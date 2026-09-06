@@ -44,7 +44,7 @@
       '<div class="row"><span class="lbl">' + T('Шрифт') + '</span>' + seg('ui-font', 'font', ['std', 'dys'], [T('обычный'), T('для дислексии')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Транскрипт аудирования') + '</span>' + seg('ui-transcript', 'transcript', [false, true], [T('скрыт'), T('показан')]) + '<span class="hint">' + T('для слабослышащих: текст виден во время звучания') + '</span></div>' +
-      '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + ' ' + T('Казахская версия интерфейса ещё не вычитана носителем.') + '</p></div>';
+      '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + ' ' + T('Казахская версия интерфейса ещё не вычитана носителем.') + ' ' + T('Вводные к разделам и пояснения к ответам пока только на русском.') + '</p></div>';
   }
   function uiButtons() {
     return '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
@@ -126,6 +126,24 @@
   function stopSpeak() { if (window.speechSynthesis) speechSynthesis.cancel(); ttsUtter = null; }
   if (window.speechSynthesis) speechSynthesis.onvoiceschanged = function () { if (run && run.type === 'listening' && run.phase === 'run' && !run.playing) route(); };
   var isEdge = /Edg\//.test(navigator.userAgent);
+
+  /* ---------------- перемешивание вариантов ответа ----------------
+     В данных ключ часто стоит первым. Один раз при загрузке переставляем варианты детерминированно
+     (сид = id теста + id вопроса), чтобы порядок был стабилен между сессиями и разбор совпадал с сохранёнными ответами. */
+  function seedOf(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function seededPerm(n, seed) { var a = []; for (var i = 0; i < n; i++) a.push(i); var x = seed || 1; for (var j = n - 1; j > 0; j--) { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; var k = (x >>> 0) % (j + 1); var t = a[j]; a[j] = a[k]; a[k] = t; } return a; }
+  function shuffleQuestion(q, key) {
+    if (!q || q.kind === 'tf' || !q.options || q.options.length < 2 || q._shuffled) return;
+    var perm = seededPerm(q.options.length, seedOf(key));
+    q.options = perm.map(function (i) { return q.options[i]; });
+    q.answer = perm.indexOf(q.answer); q._shuffled = true;
+  }
+  KZ.shuffleQuestion = shuffleQuestion;
+  KZ.tests.forEach(function (t) { t.sections.forEach(function (sec) { (sec.questions || []).forEach(function (q) { shuffleQuestion(q, t.id + '/' + sec.type + '/' + q.id); }); }); });
+  if (KZ.courses) Object.keys(KZ.courses).forEach(function (lv) { KZ.courses[lv].topics.forEach(function (tp) {
+    tp.grammar.forEach(function (g) { g.tasks.forEach(function (x, i) { shuffleQuestion(x, lv + '/' + g.id + '/' + i); }); });
+    tp.texts.forEach(function (tx) { tx.questions.forEach(function (x, i) { shuffleQuestion(x, lv + '/' + tx.id + '/' + i); }); });
+  }); });
 
   /* ---------------- router ---------------- */
   var run = null; // runtime state of the open section
@@ -210,9 +228,9 @@
   function courseCards() {
     if (!KZ.courses) return '';
     var keys = Object.keys(KZ.courses); if (!keys.length) return '';
-    return '<section><div class="kicker" style="margin-bottom:8px">' + T('Курс') + '</div><h2>' + T('Учебная программа по уровням') + '</h2><p class="sub">' + T('Слова официального лексического минимума, грамматика и тексты типового учебника — по темам, с карточками, заданиями и итоговым тестом каждой темы.') + '</p><div class="grid2">' + keys.map(function (k) {
+    return '<section><div class="kicker" style="margin-bottom:8px">' + T('Курс') + '</div><h2>' + T('Учебная программа по уровням') + '</h2><p class="sub">' + T('A1 — слова официального лексического минимума ҰТО, A2–B2 — словари учебников Тіл-Қазына (часть объёма уровня); грамматика и тексты типового учебника — по темам, с карточками, заданиями и итоговым тестом каждой темы.') + '</p><div class="grid2">' + keys.map(function (k) {
       var c = KZ.courses[k], pr = KZ.courseProgress ? KZ.courseProgress(c) : null;
-      return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + c.stats.words + ' ' + T('слов') + ' · ' + c.stats.grammar + ' ' + T('грамматических тем') + ' · ' + c.stats.texts + ' ' + T('текстов') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
+      return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + (c.stats.uniqueWords || c.stats.words) + ' ' + T('слов') + (c.coverage ? ' (' + c.coverage + ')' : '') + ' · ' + c.stats.grammar + ' ' + T('грамматических тем') + ' · ' + c.stats.texts + ' ' + T('текстов') + (c.stats.textsWithQuestions != null ? ', ' + T('с вопросами') + ' ' + c.stats.textsWithQuestions : '') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
     }).join('') + '</div></section>';
   }
   function ioPanel() {
@@ -836,7 +854,7 @@
     else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
     if (act === 'io') { var p = document.getElementById('io-panel'); p.hidden = !p.hidden; }
     else if (act === 'io-copy') { var ta = document.getElementById('io-text'); ta.select(); try { navigator.clipboard.writeText(ta.value); } catch (x) { document.execCommand('copy'); } document.getElementById('io-msg').textContent = T('Скопировано.'); }
-    else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s.tests) throw 0; state = s; saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
+    else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s || typeof s !== 'object' || typeof s.tests !== 'object' || Array.isArray(s.tests)) throw 0; var nT = Object.keys(s.tests).length, nC = s.course ? Object.keys(s.course).length : 0; if (!confirm(T('Заменить текущий прогресс импортированным?') + ' (' + T('тестов') + ': ' + nT + ', ' + T('курсов') + ': ' + nC + ')')) return; state = { version: 1, tests: s.tests, course: s.course || {}, voice: s.voice }; saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
     else if (act === 'io-reset') { if (confirm(T('Удалить весь сохранённый прогресс?'))) { state = { version: 1, tests: {} }; saveState(); route(); } }
     else if (act === 'reset-test') { if (confirm(T('Сбросить результаты этого теста?'))) { delete state.tests[b.getAttribute('data-test')]; saveState(); route(); } }
     else if (act === 'start') { run.phase = 'run'; route(); }

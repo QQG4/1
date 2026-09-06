@@ -65,7 +65,7 @@
     }).join('');
     return U.topbar([{ label: T('Хаб'), href: '#/' }, { label: course.title }], '<span class="badge level">' + course.level + '</span>') +
       '<div class="kicker">' + esc(course.kk) + ' · ' + esc(course.ru) + '</div><h1>' + esc(course.title) + ': ' + course.topics.length + ' ' + T('тем по официальной программе') + '</h1>' +
-      '<p class="lede">' + T('Слова —') + ' ' + pr.total + ' ' + T('(выучено') + ' ' + pr.known + '), ' + T('грамматика —') + ' ' + course.stats.grammar + ' ' + T('тем, тексты —') + ' ' + course.stats.texts + '. ' + T('Каждая тема: карточки слов, правило с таблицей окончаний и заданиями, тексты с вопросами, итоговый тест. Тема считается пройденной при 70 % в итоговом тесте.') + '</p>' +
+      '<p class="lede">' + T('Слова —') + ' ' + (course.stats.uniqueWords || pr.total) + (course.coverage ? ' (' + course.coverage + ')' : '') + ' ' + T('(выучено') + ' ' + pr.known + '), ' + T('грамматика —') + ' ' + course.stats.grammar + ' ' + T('тем, тексты —') + ' ' + course.stats.texts + (course.stats.textsWithQuestions != null ? ' (' + T('с вопросами') + ' ' + course.stats.textsWithQuestions + ')' : '') + '. ' + T('Каждая тема: карточки слов, правило с таблицей окончаний и заданиями, тексты с вопросами, итоговый тест. Тема считается пройденной при 70 % в итоговом тесте.') + '</p>' +
       '<div class="notice info"><b class="t">' + T('Источники') + '</b><p>' + esc(course.note) + '</p><ul class="srclist">' + course.sources.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' +
       '<div class="levels">' + rows + '</div>' +
       (course.maqal && course.maqal.length ? '<section class="mt"><h2>Мақал-мәтелдер уровня</h2><p class="sub">Из лексического минимума ҰТО. Пригодятся в письме и говорении: критерий «сөздік қор» прямо даёт балл за пословицы.</p><div class="block"><ul class="prompt-list">' + course.maqal.map(function (m) { return '<li><span><b>' + esc(m.l) + '</b>' + (m.ru ? '<br><span class="muted small">' + esc(m.ru) + '</span>' : '') + '</span></li>'; }).join('') + '</ul></div></section>' : '');
@@ -98,7 +98,7 @@
       return '<div class="wcard' + (open ? ' open' : '') + (p.words[w.l] === 1 ? ' known' : '') + '" tabindex="0" role="button" data-act="c-flip" data-w="' + esc(w.l) + '">' +
         '<div class="wf"><span class="lemma">' + esc(w.l) + '</span><span class="badge muted">' + esc(w.p) + '</span></div>' +
         (open ? '<div class="wb"><div class="tr">' + esc(w.ru) + (w.en ? ' <span class="muted">· ' + esc(w.en) + '</span>' : '') + '</div>' + (w.d ? '<div class="small muted">' + esc(w.d) + '</div>' : '') + (w.ex ? '<div class="ex">' + esc(w.ex) + '</div>' : '') +
-          '<div class="row mt"><button class="btn small" data-act="c-know" data-w="' + esc(w.l) + '">' + T('Знаю') + '</button><button class="btn ghost small" data-act="c-learn" data-w="' + esc(w.l) + '">' + T('Ещё учу') + '</button><button class="btn ghost small" data-act="c-say" data-w="' + esc(w.l) + '">▶</button></div></div>' : '') + '</div>';
+          '<div class="row mt"><button class="btn small" data-act="c-know" data-w="' + esc(w.l) + '">' + T('Знаю') + '</button><button class="btn ghost small" data-act="c-learn" data-w="' + esc(w.l) + '">' + T('Ещё учу') + '</button><button class="btn ghost small" data-act="c-say" data-w="' + esc(w.l) + '" aria-label="' + T('Озвучить') + '">▶</button><span class="hint say-msg"></span></div></div>' : '') + '</div>';
     }).join('');
     return '<div class="block"><div class="row spread"><div class="row"><span class="badge ok">' + T('выучено') + ' ' + known + ' / ' + tp.words.length + '</span>' +
       ['all', 'new', 'known'].map(function (f) { return '<button class="cb' + (filter === f ? ' on' : '') + '" data-act="c-filter" data-f="' + f + '">' + ({ all: T('все'), new: T('учу'), known: T('знаю') })[f] + '</button>'; }).join('') + '</div>' +
@@ -113,8 +113,10 @@
     var pick = shuffle(unknown.length >= n ? unknown : pool).slice(0, n);
     return pick.map(function (w, i) {
       var dir = i % 2 === 0 ? 'kk-ru' : 'ru-kk';
-      var same = pool.filter(function (x) { return x.l !== w.l && x.p === w.p; });
-      var ds = shuffle(same.length >= 3 ? same : pool.filter(function (x) { return x.l !== w.l; })).slice(0, 3);
+      var used = {}; used[w.ru.toLowerCase()] = 1; used[w.l.toLowerCase()] = 1;
+      function fresh(x) { var k1 = x.ru.toLowerCase(), k2 = x.l.toLowerCase(); if (used[k1] || used[k2]) return false; used[k1] = 1; used[k2] = 1; return true; }
+      var ds = shuffle(pool.filter(function (x) { return x.l !== w.l && x.p === w.p; })).filter(fresh).slice(0, 3);
+      if (ds.length < 3) ds = ds.concat(shuffle(pool.filter(function (x) { return x.l !== w.l && ds.indexOf(x) < 0; })).filter(fresh).slice(0, 3 - ds.length));
       var opts = shuffle([w].concat(ds));
       return { id: 'v' + i, stem: dir === 'kk-ru' ? '«' + w.l + '» сөзінің аудармасын таңдаңыз.' : '«' + w.ru + '» сөзінің қазақша баламасын таңдаңыз.',
         options: opts.map(function (o) { return dir === 'kk-ru' ? o.ru : o.l; }), answer: opts.indexOf(w), explain: w.l + ' — ' + w.ru + (w.ex ? ' · ' + w.ex : ''), w: w.l };
@@ -218,7 +220,7 @@
     if (act === 'c-flip') { if (e.target.closest('button')) return; run.open = run.open === b.getAttribute('data-w') ? null : b.getAttribute('data-w'); }
     else if (act === 'c-know') { p.words[b.getAttribute('data-w')] = 1; U.save(); }
     else if (act === 'c-learn') { p.words[b.getAttribute('data-w')] = 0; U.save(); }
-    else if (act === 'c-say') { KZ.speak(b.getAttribute('data-w')); stop = false; }
+    else if (act === 'c-say') { if (!KZ.speak(b.getAttribute('data-w'))) { var mm = b.closest('.wb') && b.closest('.wb').querySelector('.say-msg'); if (mm) mm.textContent = T('Казахский голос не найден (есть в Microsoft Edge).'); } stop = false; }
     else if (act === 'c-say-text') { var t = tp.texts[+b.getAttribute('data-t')]; if (!KZ.speak(t.text)) { var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Казахский голос не найден (есть в Microsoft Edge).'); } stop = false; }
     else if (act === 'c-filter') { run.filter = b.getAttribute('data-f'); }
     else if (act === 'c-quiz') { run.mode = 'quiz'; run.quiz = makeVocabQuiz(tp, p, 10); run.answers = {}; run.phase = 'run'; }

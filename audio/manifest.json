@@ -58,10 +58,10 @@
  "kaztest-a2-01": {
   "title": "Бірінші диалог — Демалыс жоспары",
   "voices": "Aigul + Daulet",
-  "bytes": 558432,
-  "seconds": 47,
+  "bytes": 744192,
+  "seconds": 62,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 514
+  "chars": 664
  },
  "qrt-a1-01": {
   "title": "Асқардың күні",
@@ -82,26 +82,26 @@
  "qrt-c2-01": {
   "title": "Цифрлық ортадағы тіл экологиясы",
   "voices": "Daulet",
-  "bytes": 768096,
-  "seconds": 64,
+  "bytes": 980928,
+  "seconds": 82,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1056
+  "chars": 1353
  },
  "kaztest-a1-02": {
   "title": "Бірінші диалог — Дүкенде",
   "voices": "Aigul + Daulet",
-  "bytes": 530208,
-  "seconds": 44,
+  "bytes": 665856,
+  "seconds": 55,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 417
+  "chars": 522
  },
  "kaztest-a2-02": {
   "title": "Бірінші диалог — Емханада",
   "voices": "Aigul + Daulet",
-  "bytes": 579168,
-  "seconds": 48,
+  "bytes": 666144,
+  "seconds": 56,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 499
+  "chars": 579
  },
  "kaztest-b1-02": {
   "title": "Екінші диалог — Жұмысқа орналасу сұхбаты",
@@ -114,18 +114,18 @@
  "kaztest-b2-02": {
   "title": "Үшінші диалог — Мұғаліммен сұхбат",
   "voices": "Aigul + Daulet",
-  "bytes": 774720,
-  "seconds": 65,
+  "bytes": 1093536,
+  "seconds": 91,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 850
+  "chars": 1258
  },
  "kaztest-c1-02": {
   "title": "Төртінші мәтін — Ахмет Байтұрсынұлы: ұлт ұстазы",
   "voices": "Aigul",
-  "bytes": 933696,
-  "seconds": 78,
+  "bytes": 1272960,
+  "seconds": 106,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1203
+  "chars": 1629
  },
  "qrt-a1-02": {
   "title": "Сәуленің отбасы",
@@ -154,25 +154,25 @@
  "qrt-b2-02": {
   "title": "Еріктілер қозғалысы: неге жастар қатысады?",
   "voices": "Daulet",
-  "bytes": 692928,
-  "seconds": 58,
+  "bytes": 780480,
+  "seconds": 65,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 941
+  "chars": 1060
  },
  "qrt-c1-02": {
   "title": "Су ресурстары: тапшылық қайдан келеді?",
   "voices": "Aigul",
-  "bytes": 776160,
-  "seconds": 65,
+  "bytes": 961056,
+  "seconds": 80,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1006
+  "chars": 1258
  },
  "qrt-c2-02": {
   "title": "Мәдени мұраны цифрландыру: мүмкіндік пе, қауіп пе?",
   "voices": "Daulet",
-  "bytes": 785088,
-  "seconds": 65,
+  "bytes": 1050912,
+  "seconds": 88,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1046
+  "chars": 1403
  }
 }

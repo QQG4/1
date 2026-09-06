@@ -25,6 +25,8 @@
 - Прогресс: `localStorage` ключ `kz-trainer:v1` + экспорт/импорт JSON на хабе.
 
 ## Модель данных (src/data)
+- Варианты ответов перемешиваются при загрузке (`shuffleQuestion`, сид = id теста + id вопроса) — в данных ключ может стоять первым,
+  на экране позиция случайна и стабильна. После правки текстов запускать `python3 tools/recount_words.py` (поле `words`).
 - `exams.js`: `KZ.exams[examId]` — название, `verified`, `verifiedNote`, `unverified[]`,
   `sections[]` (type, num, title, kk, minutes, tasks, desc, hypothetical?), `sources[]`.
   `KZ.levels` — B1/B2/C1 (объём лексики по testcenter.kz + рабочие критерии дифференциации).

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Озвучка скриптов аудирования через Azure Speech (kk-KZ Aigul / Daulet).
 Ключ читается ТОЛЬКО из ~/.config/qazaq-trainer/azure.env (в проект не попадает).
-Выход: audio/<testId>.mp3 и src/data/audio.js (data-URI для артефакта).
+Выход: audio/<testId>.mp3 и audio/manifest.json; KZ.audio собирает build.py (файлы для сайта, data-URI для артефакта).
 Запуск из папки qazaq-trainer: python3 tools/tts_azure.py [testId ...]
 """
 import os, re, sys, json, base64, pathlib, urllib.request, html
@@ -11,8 +11,8 @@ ENV = pathlib.Path(os.path.expanduser('~/.config/qazaq-trainer/azure.env'))
 env = dict(l.strip().split('=', 1) for l in ENV.read_text().splitlines() if '=' in l and not l.startswith('#'))
 KEY, REGION = env['AZURE_SPEECH_KEY'], env.get('AZURE_SPEECH_REGION', 'westeurope')
 A, D = 'kk-KZ-AigulNeural', 'kk-KZ-DauletNeural'
-FIRST = {'qrt-b1-01': A, 'qrt-b2-01': D, 'qrt-c1-01': D, 'kaztest-a1-01': A, 'kaztest-b1-01': D, 'kaztest-b2-01': D, 'kaztest-c1-01': A}
-RATE = {'A1': '-10%', 'B1': '-5%'}
+FIRST = {'qrt-a1-01': D, 'qrt-a2-01': A, 'qrt-b1-01': A, 'qrt-b2-01': D, 'qrt-c1-01': D, 'qrt-c2-01': D, 'kaztest-a1-01': A, 'kaztest-a2-01': D, 'kaztest-b1-01': D, 'kaztest-b2-01': D, 'kaztest-c1-01': A}
+RATE = {'A1': '-10%', 'A2': '-8%', 'B1': '-5%'}
 FMT = 'audio-24khz-48kbitrate-mono-mp3'
 
 def load_tests():
@@ -68,10 +68,3 @@ for t in tests:
 manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1))
 
 # data-URI bundle for the artifact
-bundle = {}
-for tid, m in manifest.items():
-    p = ROOT / 'audio' / f'{tid}.mp3'
-    if p.exists():
-        bundle[tid] = {'src': 'data:audio/mpeg;base64,' + base64.b64encode(p.read_bytes()).decode(), 'voices': m['voices'], 'seconds': m['seconds']}
-(ROOT / 'src/data/audio.js').write_text('/* Сгенерировано tools/tts_azure.py — не править руками. Голоса Azure kk-KZ. */\nKZ.audio = ' + json.dumps(bundle, ensure_ascii=False) + ';\n', encoding='utf-8')
-print('audio.js', (ROOT / 'src/data/audio.js').stat().st_size // 1024, 'KB')

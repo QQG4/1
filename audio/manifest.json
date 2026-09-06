@@ -54,5 +54,37 @@
   "seconds": 109,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1668
+ },
+ "kaztest-a2-01": {
+  "title": "Бірінші диалог — Демалыс жоспары",
+  "voices": "Aigul + Daulet",
+  "bytes": 325440,
+  "seconds": 54,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 514
+ },
+ "qrt-a1-01": {
+  "title": "Асқардың күні",
+  "voices": "Daulet",
+  "bytes": 240336,
+  "seconds": 40,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 451
+ },
+ "qrt-a2-01": {
+  "title": "Айнұрдың демалысы",
+  "voices": "Aigul",
+  "bytes": 270000,
+  "seconds": 45,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 508
+ },
+ "qrt-c2-01": {
+  "title": "Цифрлық ортадағы тіл экологиясы",
+  "voices": "Daulet",
+  "bytes": 426528,
+  "seconds": 71,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1056
  }
 }

@@ -14,7 +14,15 @@ A, D = 'kk-KZ-AigulNeural', 'kk-KZ-DauletNeural'
 FIRST = {'qrt-a1-01': D, 'qrt-a2-01': A, 'qrt-b1-01': A, 'qrt-b2-01': D, 'qrt-c1-01': D, 'qrt-c2-01': D, 'kaztest-a1-01': A, 'kaztest-a2-01': D, 'kaztest-b1-01': D, 'kaztest-b2-01': D, 'kaztest-c1-01': A,
          'qrt-a1-02': A, 'qrt-a2-02': D, 'qrt-b1-02': A, 'qrt-b2-02': D, 'qrt-c1-02': A, 'qrt-c2-02': D,
          'kaztest-a1-02': A, 'kaztest-a2-02': D, 'kaztest-b1-02': A, 'kaztest-b2-02': D, 'kaztest-c1-02': A}
-RATE = {'A1': '-10%', 'A2': '-8%', 'B1': '-5%'}
+# Темп 0 % для всех уровней и паузы 350 мс между репликами: выбрано пользователем по прослушиванию 06.09.2026
+# (замедление −10 % делало Aigul «тормозящей»). Замедление можно вернуть флагом --rate=-10%.
+RATE = {}
+BREAK_LINE, BREAK_PARA = '350ms', '600ms'
+# пробные варианты: --rate=0% (темп для всех уровней), --break=350ms (пауза между репликами), --suffix=-trial (отдельный файл, манифест не трогаем)
+OPTS = {a.split('=')[0][2:]: a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--')}
+if 'rate' in OPTS: RATE = {k: OPTS['rate'] for k in ('A1', 'A2', 'B1', 'B2', 'C1', 'C2')}
+if 'break' in OPTS: BREAK_LINE = OPTS['break']
+SUFFIX = OPTS.get('suffix', '')
 FMT = 'audio-24khz-48kbitrate-mono-mp3'
 
 def load_tests():
@@ -30,6 +38,13 @@ def load_tests():
         out.append({'id': tid, 'level': lvl, 'title': title, 'text': text})
     return out
 
+def for_speech(text):
+    """Только для синтеза: тире внутри предложения и многоточия дают у Aigul длинные паузы — заменяем на запятые/точки."""
+    text = re.sub(r'\s+[—–-]\s+', ', ', text)          # «Менің атым — Айгерім» → «Менің атым, Айгерім»
+    text = text.replace('…', '.').replace('...', '.')
+    text = re.sub(r',\s*,', ',', text)
+    return re.sub(r'[ \t]{2,}', ' ', text)
+
 def ssml_for(t):
     first = FIRST.get(t['id'], A); other = D if first == A else A
     rate = RATE.get(t['level'], '0%')
@@ -40,12 +55,12 @@ def ssml_for(t):
         v = first
         for l in lines:
             if not l: continue
-            spoken = re.sub(r'^—\s*', '', l)
-            parts.append(f'<voice name="{v}"><prosody rate="{rate}">{html.escape(spoken)}</prosody><break time="500ms"/></voice>')
+            spoken = for_speech(re.sub(r'^—\s*', '', l))
+            parts.append(f'<voice name="{v}"><prosody rate="{rate}">{html.escape(spoken)}</prosody><break time="{BREAK_LINE}"/></voice>')
             v = other if v == first else first
     else:
-        paras = [p.strip() for p in t['text'].split('\n\n') if p.strip()]
-        body = '<break time="700ms"/>'.join(f'<prosody rate="{rate}">{html.escape(p.replace(chr(10), " "))}</prosody>' for p in paras)
+        paras = [for_speech(p.strip()) for p in t['text'].split('\n\n') if p.strip()]
+        body = f'<break time="{BREAK_PARA}"/>'.join(f'<prosody rate="{rate}">{html.escape(p.replace(chr(10), " "))}</prosody>' for p in paras)
         parts.append(f'<voice name="{first}">{body}</voice>')
     voices = 'Aigul + Daulet' if dialog else ('Aigul' if first == A else 'Daulet')
     return '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="kk-KZ">' + ''.join(parts) + '</speak>', voices
@@ -56,17 +71,17 @@ def synth(ssml):
     with urllib.request.urlopen(req, timeout=120) as r:
         return r.read()
 
-want = set(sys.argv[1:])
+want = set(a for a in sys.argv[1:] if not a.startswith('--'))
 tests = [t for t in load_tests() if not want or t['id'] in want]
 manifest_path = ROOT / 'audio' / 'manifest.json'
 manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 for t in tests:
     ssml, voices = ssml_for(t)
     data = synth(ssml)
-    (ROOT / 'audio' / f"{t['id']}.mp3").write_bytes(data)
+    (ROOT / 'audio' / f"{t['id']}{SUFFIX}.mp3").write_bytes(data)
     secs = round(len(data) * 8 / 48000)
-    manifest[t['id']] = {'title': t['title'], 'voices': voices, 'bytes': len(data), 'seconds': secs, 'format': FMT, 'chars': len(t['text'])}
-    print(f"{t['id']:15} {voices:15} {len(data)//1024:4} KB ~{secs//60}:{secs%60:02d}  {t['title'][:40]}")
-manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1))
+    if not SUFFIX: manifest[t['id']] = {'title': t['title'], 'voices': voices, 'bytes': len(data), 'seconds': secs, 'format': FMT, 'chars': len(t['text'])}
+    print(f"{t['id']}{SUFFIX:8} {voices:15} {len(data)//1024:4} KB ~{secs//60}:{secs%60:02d}  {t['title'][:40]}")
+if not SUFFIX: manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1))
 
 # data-URI bundle for the artifact

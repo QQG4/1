@@ -2,24 +2,24 @@
  "kaztest-a1-01": {
   "title": "Бірінші диалог — Танысу",
   "voices": "Aigul + Daulet",
-  "bytes": 386352,
-  "seconds": 64,
+  "bytes": 341424,
+  "seconds": 57,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 551
  },
  "kaztest-b1-01": {
   "title": "Бірінші диалог — Демалыс күнгі саяхат",
   "voices": "Aigul + Daulet",
-  "bytes": 461952,
-  "seconds": 77,
+  "bytes": 428544,
+  "seconds": 71,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 776
  },
  "kaztest-b2-01": {
   "title": "Үшінші диалог — Кәсіпкермен сұхбат",
   "voices": "Aigul + Daulet",
-  "bytes": 610272,
-  "seconds": 102,
+  "bytes": 600336,
+  "seconds": 100,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1237
  },
@@ -34,15 +34,15 @@
  "qrt-b1-01": {
   "title": "Айгерімнің жұмыс күні",
   "voices": "Aigul",
-  "bytes": 371808,
-  "seconds": 62,
+  "bytes": 352512,
+  "seconds": 59,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 787
  },
  "qrt-b2-01": {
   "title": "Қашықтан жұмыс: артықшылықтары мен қиындықтары",
   "voices": "Daulet",
-  "bytes": 476640,
+  "bytes": 475344,
   "seconds": 79,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1213
@@ -50,79 +50,79 @@
  "qrt-c1-01": {
   "title": "Функционалдық сауаттылық: ұғымның эволюциясы",
   "voices": "Daulet",
-  "bytes": 656064,
-  "seconds": 109,
+  "bytes": 657504,
+  "seconds": 110,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1668
  },
  "kaztest-a2-01": {
   "title": "Бірінші диалог — Демалыс жоспары",
   "voices": "Aigul + Daulet",
-  "bytes": 325440,
-  "seconds": 54,
+  "bytes": 293760,
+  "seconds": 49,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 514
  },
  "qrt-a1-01": {
   "title": "Асқардың күні",
   "voices": "Daulet",
-  "bytes": 240336,
-  "seconds": 40,
+  "bytes": 216864,
+  "seconds": 36,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 451
  },
  "qrt-a2-01": {
   "title": "Айнұрдың демалысы",
   "voices": "Aigul",
-  "bytes": 270000,
-  "seconds": 45,
+  "bytes": 249120,
+  "seconds": 42,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 508
  },
  "qrt-c2-01": {
   "title": "Цифрлық ортадағы тіл экологиясы",
   "voices": "Daulet",
-  "bytes": 426528,
-  "seconds": 71,
+  "bytes": 429408,
+  "seconds": 72,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1056
  },
  "kaztest-a1-02": {
   "title": "Бірінші диалог — Дүкенде",
   "voices": "Aigul + Daulet",
-  "bytes": 305712,
-  "seconds": 51,
+  "bytes": 268704,
+  "seconds": 45,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 417
  },
  "kaztest-a2-02": {
   "title": "Бірінші диалог — Емханада",
   "voices": "Aigul + Daulet",
-  "bytes": 335808,
-  "seconds": 56,
+  "bytes": 301824,
+  "seconds": 50,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 499
  },
  "kaztest-b1-02": {
   "title": "Екінші диалог — Жұмысқа орналасу сұхбаты",
   "voices": "Aigul + Daulet",
-  "bytes": 432720,
-  "seconds": 72,
+  "bytes": 402912,
+  "seconds": 67,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 839
  },
  "kaztest-b2-02": {
   "title": "Үшінші диалог — Мұғаліммен сұхбат",
   "voices": "Aigul + Daulet",
-  "bytes": 422352,
-  "seconds": 70,
+  "bytes": 413280,
+  "seconds": 69,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 850
  },
  "kaztest-c1-02": {
   "title": "Төртінші мәтін — Ахмет Байтұрсынұлы: ұлт ұстазы",
   "voices": "Aigul",
-  "bytes": 501840,
+  "bytes": 504144,
   "seconds": 84,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1203
@@ -130,31 +130,31 @@
  "qrt-a1-02": {
   "title": "Сәуленің отбасы",
   "voices": "Aigul",
-  "bytes": 240480,
-  "seconds": 40,
+  "bytes": 221184,
+  "seconds": 37,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 450
  },
  "qrt-a2-02": {
   "title": "Менің жаңа жұмысым",
   "voices": "Daulet",
-  "bytes": 291888,
-  "seconds": 49,
+  "bytes": 268848,
+  "seconds": 45,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 581
  },
  "qrt-b1-02": {
   "title": "Ауыл дәрігерінің күні",
   "voices": "Aigul",
-  "bytes": 313344,
-  "seconds": 52,
+  "bytes": 299664,
+  "seconds": 50,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 686
  },
  "qrt-b2-02": {
   "title": "Еріктілер қозғалысы: неге жастар қатысады?",
   "voices": "Daulet",
-  "bytes": 385056,
+  "bytes": 385200,
   "seconds": 64,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 941
@@ -162,16 +162,16 @@
  "qrt-c1-02": {
   "title": "Су ресурстары: тапшылық қайдан келеді?",
   "voices": "Aigul",
-  "bytes": 428544,
-  "seconds": 71,
+  "bytes": 432000,
+  "seconds": 72,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1006
  },
  "qrt-c2-02": {
   "title": "Мәдени мұраны цифрландыру: мүмкіндік пе, қауіп пе?",
   "voices": "Daulet",
-  "bytes": 434448,
-  "seconds": 72,
+  "bytes": 439056,
+  "seconds": 73,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1046
  }

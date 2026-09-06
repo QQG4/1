@@ -6,6 +6,7 @@
    ============================================================ */
 (function () {
   'use strict';
+  var T = KZ.T, LK = KZ.LK;
   var U = KZ.util, esc = U.esc;
 
   /* ---------- markdown-мини: таблицы, жирный, абзацы ---------- */
@@ -60,24 +61,24 @@
     var pr = courseProgress(course);
     var rows = course.topics.map(function (tp) {
       var r = topicProgress(course.level, tp);
-      return '<a class="level-row" href="#/course/' + course.level + '/' + tp.id + '"><span class="lvl">' + tp.order + '</span><span><div class="nm">' + esc(tp.kk) + ' <span class="muted small">· ' + esc(tp.ru) + '</span></div><div class="dsc">' + tp.words.length + ' слов · ' + tp.grammar.length + ' грам. ' + (tp.grammar.length === 1 ? 'тема' : 'темы') + ' · ' + tp.texts.length + ' ' + (tp.texts.length === 1 ? 'текст' : 'текста(ов)') + (tp.lessons.length ? ' · уроки ' + tp.lessons.map(function (l) { return l.section + '.' + l.lesson; }).join(', ') : '') + '</div></span><span class="st"><span class="badge ' + (r.done ? 'ok' : r.pct ? 'warn' : 'muted') + '">' + (r.done ? 'пройдена' : r.pct + ' %') + '</span></span></a>';
+      return '<a class="level-row" href="#/course/' + course.level + '/' + tp.id + '"><span class="lvl">' + tp.order + '</span><span><div class="nm">' + esc(tp.kk) + ' <span class="muted small">· ' + esc(tp.ru) + '</span></div><div class="dsc">' + tp.words.length + ' ' + T('слов') + ' · ' + tp.grammar.length + ' ' + T('грам.') + ' ' + (tp.grammar.length === 1 ? T('тема') : T('темы')) + ' · ' + tp.texts.length + ' ' + (tp.texts.length === 1 ? T('текст') : T('текста(ов)')) + (tp.lessons.length ? ' · ' + T('уроки') + ' ' + tp.lessons.map(function (l) { return l.section + '.' + l.lesson; }).join(', ') : '') + '</div></span><span class="st"><span class="badge ' + (r.done ? 'ok' : r.pct ? 'warn' : 'muted') + '">' + (r.done ? T('пройдена') : r.pct + ' %') + '</span></span></a>';
     }).join('');
-    return U.topbar([{ label: 'Хаб', href: '#/' }, { label: course.title }], '<span class="badge level">' + course.level + '</span>') +
-      '<div class="kicker">' + esc(course.kk) + ' · ' + esc(course.ru) + '</div><h1>' + esc(course.title) + ': ' + course.topics.length + ' тем по официальной программе</h1>' +
-      '<p class="lede">Слова — ' + pr.total + ' (выучено ' + pr.known + '), грамматика — ' + course.stats.grammar + ' тем, тексты — ' + course.stats.texts + '. Каждая тема: карточки слов, правило с таблицей окончаний и заданиями, тексты с вопросами, итоговый тест. Тема считается пройденной при 70 % в итоговом тесте.</p>' +
-      '<div class="notice info"><b class="t">Источники</b><p>' + esc(course.note) + '</p><ul class="srclist">' + course.sources.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' +
+    return U.topbar([{ label: T('Хаб'), href: '#/' }, { label: course.title }], '<span class="badge level">' + course.level + '</span>') +
+      '<div class="kicker">' + esc(course.kk) + ' · ' + esc(course.ru) + '</div><h1>' + esc(course.title) + ': ' + course.topics.length + ' ' + T('тем по официальной программе') + '</h1>' +
+      '<p class="lede">' + T('Слова —') + ' ' + pr.total + ' ' + T('(выучено') + ' ' + pr.known + '), ' + T('грамматика —') + ' ' + course.stats.grammar + ' ' + T('тем, тексты —') + ' ' + course.stats.texts + '. ' + T('Каждая тема: карточки слов, правило с таблицей окончаний и заданиями, тексты с вопросами, итоговый тест. Тема считается пройденной при 70 % в итоговом тесте.') + '</p>' +
+      '<div class="notice info"><b class="t">' + T('Источники') + '</b><p>' + esc(course.note) + '</p><ul class="srclist">' + course.sources.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' +
       '<div class="levels">' + rows + '</div>' +
       (course.maqal && course.maqal.length ? '<section class="mt"><h2>Мақал-мәтелдер уровня</h2><p class="sub">Из лексического минимума ҰТО. Пригодятся в письме и говорении: критерий «сөздік қор» прямо даёт балл за пословицы.</p><div class="block"><ul class="prompt-list">' + course.maqal.map(function (m) { return '<li><span><b>' + esc(m.l) + '</b>' + (m.ru ? '<br><span class="muted small">' + esc(m.ru) + '</span>' : '') + '</span></li>'; }).join('') + '</ul></div></section>' : '');
   }
 
   function tabs(course, tp, cur) {
-    var ts = [['words', 'Сөздер · ' + tp.words.length], ['grammar', 'Грамматика · ' + tp.grammar.length], ['texts', 'Мәтіндер · ' + tp.texts.length], ['test', 'Тест']];
+    var ts = [['words', 'Сөздер · ' + tp.words.length], ['grammar', T('Грамматика') + ' · ' + tp.grammar.length], ['texts', 'Мәтіндер · ' + tp.texts.length], ['test', T('Тест')]];
     return '<nav class="ctabs">' + ts.map(function (t) { return '<a class="' + (t[0] === cur ? 'on' : '') + '" href="#/course/' + course.level + '/' + tp.id + '/' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</nav>';
   }
   function viewTopic(course, tp, tab) {
     var r = topicProgress(course.level, tp);
-    var head = U.topbar([{ label: 'Хаб', href: '#/' }, { label: course.title, href: '#/course/' + course.level }, { label: tp.kk }], '<span class="badge level">' + course.level + '</span><span class="badge ' + (r.done ? 'ok' : 'muted') + '">' + (r.done ? 'пройдена' : r.pct + ' %') + '</span>') +
-      '<div class="kicker">Тема ' + tp.order + ' · ' + esc(tp.ru) + '</div><h1>' + esc(tp.kk) + '</h1>' +
+    var head = U.topbar([{ label: T('Хаб'), href: '#/' }, { label: course.title, href: '#/course/' + course.level }, { label: tp.kk }], '<span class="badge level">' + course.level + '</span><span class="badge ' + (r.done ? 'ok' : 'muted') + '">' + (r.done ? T('пройдена') : r.pct + ' %') + '</span>') +
+      '<div class="kicker">' + T('Тема') + ' ' + tp.order + ' · ' + esc(tp.ru) + '</div><h1>' + esc(tp.kk) + '</h1>' +
       (tp.lessons.length ? '<p class="lede">' + tp.lessons.map(function (l) { return '<b>' + l.section + '.' + l.lesson + ' ' + esc(l.title) + '</b>' + (l.phrases.length ? ' — «' + esc(l.phrases[0]) + '»' : '') + (l.grammar.length ? ' <span class="muted">(' + esc(l.grammar.join('; ')) + ')</span>' : ''); }).join('<br>') + '</p>' : '') +
       tabs(course, tp, tab);
     var body = ({ words: viewWords, grammar: viewGrammar, texts: viewTexts, test: viewTest })[tab](course, tp);
@@ -91,19 +92,19 @@
     var filter = run.filter || 'all';
     var list = tp.words.filter(function (w) { return filter === 'all' || (filter === 'new' ? p.words[w.l] !== 1 : p.words[w.l] === 1); });
     var known = tp.words.filter(function (w) { return p.words[w.l] === 1; }).length;
-    if (!tp.words.length) return '<div class="block"><p class="muted">Слов по этой теме в базе пока нет (словарь учебника для этого раздела ещё не извлечён).</p></div>';
+    if (!tp.words.length) return '<div class="block"><p class="muted">' + T('Слов по этой теме в базе пока нет (словарь учебника для этого раздела ещё не извлечён).') + '</p></div>';
     var cards = list.map(function (w, i) {
       var open = run.open === w.l;
-      return '<div class="wcard' + (open ? ' open' : '') + (p.words[w.l] === 1 ? ' known' : '') + '" data-act="c-flip" data-w="' + esc(w.l) + '">' +
+      return '<div class="wcard' + (open ? ' open' : '') + (p.words[w.l] === 1 ? ' known' : '') + '" tabindex="0" role="button" data-act="c-flip" data-w="' + esc(w.l) + '">' +
         '<div class="wf"><span class="lemma">' + esc(w.l) + '</span><span class="badge muted">' + esc(w.p) + '</span></div>' +
         (open ? '<div class="wb"><div class="tr">' + esc(w.ru) + (w.en ? ' <span class="muted">· ' + esc(w.en) + '</span>' : '') + '</div>' + (w.d ? '<div class="small muted">' + esc(w.d) + '</div>' : '') + (w.ex ? '<div class="ex">' + esc(w.ex) + '</div>' : '') +
-          '<div class="row mt"><button class="btn small" data-act="c-know" data-w="' + esc(w.l) + '">Знаю</button><button class="btn ghost small" data-act="c-learn" data-w="' + esc(w.l) + '">Ещё учу</button><button class="btn ghost small" data-act="c-say" data-w="' + esc(w.l) + '">▶</button></div></div>' : '') + '</div>';
+          '<div class="row mt"><button class="btn small" data-act="c-know" data-w="' + esc(w.l) + '">' + T('Знаю') + '</button><button class="btn ghost small" data-act="c-learn" data-w="' + esc(w.l) + '">' + T('Ещё учу') + '</button><button class="btn ghost small" data-act="c-say" data-w="' + esc(w.l) + '">▶</button></div></div>' : '') + '</div>';
     }).join('');
-    return '<div class="block"><div class="row spread"><div class="row"><span class="badge ok">выучено ' + known + ' / ' + tp.words.length + '</span>' +
-      ['all', 'new', 'known'].map(function (f) { return '<button class="cb' + (filter === f ? ' on' : '') + '" data-act="c-filter" data-f="' + f + '">' + ({ all: 'все', new: 'учу', known: 'знаю' })[f] + '</button>'; }).join('') + '</div>' +
-      (tp.words.length >= 4 ? '<button class="btn" data-act="c-quiz">Проверить себя · 10 слов</button>' : '') + '</div>' +
-      '<p class="small muted mt">Нажмите на слово, чтобы открыть перевод, толкование и пример. Кнопка ▶ озвучивает слово, если в браузере есть казахский голос.' + (p.quizBest != null ? ' Лучший результат квиза: ' + Math.round(p.quizBest * 100) + ' %.' : '') + '</p>' +
-      '<div class="wgrid">' + (cards || '<p class="muted">В этом фильтре слов нет.</p>') + '</div></div>';
+    return '<div class="block"><div class="row spread"><div class="row"><span class="badge ok">' + T('выучено') + ' ' + known + ' / ' + tp.words.length + '</span>' +
+      ['all', 'new', 'known'].map(function (f) { return '<button class="cb' + (filter === f ? ' on' : '') + '" data-act="c-filter" data-f="' + f + '">' + ({ all: T('все'), new: T('учу'), known: T('знаю') })[f] + '</button>'; }).join('') + '</div>' +
+      (tp.words.length >= 4 ? '<button class="btn" data-act="c-quiz">' + T('Проверить себя · 10 слов') + '</button>' : '') + '</div>' +
+      '<p class="small muted mt">' + T('Нажмите на слово, чтобы открыть перевод, толкование и пример. Кнопка ▶ озвучивает слово, если в браузере есть казахский голос.') + (p.quizBest != null ? ' ' + T('Лучший результат квиза:') + ' ' + Math.round(p.quizBest * 100) + ' %.' : '') + '</p>' +
+      '<div class="wgrid">' + (cards || '<p class="muted">' + T('В этом фильтре слов нет.') + '</p>') + '</div></div>';
   }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function makeVocabQuiz(tp, p, n) {
@@ -122,29 +123,29 @@
   function viewQuiz(course, tp, run) {
     var qs = run.quiz;
     var locked = run.phase === 'review';
-    var body = '<div class="block"><span class="setlabel">Квиз · ' + qs.length + ' слов</span>' + U.renderQuestions({ questions: qs }, run.answers, locked);
-    if (!locked) body += '<div class="actions"><button class="btn" data-act="c-quiz-submit">Зафиксировать ответы</button><button class="btn ghost" data-act="c-quiz-exit">Отмена</button></div>';
-    else { var sc = run.score; body += '<div class="score-card mt"><div class="score-big">' + sc + '<small>/' + qs.length + '</small></div><div><b>' + (sc / qs.length >= 0.8 ? 'Отлично.' : sc / qs.length >= 0.5 ? 'Половина есть, повторите слова из фильтра «учу».' : 'Вернитесь к карточкам.') + '</b><div class="m">Верные ответы отмечены как «знаю», неверные — как «учу».</div></div></div><div class="actions"><button class="btn" data-act="c-quiz">Ещё 10 слов</button><button class="btn ghost" data-act="c-quiz-exit">К карточкам</button></div>'; }
+    var body = '<div class="block"><span class="setlabel">' + T('Квиз') + ' · ' + qs.length + ' ' + T('слов') + '</span>' + U.renderQuestions({ questions: qs }, run.answers, locked);
+    if (!locked) body += '<div class="actions"><button class="btn" data-act="c-quiz-submit">' + T('Зафиксировать ответы') + '</button><button class="btn ghost" data-act="c-quiz-exit">' + T('Отмена') + '</button></div>';
+    else { var sc = run.score; body += '<div class="score-card mt"><div class="score-big">' + sc + '<small>/' + qs.length + '</small></div><div><b>' + (sc / qs.length >= 0.8 ? T('Отлично.') : sc / qs.length >= 0.5 ? T('Половина есть, повторите слова из фильтра «учу».') : T('Вернитесь к карточкам.')) + '</b><div class="m">' + T('Верные ответы отмечены как «знаю», неверные — как «учу».') + '</div></div></div><div class="actions"><button class="btn" data-act="c-quiz">' + T('Ещё 10 слов') + '</button><button class="btn ghost" data-act="c-quiz-exit">' + T('К карточкам') + '</button></div>'; }
     return body + '</div>';
   }
 
   /* --- грамматика: правила + задания --- */
   function viewGrammar(course, tp) {
     var p = cp(course.level, tp.id), run = KZ.run();
-    if (!tp.grammar.length) return '<div class="block"><p class="muted">В этой теме учебник не вводит новой грамматики.</p></div>';
+    if (!tp.grammar.length) return '<div class="block"><p class="muted">' + T('В этой теме учебник не вводит новой грамматики.') + '</p></div>';
     var cards = tp.grammar.map(function (g, gi) {
       var open = run.openG == null ? gi === 0 : run.openG === gi;
-      return '<div class="block"><div class="row spread" data-act="c-gopen" data-g="' + gi + '" style="cursor:pointer"><h3 style="margin:0">' + esc(g.name) + '</h3><span class="badge muted">урок ' + esc(g.lesson) + ' · ' + esc(g.lesson_title || '') + '</span></div>' +
-        (open ? '<div class="rule mt">' + md(g.rule) + '</div>' + (g.tasks.length ? '<p class="small muted mt">' + g.tasks.length + ' заданий к этому правилу — в блоке ниже.</p>' : '') : '') + '</div>';
+      return '<div class="block"><div class="row spread" tabindex="0" role="button" data-act="c-gopen" data-g="' + gi + '" style="cursor:pointer"><h3 style="margin:0">' + esc(g.name) + '</h3><span class="badge muted">' + T('урок') + ' ' + esc(g.lesson) + ' · ' + esc(g.lesson_title || '') + '</span></div>' +
+        (open ? '<div class="rule mt">' + md(g.rule) + '</div>' + (g.tasks.length ? '<p class="small muted mt">' + g.tasks.length + ' ' + T('заданий к этому правилу — в блоке ниже.') + '</p>' : '') : '') + '</div>';
     }).join('');
     var all = []; tp.grammar.forEach(function (g) { g.tasks.forEach(function (t, i) { all.push(Object.assign({ id: 'g' + all.length, text: t.stem, gname: g.name }, t)); }); });
     var quiz = '';
     if (all.length) {
       var locked = run.gphase === 'review';
-      quiz = '<div class="block"><span class="setlabel">Задания · ' + all.length + '</span><p class="small muted">Сгенерированы по таблицам окончаний учебника и ещё не вычитаны носителем: если ответ кажется спорным, отметьте его себе для проверки.' + (p.gramBest != null ? ' Лучший результат: ' + Math.round(p.gramBest * 100) + ' %.' : '') + '</p>' +
+      quiz = '<div class="block"><span class="setlabel">' + T('Задания') + ' · ' + all.length + '</span><p class="small muted">' + T('Сгенерированы по таблицам окончаний учебника и ещё не вычитаны носителем: если ответ кажется спорным, отметьте его себе для проверки.') + (p.gramBest != null ? ' ' + T('Лучший результат:') + ' ' + Math.round(p.gramBest * 100) + ' %.' : '') + '</p>' +
         U.renderQuestions({ questions: all }, run.ganswers || {}, locked) +
-        (locked ? '<div class="score-card mt"><div class="score-big">' + run.gscore + '<small>/' + all.length + '</small></div><div><b>Результат сохранён.</b></div></div><div class="actions"><button class="btn ghost" data-act="c-gram-retry">Пройти заново</button></div>' :
-          '<div class="actions"><button class="btn" data-act="c-gram-submit">Зафиксировать ответы</button><span class="hint" id="submit-msg"></span></div>') + '</div>';
+        (locked ? '<div class="score-card mt"><div class="score-big">' + run.gscore + '<small>/' + all.length + '</small></div><div><b>' + T('Результат сохранён.') + '</b></div></div><div class="actions"><button class="btn ghost" data-act="c-gram-retry">' + T('Пройти заново') + '</button></div>' :
+          '<div class="actions"><button class="btn" data-act="c-gram-submit">' + T('Зафиксировать ответы') + '</button><span class="hint" id="submit-msg"></span></div>') + '</div>';
     }
     return cards + quiz;
   }
@@ -152,17 +153,17 @@
   /* --- тексты --- */
   function viewTexts(course, tp) {
     var p = cp(course.level, tp.id), run = KZ.run();
-    if (!tp.texts.length) return '<div class="block"><p class="muted">Текстов по этой теме в базе пока нет.</p></div>';
+    if (!tp.texts.length) return '<div class="block"><p class="muted">' + T('Текстов по этой теме в базе пока нет.') + '</p></div>';
     return tp.texts.map(function (t, ti) {
       var open = run.openT == null ? ti === 0 : run.openT === ti;
       var done = p.textsDone[t.id];
       var qs = t.questions.map(function (q, qi) { return Object.assign({ id: t.id + '-q' + qi, text: q.stem }, q); });
       var locked = run.tphase && run.tphase[t.id] === 'review';
-      return '<div class="block"><div class="row spread" data-act="c-topen" data-t="' + ti + '" style="cursor:pointer"><h3 style="margin:0">' + esc(t.title) + ' <span class="muted small">· ' + esc(t.genre) + ' · ' + t.words + ' слов</span></h3>' + (done ? '<span class="badge ok">прочитан</span>' : '<span class="badge muted">' + (t.use.indexOf('listening') >= 0 ? 'аудио-скрипт' : 'чтение') + '</span>') + '</div>' +
-        (open ? '<div class="script mt">' + esc(t.text) + '</div><div class="row mt"><button class="btn ghost small" data-act="c-say-text" data-t="' + ti + '">▶ Озвучить</button><span class="hint" id="tts-msg"></span><span class="small muted">источник: ' + esc(t.src) + '</span></div>' +
-          (qs.length ? '<div class="mt"><span class="setlabel">Вопросы · ' + qs.length + '</span><p class="small muted">Вопросы сгенерированы по тексту и не вычитаны носителем.</p>' + U.renderQuestions({ questions: qs }, (run.tanswers || {})[t.id] || {}, locked) +
-            (locked ? '<div class="actions"><span class="badge ok">верно ' + run.tscore[t.id] + ' / ' + qs.length + '</span></div>' : '<div class="actions"><button class="btn" data-act="c-text-submit" data-tid="' + esc(t.id) + '">Зафиксировать ответы</button></div>') + '</div>' :
-            (!done ? '<div class="actions"><button class="btn secondary small" data-act="c-text-done" data-tid="' + esc(t.id) + '">Прочитал(а)</button></div>' : '')) : '') + '</div>';
+      return '<div class="block"><div class="row spread" tabindex="0" role="button" data-act="c-topen" data-t="' + ti + '" style="cursor:pointer"><h3 style="margin:0">' + esc(t.title) + ' <span class="muted small">· ' + esc(t.genre) + ' · ' + t.words + ' ' + T('слов') + '</span></h3>' + (done ? '<span class="badge ok">' + T('прочитан') + '</span>' : '<span class="badge muted">' + (t.use.indexOf('listening') >= 0 ? T('аудио-скрипт') : T('чтение')) + '</span>') + '</div>' +
+        (open ? '<div class="script mt">' + esc(t.text) + '</div><div class="row mt"><button class="btn ghost small" data-act="c-say-text" data-t="' + ti + '">▶ ' + T('Озвучить') + '</button><span class="hint" id="tts-msg"></span><span class="small muted">' + T('источник:') + ' ' + esc(t.src) + '</span></div>' +
+          (qs.length ? '<div class="mt"><span class="setlabel">' + T('Вопросы') + ' · ' + qs.length + '</span><p class="small muted">' + T('Вопросы сгенерированы по тексту и не вычитаны носителем.') + '</p>' + U.renderQuestions({ questions: qs }, (run.tanswers || {})[t.id] || {}, locked) +
+            (locked ? '<div class="actions"><span class="badge ok">' + T('верно') + ' ' + run.tscore[t.id] + ' / ' + qs.length + '</span></div>' : '<div class="actions"><button class="btn" data-act="c-text-submit" data-tid="' + esc(t.id) + '">' + T('Зафиксировать ответы') + '</button></div>') + '</div>' :
+            (!done ? '<div class="actions"><button class="btn secondary small" data-act="c-text-done" data-tid="' + esc(t.id) + '">' + T('Прочитал(а)') + '</button></div>' : '')) : '') + '</div>';
     }).join('');
   }
 
@@ -178,9 +179,9 @@
   function viewTest(course, tp) {
     var p = cp(course.level, tp.id), run = KZ.run();
     var avail = (tp.words.length >= 4 ? 1 : 0) + (tp.grammar.some(function (g) { return g.tasks.length; }) ? 1 : 0) + (tp.texts.some(function (t) { return t.questions.length; }) ? 1 : 0);
-    if (!avail) return '<div class="block"><h3>Итоговый тест темы</h3><p class="muted">Для этой темы пока нет ни слов, ни заданий — тест собрать не из чего.</p></div>';
+    if (!avail) return '<div class="block"><h3>' + T('Итоговый тест темы') + '</h3><p class="muted">' + T('Для этой темы пока нет ни слов, ни заданий — тест собрать не из чего.') + '</p></div>';
     if (!run.test) {
-      return '<div class="block"><h3>Итоговый тест темы</h3><p>До 15 вопросов: слова темы, окончания из грамматики урока и вопросы к текстам. Порог «тема пройдена» — 70 %.' + (p.testBest != null ? ' Лучший результат: <b>' + Math.round(p.testBest * 100) + ' %</b>.' : '') + '</p><div class="actions"><button class="btn" data-act="c-test-start">Начать тест</button></div></div>';
+      return '<div class="block"><h3>' + T('Итоговый тест темы') + '</h3><p>' + T('До 15 вопросов: слова темы, окончания из грамматики урока и вопросы к текстам. Порог «тема пройдена» — 70 %.') + (p.testBest != null ? ' ' + T('Лучший результат:') + ' <b>' + Math.round(p.testBest * 100) + ' %</b>.' : '') + '</p><div class="actions"><button class="btn" data-act="c-test-start">' + T('Начать тест') + '</button></div></div>';
     }
     var locked = run.testPhase === 'review';
     var html = '';
@@ -188,9 +189,9 @@
       if (q.ctx && (i === 0 || run.test[i - 1].ctx !== q.ctx)) html += '<div class="script small">' + esc(q.ctx) + '</div>';
       html += U.renderQuestions({ questions: [q] }, run.testAnswers || {}, locked, i + 1);
     });
-    return '<div class="block"><span class="setlabel">Тест · ' + run.test.length + ' вопросов</span>' + html +
-      (locked ? '<div class="score-card mt"><div class="score-big">' + run.testScore + '<small>/' + run.test.length + '</small></div><div><b>' + (run.testScore / run.test.length >= 0.7 ? 'Тема пройдена.' : 'Ниже 70 % — повторите слова и правило, затем ещё раз.') + '</b></div></div><div class="actions"><button class="btn" data-act="c-test-start">Ещё раз</button><a class="btn ghost" href="#/course/' + course.level + '">К списку тем</a></div>' :
-        '<div class="actions"><button class="btn" data-act="c-test-submit">Зафиксировать ответы</button></div>') + '</div>';
+    return '<div class="block"><span class="setlabel">' + T('Тест') + ' · ' + run.test.length + ' ' + T('вопросов') + '</span>' + html +
+      (locked ? '<div class="score-card mt"><div class="score-big">' + run.testScore + '<small>/' + run.test.length + '</small></div><div><b>' + (run.testScore / run.test.length >= 0.7 ? T('Тема пройдена.') : T('Ниже 70 % — повторите слова и правило, затем ещё раз.')) + '</b></div></div><div class="actions"><button class="btn" data-act="c-test-start">' + T('Ещё раз') + '</button><a class="btn ghost" href="#/course/' + course.level + '">' + T('К списку тем') + '</a></div>' :
+        '<div class="actions"><button class="btn" data-act="c-test-submit">' + T('Зафиксировать ответы') + '</button></div>') + '</div>';
   }
 
   /* ---------- маршрут и события ---------- */
@@ -218,7 +219,7 @@
     else if (act === 'c-know') { p.words[b.getAttribute('data-w')] = 1; U.save(); }
     else if (act === 'c-learn') { p.words[b.getAttribute('data-w')] = 0; U.save(); }
     else if (act === 'c-say') { KZ.speak(b.getAttribute('data-w')); stop = false; }
-    else if (act === 'c-say-text') { var t = tp.texts[+b.getAttribute('data-t')]; if (!KZ.speak(t.text)) { var m = document.getElementById('tts-msg'); if (m) m.textContent = 'Казахский голос не найден (есть в Microsoft Edge).'; } stop = false; }
+    else if (act === 'c-say-text') { var t = tp.texts[+b.getAttribute('data-t')]; if (!KZ.speak(t.text)) { var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Казахский голос не найден (есть в Microsoft Edge).'); } stop = false; }
     else if (act === 'c-filter') { run.filter = b.getAttribute('data-f'); }
     else if (act === 'c-quiz') { run.mode = 'quiz'; run.quiz = makeVocabQuiz(tp, p, 10); run.answers = {}; run.phase = 'run'; }
     else if (act === 'c-quiz-exit') { run.mode = null; }

@@ -181,10 +181,12 @@
         var t = tests[0];
         var st = t ? testStatus(t) : { label: T('нет теста'), cls: 'muted' };
         var href = t && t.status !== 'draft' ? '#/test/' + t.id : '#/exam/' + eid;
+        // несколько вариантов уровня: чипы «1 · 2 · 3» со статусом каждого
+        var chips = tests.length > 1 ? '<span class="variants">' + tests.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (i + 1) + '</span>'; }).join('') + '</span>' : '';
         return '<a class="level-row' + (t && t.status === 'draft' ? ' draft' : '') + '" href="' + href + '">' +
           '<span class="lvl">' + lv + '</span>' +
-          '<span><div class="nm">' + esc(LK(KZ.levels[lv], 'name')) + '</div><div class="dsc">' + esc(t ? t.summary : '') + '</div></span>' +
-          '<span class="st"><span class="badge ' + st.cls + '">' + st.label + '</span></span></a>';
+          '<span><div class="nm">' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + T('варианта') + '</span>' : '') + '</div><div class="dsc">' + esc(t ? t.summary : '') + '</div></span>' +
+          '<span class="st">' + chips + '<span class="badge ' + st.cls + '">' + st.label + '</span></span></a>';
       }).join('');
       return '<div class="exam-card-wrap"><a class="exam-card" href="#/exam/' + eid + '">' +
         '<div class="row spread"><span class="badge exam">' + esc(ex.kicker) + '</span>' +
@@ -196,7 +198,7 @@
     return topbar([{ label: T('Хаб') }], '<button class="btn ghost small" data-act="io">' + T('Прогресс: экспорт / импорт') + '</button>') +
       '<div class="kicker">' + T('Qazaq trainer · тренажёр') + '</div>' +
       '<h1>' + T('Подготовка к государственным экзаменам по казахскому языку') + '</h1>' +
-      '<p class="lede">' + T('Два экзамена, три уровня, по одному полному мок-тесту на каждую пару. Результаты по разделам сохраняются в этом браузере; для переноса на другое устройство есть экспорт.') + '</p>' +
+      '<p class="lede">' + T('Два экзамена, уровни от A1 до C2, по несколько вариантов мок-теста на каждый уровень. Результаты по разделам сохраняются в этом браузере; для переноса на другое устройство есть экспорт.') + '</p>' +
       '<div id="io-panel" hidden>' + ioPanel() + '</div>' +
       courseCards() +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Один полный тест на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
@@ -828,6 +830,7 @@
     var t = run && findTest(run.testId), sec = null;
     if (t) t.sections.forEach(function (s) { if (s.type === run.type) sec = s; });
 
+    if (act === 'go') { e.preventDefault(); location.hash = b.getAttribute('data-href'); return; }
     if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); saveUi(); route(); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
     else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }

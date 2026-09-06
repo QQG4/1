@@ -335,3 +335,9 @@ figure.picture figcaption{font-size:12.5px;color:var(--ink-faint);padding:8px 12
 .rec-msg{max-width:46ch}
 .aubar{height:6px;border-radius:3px;background:var(--border);margin-top:12px;overflow:hidden}
 .aubar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s linear}
+
+/* варианты теста на хабе */
+.variants{display:inline-flex;gap:4px;margin-right:8px;vertical-align:middle}
+.vchip{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border-radius:6px;font-family:var(--mono);font-size:11.5px;font-weight:600;border:1px solid var(--border);color:var(--ink-muted);background:var(--surface)}
+.vchip:hover,.vchip:focus-visible{border-color:var(--accent);color:var(--accent)}
+.vchip.ok{color:var(--good);border-color:var(--good)}.vchip.warn{color:var(--gold);border-color:var(--gold)}

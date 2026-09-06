@@ -86,5 +86,93 @@
   "seconds": 71,
   "format": "audio-24khz-48kbitrate-mono-mp3",
   "chars": 1056
+ },
+ "kaztest-a1-02": {
+  "title": "Бірінші диалог — Дүкенде",
+  "voices": "Aigul + Daulet",
+  "bytes": 305712,
+  "seconds": 51,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 417
+ },
+ "kaztest-a2-02": {
+  "title": "Бірінші диалог — Емханада",
+  "voices": "Aigul + Daulet",
+  "bytes": 335808,
+  "seconds": 56,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 499
+ },
+ "kaztest-b1-02": {
+  "title": "Екінші диалог — Жұмысқа орналасу сұхбаты",
+  "voices": "Aigul + Daulet",
+  "bytes": 432720,
+  "seconds": 72,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 839
+ },
+ "kaztest-b2-02": {
+  "title": "Үшінші диалог — Мұғаліммен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 422352,
+  "seconds": 70,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 850
+ },
+ "kaztest-c1-02": {
+  "title": "Төртінші мәтін — Ахмет Байтұрсынұлы: ұлт ұстазы",
+  "voices": "Aigul",
+  "bytes": 501840,
+  "seconds": 84,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1203
+ },
+ "qrt-a1-02": {
+  "title": "Сәуленің отбасы",
+  "voices": "Aigul",
+  "bytes": 240480,
+  "seconds": 40,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 450
+ },
+ "qrt-a2-02": {
+  "title": "Менің жаңа жұмысым",
+  "voices": "Daulet",
+  "bytes": 291888,
+  "seconds": 49,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 581
+ },
+ "qrt-b1-02": {
+  "title": "Ауыл дәрігерінің күні",
+  "voices": "Aigul",
+  "bytes": 313344,
+  "seconds": 52,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 686
+ },
+ "qrt-b2-02": {
+  "title": "Еріктілер қозғалысы: неге жастар қатысады?",
+  "voices": "Daulet",
+  "bytes": 385056,
+  "seconds": 64,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 941
+ },
+ "qrt-c1-02": {
+  "title": "Су ресурстары: тапшылық қайдан келеді?",
+  "voices": "Aigul",
+  "bytes": 428544,
+  "seconds": 71,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1006
+ },
+ "qrt-c2-02": {
+  "title": "Мәдени мұраны цифрландыру: мүмкіндік пе, қауіп пе?",
+  "voices": "Daulet",
+  "bytes": 434448,
+  "seconds": 72,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1046
  }
 }

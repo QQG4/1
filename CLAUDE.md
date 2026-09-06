@@ -36,7 +36,7 @@
   `picture` рисуется как SVG в app.js; говорение: kind questions|topic, `prepMinutes`, `answerMinutes`,
   общие `criteria`). Самооценка по критериям даёт score/total в баллах теста.
   У вопроса: `id, text, options[], answer (индекс), explain`. Для tf: `answer` 0=Дұрыс, 1=Бұрыс.
-- Готовы 11 мок-тестов (qrt-a1/a2/b1/b2/c1/c2, kaztest-a1/a2/b1/b2/c1), все озвучены; целевая матрица этапа 1 — см. `база/СТРАТЕГИЯ.md` 2.1. Новый тест — файл `tests/<exam>-<level>-02.js`;
+- Готовы 22 мок-теста: по два варианта (-01, -02) на qrt-a1/a2/b1/b2/c1/c2 и kaztest-a1/a2/b1/b2/c1, все озвучены; хаб показывает варианты чипами; целевая матрица этапа 1 — см. `база/СТРАТЕГИЯ.md` 2.1. Новый тест — файл `tests/<exam>-<level>-02.js`;
   заглушку можно объявить с `status:'draft'` и `sections:[]`, хаб покажет «в разработке».
 - Сцены для картинки письма ҚАЗТЕСТ: `picture.scene` = park | market | office (SVG в `SCENES` в app.js);
   для нового теста добавить сцену туда же или переиспользовать существующую.
@@ -56,8 +56,8 @@
   (`sec.plays` переопределяет). Без голоса — запасной режим: текст показывается на `script.readSeconds`.
   Предзаписанные MP3: `tools/tts_azure.py` (Azure Speech, kk-KZ Aigul/Daulet, диалоги — чередование голосов,
   первый голос в `FIRST`), ключ только в `~/.config/qazaq-trainer/azure.env`. Выход `audio/<testId>.mp3`,
-  `audio/manifest.json` и `src/data/audio.js` (data-URI, ~4.7 МБ на 7 тестов; лимит артефакта 16 МБ —
-  при добавлении тестов следить). В приложении `KZ.audio[testId]` имеет приоритет над TTS: кастомный плеер
+  `audio/manifest.json`; `KZ.audio` собирает build.py (сайт — файлы `docs/audio/`, артефакт — data-URI: 22 теста ≈ 14 МБ при лимите 16,
+  новые тесты в артефакт только без аудио). В приложении `KZ.audio[testId]` имеет приоритет над TTS: кастомный плеер
   с паузой, но без перемотки, счёт прослушиваний по событию ended; в разборе — обычный `<audio controls>`.
 - Интервью — запись с микрофона (MediaRecorder), хранится в IndexedDB `kz-trainer/recs`
   (кнопка записи не отключается по `featurePolicy` iframe — пробуем getUserMedia и объясняем отказ; в артефакте claude.ai

@@ -1,0 +1,58 @@
+{
+ "kaztest-a1-01": {
+  "title": "Бірінші диалог — Танысу",
+  "voices": "Aigul + Daulet",
+  "bytes": 386352,
+  "seconds": 64,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 551
+ },
+ "kaztest-b1-01": {
+  "title": "Бірінші диалог — Демалыс күнгі саяхат",
+  "voices": "Aigul + Daulet",
+  "bytes": 461952,
+  "seconds": 77,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 776
+ },
+ "kaztest-b2-01": {
+  "title": "Үшінші диалог — Кәсіпкермен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 610272,
+  "seconds": 102,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1237
+ },
+ "kaztest-c1-01": {
+  "title": "Бірінші мәтін — Шоқан Уәлиханов: ғалым және саяхатшы",
+  "voices": "Aigul",
+  "bytes": 685728,
+  "seconds": 114,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1591
+ },
+ "qrt-b1-01": {
+  "title": "Айгерімнің жұмыс күні",
+  "voices": "Aigul",
+  "bytes": 371808,
+  "seconds": 62,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 787
+ },
+ "qrt-b2-01": {
+  "title": "Қашықтан жұмыс: артықшылықтары мен қиындықтары",
+  "voices": "Daulet",
+  "bytes": 476640,
+  "seconds": 79,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1213
+ },
+ "qrt-c1-01": {
+  "title": "Функционалдық сауаттылық: ұғымның эволюциясы",
+  "voices": "Daulet",
+  "bytes": 656064,
+  "seconds": 109,
+  "format": "audio-24khz-48kbitrate-mono-mp3",
+  "chars": 1668
+ }
+}

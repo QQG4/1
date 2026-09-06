@@ -10,20 +10,24 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 ENV = pathlib.Path(os.path.expanduser('~/.config/qazaq-trainer/azure.env'))
 env = dict(l.strip().split('=', 1) for l in ENV.read_text().splitlines() if '=' in l and not l.startswith('#'))
 KEY, REGION = env['AZURE_SPEECH_KEY'], env.get('AZURE_SPEECH_REGION', 'westeurope')
+OPTS = {a.split('=')[0][2:]: a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--')}
 A, D = 'kk-KZ-AigulNeural', 'kk-KZ-DauletNeural'
 FIRST = {'qrt-a1-01': D, 'qrt-a2-01': A, 'qrt-b1-01': A, 'qrt-b2-01': D, 'qrt-c1-01': D, 'qrt-c2-01': D, 'kaztest-a1-01': A, 'kaztest-a2-01': D, 'kaztest-b1-01': D, 'kaztest-b2-01': D, 'kaztest-c1-01': A,
          'qrt-a1-02': A, 'qrt-a2-02': D, 'qrt-b1-02': A, 'qrt-b2-02': D, 'qrt-c1-02': A, 'qrt-c2-02': D,
          'kaztest-a1-02': A, 'kaztest-a2-02': D, 'kaztest-b1-02': A, 'kaztest-b2-02': D, 'kaztest-c1-02': A}
 # Темп 0 % для всех уровней и паузы 350 мс между репликами: выбрано пользователем по прослушиванию 06.09.2026
 # (замедление −10 % делало Aigul «тормозящей»). Замедление можно вернуть флагом --rate=-10%.
-RATE = {}
-BREAK_LINE, BREAK_PARA = '350ms', '600ms'
+# Настройки по прослушиванию пользователя 06.09.2026: тире и многоточия — как в тексте (голос сам ставит интонационную паузу),
+# 96 кбит/с, паузы между предложениями точные; для A1–A2 чуть медленнее и с более длинными паузами, чем для B1+.
+RATE = {'A1': '-5%', 'A2': '-3%'}
+SIL_BY_LEVEL = {'A1': '400ms', 'A2': '350ms', 'B1': '300ms'}   # остальные уровни — 250ms
+COMMA_DEFAULT = '150ms'
+BREAK_LINE, BREAK_PARA = '400ms', '600ms'
 # пробные варианты: --rate=0% (темп для всех уровней), --break=350ms (пауза между репликами), --suffix=-trial (отдельный файл, манифест не трогаем)
-OPTS = {a.split('=')[0][2:]: a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--')}
 if 'rate' in OPTS: RATE = {k: OPTS['rate'] for k in ('A1', 'A2', 'B1', 'B2', 'C1', 'C2')}
 if 'break' in OPTS: BREAK_LINE = OPTS['break']
 SUFFIX = OPTS.get('suffix', '')
-FMT = 'audio-24khz-48kbitrate-mono-mp3'
+FMT = OPTS.get('fmt', 'audio-24khz-96kbitrate-mono-mp3')  # 96 кбит/с: меньше «металла», чем у 48
 
 def load_tests():
     out = []
@@ -38,12 +42,19 @@ def load_tests():
         out.append({'id': tid, 'level': lvl, 'title': title, 'text': text})
     return out
 
+SIL = OPTS.get('sil'); COMMA = OPTS.get('comma', COMMA_DEFAULT)
+def silence(level='B2'):
+    sil = SIL or SIL_BY_LEVEL.get(level, '250ms')
+    return f'<mstts:silence type="Sentenceboundary-exact" value="{sil}"/>' + (f'<mstts:silence type="Comma-exact" value="{COMMA}"/>' if COMMA else '')
+DASH = OPTS.get('dash', 'keep')   # 'break' — тире внутри предложения → запятая + короткая пауза; 'comma' — только запятая; 'keep' — как в тексте
+DASH_MS = OPTS.get('dashms', '250ms')
 def for_speech(text):
-    """Только для синтеза: тире внутри предложения и многоточия дают у Aigul длинные паузы — заменяем на запятые/точки."""
-    text = re.sub(r'\s+[—–-]\s+', ', ', text)          # «Менің атым — Айгерім» → «Менің атым, Айгерім»
-    text = text.replace('…', '.').replace('...', '.')
-    text = re.sub(r',\s*,', ',', text)
-    return re.sub(r'[ \t]{2,}', ' ', text)
+    """Только для синтеза (текст на экране не меняется). Возвращает уже экранированный SSML-фрагмент."""
+    text = re.sub(r'[ \t]{2,}', ' ', text)
+    if DASH == 'keep': return html.escape(text)
+    parts = re.split(r'\s+[—–]\s+', text)              # «Менің атым — Айгерім»
+    if DASH == 'comma': return html.escape(', '.join(parts).replace('…', '.'))
+    return f',<break time="{DASH_MS}"/> '.join(html.escape(x) for x in parts).replace('…', '.')
 
 def ssml_for(t):
     first = FIRST.get(t['id'], A); other = D if first == A else A
@@ -56,14 +67,14 @@ def ssml_for(t):
         for l in lines:
             if not l: continue
             spoken = for_speech(re.sub(r'^—\s*', '', l))
-            parts.append(f'<voice name="{v}"><prosody rate="{rate}">{html.escape(spoken)}</prosody><break time="{BREAK_LINE}"/></voice>')
+            parts.append(f'<voice name="{v}">{silence(t['level'])}<prosody rate="{rate}">{spoken}</prosody><break time="{BREAK_LINE}"/></voice>')
             v = other if v == first else first
     else:
         paras = [for_speech(p.strip()) for p in t['text'].split('\n\n') if p.strip()]
-        body = f'<break time="{BREAK_PARA}"/>'.join(f'<prosody rate="{rate}">{html.escape(p.replace(chr(10), " "))}</prosody>' for p in paras)
-        parts.append(f'<voice name="{first}">{body}</voice>')
+        body = f'<break time="{BREAK_PARA}"/>'.join(f'<prosody rate="{rate}">{p.replace(chr(10), " ")}</prosody>' for p in paras)
+        parts.append(f'<voice name="{first}">{silence(t['level'])}{body}</voice>')
     voices = 'Aigul + Daulet' if dialog else ('Aigul' if first == A else 'Daulet')
-    return '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="kk-KZ">' + ''.join(parts) + '</speak>', voices
+    return '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="kk-KZ">' + ''.join(parts) + '</speak>', voices
 
 def synth(ssml):
     req = urllib.request.Request(f'https://{REGION}.tts.speech.microsoft.com/cognitiveservices/v1', data=ssml.encode('utf-8'), method='POST',
@@ -79,7 +90,7 @@ for t in tests:
     ssml, voices = ssml_for(t)
     data = synth(ssml)
     (ROOT / 'audio' / f"{t['id']}{SUFFIX}.mp3").write_bytes(data)
-    secs = round(len(data) * 8 / 48000)
+    kbps = int(re.search(r'(\d+)kbitrate', FMT).group(1)); secs = round(len(data) * 8 / (kbps * 1000))
     if not SUFFIX: manifest[t['id']] = {'title': t['title'], 'voices': voices, 'bytes': len(data), 'seconds': secs, 'format': FMT, 'chars': len(t['text'])}
     print(f"{t['id']}{SUFFIX:8} {voices:15} {len(data)//1024:4} KB ~{secs//60}:{secs%60:02d}  {t['title'][:40]}")
 if not SUFFIX: manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1))

@@ -5,3 +5,5 @@ audio/*-openai.mp3
 audio/*-yandex.mp3
 audio/*-trial.mp3
 audio/*-t[0-9].mp3
+audio/*-google*.mp3
+__pycache__/

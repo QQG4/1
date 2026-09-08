@@ -48,7 +48,7 @@
   }
   function uiButtons() {
     return '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
-      '<button class="btn ghost small" data-act="ui-panel" aria-expanded="false" aria-controls="ui-panel" title="' + T('Настройки') + '">⚙ <span class="sr">' + T('Настройки') + '</span></button>';
+      '<button class="btn ghost small gear" data-act="ui-panel" aria-expanded="false" aria-controls="ui-panel" title="' + T('Настройки') + '">⚙<span class="sr">' + T('Настройки') + '</span></button>';
   }
 
   /* ---------------- helpers ---------------- */

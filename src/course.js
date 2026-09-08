@@ -207,6 +207,8 @@
     var run = KZ.run(); if (run.key !== p[1] + '/' + p[2]) { KZ.resetRun({ key: p[1] + '/' + p[2] }); }
     return viewTopic(course, tp, tab);
   });
+  // app.js уже отрисовал первый маршрут до регистрации курса — прямая ссылка #/course/... иначе открывает хаб
+  if (/^#\/?course\//.test(location.hash)) KZ.route();
 
   function score(qs, answers) { var s = 0; qs.forEach(function (q) { if (answers[q.id] === q.answer) s++; }); return s; }
 

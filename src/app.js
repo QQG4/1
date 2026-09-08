@@ -203,7 +203,7 @@
         var chips = tests.length > 1 ? '<span class="variants">' + tests.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (i + 1) + '</span>'; }).join('') + '</span>' : '';
         return '<a class="level-row' + (t && t.status === 'draft' ? ' draft' : '') + '" href="' + href + '">' +
           '<span class="lvl">' + lv + '</span>' +
-          '<span><div class="nm">' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + T('варианта') + '</span>' : '') + '</div><div class="dsc">' + esc(t ? t.summary : '') + '</div></span>' +
+          '<span><div class="nm">' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + T('варианта') + '</span>' : '') + '</div><div class="dsc">' + esc(t ? LK(t, 'summary') : '') + '</div></span>' +
           '<span class="st">' + chips + '<span class="badge ' + st.cls + '">' + st.label + '</span></span></a>';
       }).join('');
       return '<div class="exam-card-wrap"><a class="exam-card" href="#/exam/' + eid + '">' +
@@ -221,8 +221,8 @@
       courseCards() +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Один полный тест на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
-      '<p class="sub">Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.</p>' +
-      '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-level">' + lv + '</div><div class="rung-name">' + esc(LK(L, 'name')) + '</div><div class="rung-units">' + esc(LK(L, 'units')) + '</div><div class="rung-focus">' + esc(L.focus) + '</div></div>'; }).join('') + '</div></section>' +
+      '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
+      '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-level">' + lv + '</div><div class="rung-name">' + esc(LK(L, 'name')) + '</div><div class="rung-units">' + esc(LK(L, 'units')) + '</div><div class="rung-focus">' + esc(LK(L, 'focus')) + '</div></div>'; }).join('') + '</div></section>' +
       '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + '</footer>';
   }
   function courseCards() {
@@ -251,12 +251,12 @@
       return tests.map(function (t) {
         var st = testStatus(t);
         var href = t.status === 'draft' ? '#/exam/' + ex.id : '#/test/' + t.id;
-        return '<a class="level-row' + (t.status === 'draft' ? ' draft' : '') + '" href="' + href + '"><span class="lvl">' + lv + '</span><span><div class="nm">' + esc(LK(t, 'title')) + ' · ' + esc(LK(KZ.levels[lv], 'name')) + '</div><div class="dsc">' + esc(t.summary) + '</div></span><span class="st"><span class="badge ' + st.cls + '">' + st.label + '</span></span></a>';
+        return '<a class="level-row' + (t.status === 'draft' ? ' draft' : '') + '" href="' + href + '"><span class="lvl">' + lv + '</span><span><div class="nm">' + esc(LK(t, 'title')) + ' · ' + esc(LK(KZ.levels[lv], 'name')) + '</div><div class="dsc">' + esc(LK(t, 'summary')) + '</div></span><span class="st"><span class="badge ' + st.cls + '">' + st.label + '</span></span></a>';
       }).join('');
     }).join('');
     return topbar([{ label: T('Хаб'), href: '#/' }, { label: ex.short }]) +
       '<div class="kicker">' + esc(ex.kicker) + '</div><h1>' + esc(ex.name) + '</h1><p class="lede">' + esc(LK(ex, 'tagline')) + '</p>' +
-      '<div class="notice ' + (ex.verified ? 'good' : '') + '"><b class="t">' + (ex.verified ? T('Подтверждено') : T('Не подтверждено')) + '</b><p>' + esc(ex.verifiedNote) + '</p></div>' +
+      '<div class="notice ' + (ex.verified ? 'good' : '') + '"><b class="t">' + (ex.verified ? T('Подтверждено') : T('Не подтверждено')) + '</b><p>' + esc(LK(ex, 'verifiedNote')) + '</p></div>' +
       '<section><h2>' + T('Структура теста') + '</h2><p class="sub">' + (ex.verified ? T('По официальному описанию.') : T('Рабочая гипотеза по вторичным источникам — звёздочкой помечены цифры, требующие сверки.')) + '</p>' +
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(ex.mockNote) + '</p>' : '') + '</section>' +
@@ -282,7 +282,7 @@
     return topbar([{ label: T('Хаб'), href: '#/' }, { label: ex.short, href: '#/exam/' + ex.id }, { label: t.level + ' · ' + LK(t, 'title') }],
         '<span class="badge level">' + t.level + '</span><span class="badge ' + st.cls + '">' + st.label + '</span>') +
       '<div class="kicker">' + esc(ex.kicker) + ' · ' + T('уровень') + ' ' + t.level + '</div><h1>' + esc(LK(t, 'title')) + ' — ' + esc(LK(KZ.levels[t.level], 'name')) + '</h1>' +
-      '<p class="lede">' + esc(t.summary) + ' ' + T('Разделы можно проходить по порядку, как на экзамене, или по одному. Ответы фиксируются один раз, после этого открывается разбор.') + '</p>' +
+      '<p class="lede">' + esc(LK(t, 'summary')) + ' ' + T('Разделы можно проходить по порядку, как на экзамене, или по одному. Ответы фиксируются один раз, после этого открывается разбор.') + '</p>' +
       '<div class="stages">' + stages + '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + total + ' ' + T('минут') + ' · ' + t.sections.length + (t.sections.length === 4 ? ' ' + T('блока') : ' ' + T('разделов')) + '</b></div></div>' +
       '<div class="actions"><button class="btn danger small" data-act="reset-test" data-test="' + t.id + '">' + T('Сбросить результаты этого теста') + '</button>' +
       (tp(t.id).updatedAt ? '<span class="hint">' + T('последнее изменение:') + ' ' + fmtDate(tp(t.id).updatedAt) + '</span>' : '') + '</div>';
@@ -323,12 +323,12 @@
       tipsBlock(es);
   }
   function tipsInline(es) {
-    if (!es.tips || !es.tips.length) return '';
-    return '<p class="tip"><span class="tip-tag">' + T('по опыту сдававших') + '</span>' + esc(es.tips[0]) + (es.tips.length > 1 ? ' <span class="muted">(+' + (es.tips.length - 1) + ')</span>' : '') + '</p>';
+    if (!tipsOf(es) || !tipsOf(es).length) return '';
+    return '<p class="tip"><span class="tip-tag">' + T('по опыту сдававших') + '</span>' + esc(tipsOf(es)[0]) + (tipsOf(es).length > 1 ? ' <span class="muted">(+' + (tipsOf(es).length - 1) + ')</span>' : '') + '</p>';
   }
   function tipsBlock(es) {
-    if (!es.tips || !es.tips.length) return '';
-    return '<div class="notice info hintx"><b class="t">' + T('По опыту сдававших') + '</b><ul>' + es.tips.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><p class="small muted" style="margin-top:8px">' + esc(KZ.tipsSource) + '</p></div>';
+    if (!tipsOf(es) || !tipsOf(es).length) return '';
+    return '<div class="notice info hintx"><b class="t">' + T('По опыту сдававших') + '</b><ul>' + tipsOf(es).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><p class="small muted" style="margin-top:8px">' + esc(KZ.tipsSource) + '</p></div>';
   }
   function scoringTable(ex) {
     var sc = ex.scoring;
@@ -830,7 +830,7 @@
     (KZ.sources || []).forEach(function (x) { (groups[x.tier || 9] = groups[x.tier || 9] || []).push(x); });
     var html = Object.keys(groups).sort().map(function (tk) {
       return '<section><h2>' + esc(tiers[tk] || T('Прочее')) + '</h2><ol class="prompt-list">' + groups[tk].map(function (x) {
-        return '<li><span><b lang="kk">' + esc(x.title) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(x.kind) : '') + (x.level ? ' · ' + esc(x.level) : '') + '</span></span></li>';
+        return '<li><span><b lang="kk">' + esc(x.title) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(T(x.kind)) : '') + (x.level ? ' · ' + esc(x.level) : '') + '</span></span></li>';
       }).join('') + '</ol></section>';
     }).join('');
     var official = KZ.examOrder.map(function (eid) { var ex = KZ.exams[eid]; return '<h3>' + esc(ex.name) + '</h3><ul class="srclist">' + ex.sources.map(function (x) { return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a></li>'; }).join('') + '</ul>'; }).join('');
@@ -839,6 +839,7 @@
       '<p class="lede">' + T('Учебники и словари, по которым собраны лексика, грамматика и тексты курса. Задания тренажёра — собственные, написаны по методу этих пособий, а не скопированы из них; всё сгенерированное помечено как не вычитанное.') + '</p>' +
       html + '<section><h2>' + T('Официальные документы экзаменов') + '</h2>' + official + '</section>';
   }
+  function tipsOf(es) { return (KZ.lang === 'kk' && es.tips_kk) || es.tips; }
   function nextSection(t, type) { for (var i = 0; i < t.sections.length - 1; i++) if (t.sections[i].type === type) return t.sections[i + 1]; return null; }
 
   /* ---------------- events ---------------- */

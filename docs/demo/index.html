@@ -427,7 +427,7 @@ KZ.exams = {
     unverified: [
       'Точный тип заданий (выбор варианта, верно/неверно, открытый ответ) официально не публикуется — в тренажёре используется рабочая реконструкция: выбор из трёх вариантов и верно/неверно.',
       'Минимальный объём сочинения, критерии оценки и проходные баллы не публикуются.',
-      'Аудирование в реальном тесте — видео; здесь оно заменено текстом-скриптом.',
+      'Аудирование в реальном тесте — видео; здесь оно заменено текстом-скриптом. Число просмотров видео официально не названо; в тренажёре повтор не ограничен в пределах 10 минут раздела, по истечении времени раздел закрывается.',
       'В блоке чтения тренажёра задания на выбор из трёх вариантов и «дұрыс / бұрыс» считаются по одному баллу, хотя вероятность угадать у них разная (33 % и 50 %). Это упрощение тренажёра, а не правило теста.'
     ],
     examLevels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
@@ -459,7 +459,7 @@ KZ.exams = {
     verifiedNote: 'Структура, число заданий, время и баллы — по «Спецификации тестовых заданий ҚАЗТЕСТ» (НЦТ, утв. 05.09.2024) и «Руководству тестируемого» (testcenter.kz, февраль 2026). Критерии письма и говорения — по официальным PDF критериев. Проверено 05.09.2026.',
     verifiedNote_kk: 'Құрылымы, тапсырма саны, уақыты мен балдары — «ҚАЗТЕСТ тест тапсырмаларының спецификациясы» (ҰТО, 05.09.2024 бекітілген) және «Тестіленушіге арналған нұсқаулық» (testcenter.kz, 2026 жылғы ақпан) бойынша. Жазылым мен айтылым критерийлері — ресми критерийлер PDF бойынша. 05.09.2026 тексерілді.',
     unverified: [
-      'В реальном тесте аудио звучит несколько раз («мәтін бірнеше рет тыңдалады»); точное число прослушиваний в спецификации не названо.',
+      'По спецификации ҰТО текст аудирования звучит несколько раз («Мәтін бірнеше рет тыңдалады. Әр мәтінді тыңдап болған соң, оған арналған тест тапсырмаларын орындауға уақыт беріледі»), точное число не названо; в тренажёре повтор не ограничен в пределах времени блока, а вопросы видны сразу.',
       'Полный тест содержит 4 текста разных уровней (A1–C1) в аудировании и чтении. Мок-тесты тренажёра дают один текст целевого уровня — это тренировка формата, а не полная имитация 127 минут.',
       'Изображение для 1-задания письма в тренажёре — схематичная иллюстрация, в реальном тесте — фотография или рисунок.'
     ],
@@ -510,16 +510,11 @@ KZ.exams = {
 
 /* Советы «по опыту сдававших» — один личный отчёт о сдаче ҚАЗТЕСТ на B2 (блог на el.kz).
    Это не официальные правила теста; показываются с соответствующей пометкой. */
-/* Строгая шкала тренажёра (решение пользователя 10.09.2026, акция «вернём деньги, если уровень не подтвердится на реальном тесте»):
+/* Внутренняя шкала подсчёта (решение пользователя 10.09.2026, акция «вернём деньги, если уровень не подтвердится на реальном тесте»):
    вердикт «уровень подтверждён» выносится, только если в КАЖДОМ разделе набрано на полуровень больше официального порога ҚАЗТЕСТ
-   (A1 30 → 35, A2 40 → 45, B1 50 → 55, B2 60 → 70, C1 80 → 90; для QRT пороги официально не публикуются — та же шкала, C2 95),
-   а аудио звучит один раз (в реальном ҚАЗТЕСТ — несколько). Письмо и говорение входят в вердикт по самооценке. */
-KZ.strict = {
-  pct: { A1: 35, A2: 45, B1: 55, B2: 70, C1: 90, C2: 95 },
-  plays: 1,
-  note: 'Уровень считается подтверждённым, только если в каждом разделе набрано на полуровень больше официального порога: A1 — от 35 %, A2 — от 45 %, B1 — от 55 %, B2 — от 70 %, C1 — от 90 %, C2 — от 95 %. Аудио звучит один раз. Так результат тренажёра заведомо не выше того, что покажет реальный экзамен.',
-  note_kk: 'Деңгей тек әр бөлімде ресми шектен жарты деңгейге артық жиналғанда ғана расталған деп саналады: A1 — 35 %-дан, A2 — 45 %-дан, B1 — 55 %-дан, B2 — 70 %-дан, C1 — 90 %-дан, C2 — 95 %-дан. Аудио бір рет ойнатылады. Осылайша жаттықтырғыштың нәтижесі нақты емтихан көрсететін нәтижеден жоғары болмайды.'
-};
+   (A1 30 → 35, A2 40 → 45, B1 50 → 55, B2 60 → 70, C1 80 → 90; для QRT пороги официально не публикуются — та же шкала, C2 95).
+   В интерфейсе пороги НЕ показываются (официальная таблица scoring остаётся как есть); письмо и говорение входят по самооценке. */
+KZ.strict = { pct: { A1: 35, A2: 45, B1: 55, B2: 70, C1: 90, C2: 95 } };
 KZ.tipsSource = 'По опыту сдававших: личный отчёт о сдаче ҚАЗТЕСТ на B2 (блог el.kz). Один случай, не официальное правило.';
 KZ.tipsSource_kk = 'Тапсырғандардың тәжірибесі: ҚАЗТЕСТ-ті B2 деңгейінде тапсыру туралы жеке есеп (el.kz блогы). Бір ғана жағдай, ресми ереже емес.';
 
@@ -3629,6 +3624,7 @@ window.KZ = window.KZ || {};
   KZ.T = function (s) { if (KZ.lang === 'ru') return s; var d = KZ.i18n[KZ.lang]; return (d && d[s]) || s; };
   KZ.LK = function (obj, field) { if (!obj) return ''; if (KZ.lang !== 'ru' && obj[field + '_' + KZ.lang] != null) return obj[field + '_' + KZ.lang]; return KZ.T(obj[field]); };
   KZ.i18n = { kk: {
+    'повтор доступен, пока идёт время раздела': 'бөлім уақыты біткенше қайта тыңдауға болады', 'Время вышло': 'Уақыт бітті', 'Раздел закрыт по таймеру, как на экзамене: ответы зафиксированы, оцените то, что успели.': 'Бөлім емтихандағыдай таймер бойынша жабылды: жауаптар бекітілді, үлгергеніңізді бағалаңыз.', 'Результат': 'Нәтиже', 'Уровень подтверждён:': 'Деңгей расталды:', 'Уровень не подтверждён: недостаточно баллов в разделах': 'Деңгей расталмады: мына бөлімдерде балл жеткіліксіз —', 'Пройдите все разделы, чтобы получить результат по уровню.': 'Деңгей бойынша нәтиже алу үшін барлық бөлімді өтіңіз.',
     'Строгая шкала': 'Қатаң шкала', 'Строгая шкала тренажёра': 'Жаттықтырғыштың қатаң шкаласы', 'Уровень подтверждён по строгой шкале тренажёра.': 'Деңгей жаттықтырғыштың қатаң шкаласы бойынша расталды.', 'Уровень не подтверждён: ниже строгого порога в разделах': 'Деңгей расталмады: мына бөлімдерде қатаң шектен төмен —', 'Пройдите все разделы — тогда тренажёр вынесет вердикт по строгой шкале.': 'Барлық бөлімді өтіңіз — сонда жаттықтырғыш қатаң шкала бойынша вердикт шығарады.', 'самооценка': 'өзін-өзі бағалау', 'уровень подтверждён': 'деңгей расталды', 'не подтверждён': 'расталмады',
     'Программа построена на нашей методологии, разработанной с опорой на официальный лексический минимум ҰТО и типовые учебники уровней; по каждой теме — карточки слов, грамматика с заданиями, тексты с вопросами и итоговый тест.': 'Бағдарлама ҰТО ресми лексикалық минимумы мен деңгейлердің типтік оқулықтарына сүйеніп әзірленген өз әдістемемізге негізделген; әр тақырыпта — сөз карточкалары, тапсырмалары бар грамматика, сұрақтары бар мәтіндер және қорытынды тест.', 'Задания созданы нашими специалистами по официальной структуре теста.': 'Тапсырмаларды тесттің ресми құрылымы бойынша біздің мамандарымыз әзірледі.', 'Литература, на которую мы опирались': 'Біз сүйенген әдебиет', 'Пособия и словари, которые мы изучали и которыми вдохновлялись, строя собственную методологию тренажёра. Все задания созданы нашими специалистами. Особое внимание мы уделяем авторам из первого раздела и рекомендуем их пособия для самостоятельной работы.': 'Жаттықтырғыштың өз әдістемесін құру барысында біз зерттеген және шабыт алған оқу құралдары мен сөздіктер. Барлық тапсырмаларды біздің мамандарымыз әзірледі. Бірінші бөлімдегі авторларға ерекше назар аударамыз және олардың құралдарын өз бетінше жұмыс істеуге ұсынамыз.', 'Ключевые пособия — рекомендуем': 'Негізгі құралдар — ұсынамыз', 'Дополнительная литература': 'Қосымша әдебиет', 'Задания составлены нашими специалистами по грамматической теме урока.': 'Тапсырмаларды сабақтың грамматикалық тақырыбы бойынша біздің мамандарымыз құрастырды.', 'Вопросы составлены нашими специалистами по содержанию текста.': 'Сұрақтарды мәтін мазмұны бойынша біздің мамандарымыз құрастырды.', 'На чём основана методология': 'Әдістеме неге негізделген', 'Мақал-мәтелдер уровня': 'Деңгейдің мақал-мәтелдері', 'Из лексического минимума ҰТО. Пригодятся в письме и говорении: критерий «сөздік қор» прямо даёт балл за пословицы.': 'ҰТО лексикалық минимумынан. Жазылым мен айтылымда пайдалы: «сөздік қор» критерийі мақал-мәтел үшін балл береді.',
     'Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.': 'Лексика көлемі — ҚАЗТЕСТ әдістемесі бойынша (testcenter.kz). Қалғаны — тапсырмаларды саралаудың жұмыс критерийлері, ресми талаптар емес.', 'учебное пособие': 'оқу құралы', 'толковый словарь': 'түсіндірме сөздік', 'учебник': 'оқулық', 'терминологический словарь': 'терминологиялық сөздік', 'разговорник': 'тілашар', 'альманах': 'альманах', 'лексический минимум': 'лексикалық минимум', 'методика': 'әдістеме', 'сборник': 'жинақ',
@@ -3829,10 +3825,10 @@ window.KZ = window.KZ || {};
   function verdictCard(t) {
     var v = verdict(t); if (!v) return '';
     var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok; }).map(function (r) { return r.name; }).join(', ');
-    var head = v.pass ? T('Уровень подтверждён по строгой шкале тренажёра.') : v.all ? T('Уровень не подтверждён: ниже строгого порога в разделах') + ' ' + failed + '.' : T('Пройдите все разделы — тогда тренажёр вынесет вердикт по строгой шкале.');
-    return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Строгая шкала') + ' · ' + t.level + ' ' + T('от') + ' ' + v.need + ' %</b><p><b>' + head + '</b></p><ul>' +
+    var head = v.pass ? T('Уровень подтверждён:') + ' ' + t.level : v.all ? T('Уровень не подтверждён: недостаточно баллов в разделах') + ' ' + failed + '.' : T('Пройдите все разделы, чтобы получить результат по уровню.');
+    return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Результат') + ' · ' + t.level + '</b><p><b>' + head + '</b></p><ul>' +
       v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка') + '</span>' : '') + '</li>'; }).join('') +
-      '</ul><p class="small muted" style="margin-top:8px">' + esc(LK(KZ.strict, 'note')) + '</p></div>';
+      '</ul></div>';
   }
   function testStatus(test) {
     if (test.status === 'draft') return { label: T('в разработке'), cls: 'muted' };
@@ -3858,6 +3854,23 @@ window.KZ = window.KZ || {};
     el.textContent = left >= 0 ? mmss(left) : '−' + mmss(-left);
     el.className = 'clock' + (left < 0 ? ' over' : left < 60 ? ' warn' : '');
     if (timer.onTick) timer.onTick(elapsed());
+    if (left <= 0 && run && run.phase === 'run' && !run.timedOut) timeUp();
+  }
+  /* Время раздела вышло — раздел закрывается, как на экзамене: ответы фиксируются, письмо/говорение переходят к самопроверке */
+  function timeUp() {
+    var t = findTest(run.testId); if (!t) return;
+    var sec = null; t.sections.forEach(function (x) { if (x.type === run.type) sec = x; }); if (!sec) return;
+    run.timedOut = true; run.secondsUsed = Math.round(elapsed()); stopTimer(); stopSpeak(); stopRec();
+    var au = document.getElementById('au'); if (au) { try { au.pause(); } catch (e) {} }
+    if (qTimer) clearInterval(qTimer); if (tkTimer) clearInterval(tkTimer);
+    var ta = document.getElementById('essay'); if (ta) { if (ta.getAttribute('data-task')) { run.texts = run.texts || {}; run.texts[ta.getAttribute('data-task')] = ta.value; } else run.text = ta.value; }
+    if (sec.questions) { run.confirmSkip = true; submitQuiz(t, sec); return; }
+    if (run.type === 'writing' && !sec.tasks && !run.promptId) { run.promptId = sec.prompts[0].id; run.text = run.text || ''; }
+    if (run.type === 'speaking' && !sec.tasks && !run.setId) run.setId = sec.sets[0].id;
+    run.sub = 'check'; route();
+  }
+  function timeUpNotice() {
+    return run && run.timedOut ? '<div class="notice"><b class="t">' + T('Время вышло') + '</b><p>' + T('Раздел закрыт по таймеру, как на экзамене: ответы зафиксированы, оцените то, что успели.') + '</p></div>' : '';
   }
 
   /* ---------------- TTS ---------------- */
@@ -4024,7 +4037,6 @@ window.KZ = window.KZ || {};
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(ex.mockNote) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
-      (KZ.strict ? '<section><h2>' + T('Строгая шкала тренажёра') + '</h2><p class="sub">' + esc(LK(KZ.strict, 'note')) + '</p></section>' : '') +
       (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
       '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
@@ -4068,6 +4080,7 @@ window.KZ = window.KZ || {};
       '<span class="badge level">' + t.level + '</span>' + sectionDots(t, type));
     var title = '<div class="kicker">' + T('Раздел') + ' ' + (es.num || '') + ' · ' + es.kk + '</div><h1>' + esc((KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[type], 'label')) + '</h1>' +
       '<p class="lede' + (run.phase === 'ready' ? '' : ' hintx') + '">' + esc(LK(sec, 'intro')) + '</p>';
+    title += timeUpNotice();
     var body;
     if (run.phase === 'ready') body = viewReady(t, sec, es);
     else if (run.phase === 'review') body = viewReview(t, sec, es, saved);
@@ -4136,7 +4149,7 @@ window.KZ = window.KZ || {};
     return timerBar(sec) + body;
   }
   function runListening(t, sec, es) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed == null) run.playsUsed = 0;
     var voice = kkVoice(), left = plays - run.playsUsed;
     var head;
@@ -4145,14 +4158,14 @@ window.KZ = window.KZ || {};
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="au-play"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         '<button class="btn ghost small" data-act="au-pause" id="au-pause"' + (run.playing ? '' : ' hidden') + '>⏸ ' + T('Пауза') + '</button>' +
-        '<span class="hint" id="tts-msg">' + (left > 0 ? T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + T('голоса') + ' ' + esc(au.voices) + '</span></div>' +
+        '<span class="hint" id="tts-msg">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + T('голоса') + ' ' + esc(au.voices) + '</span></div>' +
         '<div class="aubar" aria-hidden="true"><i id="aubar"></i></div><audio id="au" preload="auto" src="' + au.src + '"></audio>' + transcriptBlock(sec) +
         '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене: читайте вопросы и отмечайте ответы по ходу звучания. Паузу поставить можно, перемотки нет; прослушивание засчитывается, когда запись дозвучала до конца.') + (plays > 1 ? ' В ҚАЗТЕСТ аудио звучит несколько раз, здесь — ' + plays + '.' : ' ' + T('В QRT видео идёт один раз.')) + '</p></div>';
     } else if (voice) {
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="tts"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         (run.playing ? '<button class="btn ghost small" data-act="tts-pause">' + (window.speechSynthesis && speechSynthesis.paused ? '▶ ' + T('Продолжить') : '⏸ ' + T('Пауза')) + '</button><button class="btn ghost small" data-act="tts-stop">■ ' + T('Остановить') + '</button>' : '') +
-        '<span class="hint" id="tts-msg">' + (left > 0 ? T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
+        '<span class="hint" id="tts-msg">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
         transcriptBlock(sec) +
         (kkVoices().length > 1 ? '<div class="row mt small"><span class="muted">' + T('Голос:') + '</span>' + kkVoices().map(function (v) { return '<button class="cb' + (v === voice ? ' on' : '') + '" data-act="voice" data-name="' + esc(v.name) + '">' + esc(v.name.replace(/Microsoft |Online |\(Natural\)| - Kazakh.*$/g, '').trim()) + '</button>'; }).join('') + '</div>' : '') +
         '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене. Читайте вопросы во время звучания и отмечайте ответы сразу.') + (plays > 1 ? ' В ҚАЗТЕСТ аудио звучит несколько раз, здесь — ' + plays + '.' : ' ' + T('В QRT видео идёт один раз.')) + '</p></div>';
@@ -4172,7 +4185,7 @@ window.KZ = window.KZ || {};
       (ui.transcript ? '<div class="script" lang="kk" aria-live="off">' + esc(sec.script.text) + '</div>' : '');
   }
   function playAudio(t, sec, btn) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed >= plays || run.playing) return;
     var a = document.getElementById('au'); if (!a) return;
     run.playing = true; btn.disabled = true; btn.textContent = '▶ ' + T('Звучит…');
@@ -4187,7 +4200,7 @@ window.KZ = window.KZ || {};
     var pr = a.play(); if (pr && pr.catch) pr.catch(function (e) { run.playing = false; btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Браузер заблокировал воспроизведение:') + ' ' + (e && e.name ? e.name : e); });
   }
   function playScript(t, sec) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed >= plays || run.playing) return;
     run.playing = true;
     var ok = speak(sec.script.text, function () { run.playing = false; run.playsUsed++; route(); });
@@ -4195,7 +4208,7 @@ window.KZ = window.KZ || {};
     route();
   }
   function showScriptTimed(t, sec) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed >= plays || run.scriptVisible) return;
     run.scriptVisible = true; route();
     var secs = sec.script.readSeconds || 90, t0 = Date.now();
@@ -4247,7 +4260,7 @@ window.KZ = window.KZ || {};
     }
     body = '<div class="block"><span class="setlabel">' + T('Ваш текст') + '</span><p class="small muted">' + esc(prompt.text) + '</p><div class="essay-view">' + esc(run.text) + '</div><div class="wc">' + wordCount(run.text) + ' ' + T('слов') + ' · ' + mmss(run.secondsUsed || 0) + '</div></div>' +
       '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
-      '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button><button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button></div></div>';
+      '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button>') + '</div></div>';
     run.afterRender = null;
     return body;
   }
@@ -4416,7 +4429,7 @@ window.KZ = window.KZ || {};
     }
     body = sec.tasks.map(function (task) {
       return '<div class="block"><span class="setlabel">' + esc(task.title) + ' · ' + task.points + ' ' + T('баллов') + '</span><p class="small muted">' + esc(task.prompt) + '</p><div class="essay-view">' + esc(run.texts[task.id] || '') + '</div><div class="wc">' + wordCount(run.texts[task.id]) + ' ' + T('слов') + ' · ' + mmss(run.taskSec[task.id] || 0) + '</div>' + critScorer(task.id, task.criteria, run.crit[task.id] || []) + '</div>';
-    }).join('') + '<div class="actions"><button class="btn" data-act="save-tasks">' + T('Сохранить результат') + '</button><button class="btn ghost" data-act="back-tasks">' + T('Вернуться к тексту') + '</button></div>';
+    }).join('') + '<div class="actions"><button class="btn" data-act="save-tasks">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-tasks">' + T('Вернуться к тексту') + '</button>') + '</div>';
     run.afterRender = null;
     return body;
   }

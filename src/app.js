@@ -87,10 +87,10 @@
   function verdictCard(t) {
     var v = verdict(t); if (!v) return '';
     var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok; }).map(function (r) { return r.name; }).join(', ');
-    var head = v.pass ? T('Уровень подтверждён по строгой шкале тренажёра.') : v.all ? T('Уровень не подтверждён: ниже строгого порога в разделах') + ' ' + failed + '.' : T('Пройдите все разделы — тогда тренажёр вынесет вердикт по строгой шкале.');
-    return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Строгая шкала') + ' · ' + t.level + ' ' + T('от') + ' ' + v.need + ' %</b><p><b>' + head + '</b></p><ul>' +
+    var head = v.pass ? T('Уровень подтверждён:') + ' ' + t.level : v.all ? T('Уровень не подтверждён: недостаточно баллов в разделах') + ' ' + failed + '.' : T('Пройдите все разделы, чтобы получить результат по уровню.');
+    return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Результат') + ' · ' + t.level + '</b><p><b>' + head + '</b></p><ul>' +
       v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка') + '</span>' : '') + '</li>'; }).join('') +
-      '</ul><p class="small muted" style="margin-top:8px">' + esc(LK(KZ.strict, 'note')) + '</p></div>';
+      '</ul></div>';
   }
   function testStatus(test) {
     if (test.status === 'draft') return { label: T('в разработке'), cls: 'muted' };
@@ -116,6 +116,23 @@
     el.textContent = left >= 0 ? mmss(left) : '−' + mmss(-left);
     el.className = 'clock' + (left < 0 ? ' over' : left < 60 ? ' warn' : '');
     if (timer.onTick) timer.onTick(elapsed());
+    if (left <= 0 && run && run.phase === 'run' && !run.timedOut) timeUp();
+  }
+  /* Время раздела вышло — раздел закрывается, как на экзамене: ответы фиксируются, письмо/говорение переходят к самопроверке */
+  function timeUp() {
+    var t = findTest(run.testId); if (!t) return;
+    var sec = null; t.sections.forEach(function (x) { if (x.type === run.type) sec = x; }); if (!sec) return;
+    run.timedOut = true; run.secondsUsed = Math.round(elapsed()); stopTimer(); stopSpeak(); stopRec();
+    var au = document.getElementById('au'); if (au) { try { au.pause(); } catch (e) {} }
+    if (qTimer) clearInterval(qTimer); if (tkTimer) clearInterval(tkTimer);
+    var ta = document.getElementById('essay'); if (ta) { if (ta.getAttribute('data-task')) { run.texts = run.texts || {}; run.texts[ta.getAttribute('data-task')] = ta.value; } else run.text = ta.value; }
+    if (sec.questions) { run.confirmSkip = true; submitQuiz(t, sec); return; }
+    if (run.type === 'writing' && !sec.tasks && !run.promptId) { run.promptId = sec.prompts[0].id; run.text = run.text || ''; }
+    if (run.type === 'speaking' && !sec.tasks && !run.setId) run.setId = sec.sets[0].id;
+    run.sub = 'check'; route();
+  }
+  function timeUpNotice() {
+    return run && run.timedOut ? '<div class="notice"><b class="t">' + T('Время вышло') + '</b><p>' + T('Раздел закрыт по таймеру, как на экзамене: ответы зафиксированы, оцените то, что успели.') + '</p></div>' : '';
   }
 
   /* ---------------- TTS ---------------- */
@@ -282,7 +299,6 @@
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(ex.mockNote) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
-      (KZ.strict ? '<section><h2>' + T('Строгая шкала тренажёра') + '</h2><p class="sub">' + esc(LK(KZ.strict, 'note')) + '</p></section>' : '') +
       (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
       '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
@@ -326,6 +342,7 @@
       '<span class="badge level">' + t.level + '</span>' + sectionDots(t, type));
     var title = '<div class="kicker">' + T('Раздел') + ' ' + (es.num || '') + ' · ' + es.kk + '</div><h1>' + esc((KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[type], 'label')) + '</h1>' +
       '<p class="lede' + (run.phase === 'ready' ? '' : ' hintx') + '">' + esc(LK(sec, 'intro')) + '</p>';
+    title += timeUpNotice();
     var body;
     if (run.phase === 'ready') body = viewReady(t, sec, es);
     else if (run.phase === 'review') body = viewReview(t, sec, es, saved);
@@ -394,7 +411,7 @@
     return timerBar(sec) + body;
   }
   function runListening(t, sec, es) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed == null) run.playsUsed = 0;
     var voice = kkVoice(), left = plays - run.playsUsed;
     var head;
@@ -403,14 +420,14 @@
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="au-play"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         '<button class="btn ghost small" data-act="au-pause" id="au-pause"' + (run.playing ? '' : ' hidden') + '>⏸ ' + T('Пауза') + '</button>' +
-        '<span class="hint" id="tts-msg">' + (left > 0 ? T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + T('голоса') + ' ' + esc(au.voices) + '</span></div>' +
+        '<span class="hint" id="tts-msg">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + T('голоса') + ' ' + esc(au.voices) + '</span></div>' +
         '<div class="aubar" aria-hidden="true"><i id="aubar"></i></div><audio id="au" preload="auto" src="' + au.src + '"></audio>' + transcriptBlock(sec) +
         '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене: читайте вопросы и отмечайте ответы по ходу звучания. Паузу поставить можно, перемотки нет; прослушивание засчитывается, когда запись дозвучала до конца.') + (plays > 1 ? ' В ҚАЗТЕСТ аудио звучит несколько раз, здесь — ' + plays + '.' : ' ' + T('В QRT видео идёт один раз.')) + '</p></div>';
     } else if (voice) {
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="tts"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         (run.playing ? '<button class="btn ghost small" data-act="tts-pause">' + (window.speechSynthesis && speechSynthesis.paused ? '▶ ' + T('Продолжить') : '⏸ ' + T('Пауза')) + '</button><button class="btn ghost small" data-act="tts-stop">■ ' + T('Остановить') + '</button>' : '') +
-        '<span class="hint" id="tts-msg">' + (left > 0 ? T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
+        '<span class="hint" id="tts-msg">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
         transcriptBlock(sec) +
         (kkVoices().length > 1 ? '<div class="row mt small"><span class="muted">' + T('Голос:') + '</span>' + kkVoices().map(function (v) { return '<button class="cb' + (v === voice ? ' on' : '') + '" data-act="voice" data-name="' + esc(v.name) + '">' + esc(v.name.replace(/Microsoft |Online |\(Natural\)| - Kazakh.*$/g, '').trim()) + '</button>'; }).join('') + '</div>' : '') +
         '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене. Читайте вопросы во время звучания и отмечайте ответы сразу.') + (plays > 1 ? ' В ҚАЗТЕСТ аудио звучит несколько раз, здесь — ' + plays + '.' : ' ' + T('В QRT видео идёт один раз.')) + '</p></div>';
@@ -430,7 +447,7 @@
       (ui.transcript ? '<div class="script" lang="kk" aria-live="off">' + esc(sec.script.text) + '</div>' : '');
   }
   function playAudio(t, sec, btn) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed >= plays || run.playing) return;
     var a = document.getElementById('au'); if (!a) return;
     run.playing = true; btn.disabled = true; btn.textContent = '▶ ' + T('Звучит…');
@@ -445,7 +462,7 @@
     var pr = a.play(); if (pr && pr.catch) pr.catch(function (e) { run.playing = false; btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Браузер заблокировал воспроизведение:') + ' ' + (e && e.name ? e.name : e); });
   }
   function playScript(t, sec) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed >= plays || run.playing) return;
     run.playing = true;
     var ok = speak(sec.script.text, function () { run.playing = false; run.playsUsed++; route(); });
@@ -453,7 +470,7 @@
     route();
   }
   function showScriptTimed(t, sec) {
-    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed >= plays || run.scriptVisible) return;
     run.scriptVisible = true; route();
     var secs = sec.script.readSeconds || 90, t0 = Date.now();
@@ -505,7 +522,7 @@
     }
     body = '<div class="block"><span class="setlabel">' + T('Ваш текст') + '</span><p class="small muted">' + esc(prompt.text) + '</p><div class="essay-view">' + esc(run.text) + '</div><div class="wc">' + wordCount(run.text) + ' ' + T('слов') + ' · ' + mmss(run.secondsUsed || 0) + '</div></div>' +
       '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
-      '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button><button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button></div></div>';
+      '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button>') + '</div></div>';
     run.afterRender = null;
     return body;
   }
@@ -674,7 +691,7 @@
     }
     body = sec.tasks.map(function (task) {
       return '<div class="block"><span class="setlabel">' + esc(task.title) + ' · ' + task.points + ' ' + T('баллов') + '</span><p class="small muted">' + esc(task.prompt) + '</p><div class="essay-view">' + esc(run.texts[task.id] || '') + '</div><div class="wc">' + wordCount(run.texts[task.id]) + ' ' + T('слов') + ' · ' + mmss(run.taskSec[task.id] || 0) + '</div>' + critScorer(task.id, task.criteria, run.crit[task.id] || []) + '</div>';
-    }).join('') + '<div class="actions"><button class="btn" data-act="save-tasks">' + T('Сохранить результат') + '</button><button class="btn ghost" data-act="back-tasks">' + T('Вернуться к тексту') + '</button></div>';
+    }).join('') + '<div class="actions"><button class="btn" data-act="save-tasks">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-tasks">' + T('Вернуться к тексту') + '</button>') + '</div>';
     run.afterRender = null;
     return body;
   }

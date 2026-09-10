@@ -6,7 +6,9 @@
 ## Стек
 - Чистый HTML/CSS/JS, без фреймворков и без node (на машине его нет).
 - Исходники в `src/`, сборка `python3 build.py` → `docs/index.html` + `docs/audio/*.mp3` (сайт, GitHub Pages публикует
-  папку `docs/` ветки main), `dist/index.html` (всё одним файлом, открывать локально) и `dist/artifact.html`
+  папку `docs/` ветки main), `docs/demo/index.html` (демо для показа клиентам: только мок-тесты, без курса — данные курса
+  не включаются, `KZ.site.demo = true` скрывает блок «что официально не опубликовано»; адрес `<siteUrl>demo/`, аудио общее `../audio/`;
+  локально http://localhost:8765/demo/), `dist/index.html` (всё одним файлом, открывать локально) и `dist/artifact.html`
   (Artifact той же ссылкой; аудио data-URI, потому что внешние файлы в артефакте запрещены). `dist/` не в git.
 - Локальный сервер `serve.py` отдаёт `docs/`; после пересборки открывать с `?v=N`.
 - Настройки сайта — `src/data/site.js` (`KZ.site`: `feedbackTelegram`, `analyticsSnippet`, `siteUrl`); пустые значения выключают кнопки.

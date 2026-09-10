@@ -44,7 +44,7 @@
       '<div class="row"><span class="lbl">' + T('Шрифт') + '</span>' + seg('ui-font', 'font', ['std', 'dys'], [T('обычный'), T('для дислексии')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Транскрипт аудирования') + '</span>' + seg('ui-transcript', 'transcript', [false, true], [T('скрыт'), T('показан')]) + '<span class="hint">' + T('для слабослышащих: текст виден во время звучания') + '</span></div>' +
-      '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + ' ' + T('Вводные к разделам и пояснения к ответам пока только на русском.') + '</p></div>';
+      '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + '</p></div>';
   }
   function uiButtons() {
     return '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
@@ -261,7 +261,7 @@
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(ex.mockNote) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
-      '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>' +
+      (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
       '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
   }

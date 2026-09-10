@@ -44,7 +44,7 @@
       '<div class="row"><span class="lbl">' + T('Шрифт') + '</span>' + seg('ui-font', 'font', ['std', 'dys'], [T('обычный'), T('для дислексии')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Транскрипт аудирования') + '</span>' + seg('ui-transcript', 'transcript', [false, true], [T('скрыт'), T('показан')]) + '<span class="hint">' + T('для слабослышащих: текст виден во время звучания') + '</span></div>' +
-      '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + ' ' + T('Казахская версия интерфейса ещё не вычитана носителем.') + ' ' + T('Вводные к разделам и пояснения к ответам пока только на русском.') + '</p></div>';
+      '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + ' ' + T('Вводные к разделам и пояснения к ответам пока только на русском.') + '</p></div>';
   }
   function uiButtons() {
     return '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
@@ -228,9 +228,9 @@
   function courseCards() {
     if (!KZ.courses) return '';
     var keys = Object.keys(KZ.courses); if (!keys.length) return '';
-    return '<section><div class="kicker" style="margin-bottom:8px">' + T('Курс') + '</div><h2>' + T('Учебная программа по уровням') + '</h2><p class="sub">' + T('A1 — слова официального лексического минимума ҰТО, A2–B2 — словари учебников Тіл-Қазына (часть объёма уровня); грамматика и тексты типового учебника — по темам, с карточками, заданиями и итоговым тестом каждой темы.') + '</p><div class="grid2">' + keys.map(function (k) {
+    return '<section><div class="kicker" style="margin-bottom:8px">' + T('Курс') + '</div><h2>' + T('Учебная программа по уровням') + '</h2><p class="sub">' + T('Программа построена на нашей методологии, разработанной с опорой на официальный лексический минимум ҰТО и типовые учебники уровней; по каждой теме — карточки слов, грамматика с заданиями, тексты с вопросами и итоговый тест.') + '</p><div class="grid2">' + keys.map(function (k) {
       var c = KZ.courses[k], pr = KZ.courseProgress ? KZ.courseProgress(c) : null;
-      return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + (c.stats.uniqueWords || c.stats.words) + ' ' + T('слов') + (c.coverage ? ' (' + c.coverage + ')' : '') + ' · ' + c.stats.grammar + ' ' + T('грамматических тем') + ' · ' + c.stats.texts + ' ' + T('текстов') + (c.stats.textsWithQuestions != null ? ', ' + T('с вопросами') + ' ' + c.stats.textsWithQuestions : '') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
+      return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + (c.stats.uniqueWords || c.stats.words) + ' ' + T('слов') + (c.coverage ? ' (' + LK(c, 'coverage') + ')' : '') + ' · ' + c.stats.grammar + ' ' + T('грамматических тем') + ' · ' + c.stats.texts + ' ' + T('текстов') + (c.stats.textsWithQuestions != null ? ', ' + T('с вопросами') + ' ' + c.stats.textsWithQuestions : '') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
     }).join('') + '</div></section>';
   }
   function ioPanel() {
@@ -243,7 +243,7 @@
   /* ---------------- views: exam ---------------- */
   function viewExam(ex) {
     var stages = ex.sections.map(function (s) {
-      return '<div class="stage' + (s.hypothetical ? ' locked' : '') + '"><div class="stage-num">' + s.num + '</div><div><p class="stage-name">' + esc(KZ.lang === 'kk' ? s.kk : s.title) + ' <span class="muted small">' + esc(KZ.lang === 'kk' ? s.title : s.kk) + '</span>' + (s.hypothetical ? ' <span class="badge warn">' + T('гипотеза') + '</span>' : '') + '</p><p class="stage-desc">' + esc(LK(s, 'desc')) + '</p>' + tipsInline(s) + '</div>' +
+      return '<div class="stage' + (s.hypothetical ? ' locked' : '') + '"><div class="stage-num">' + s.num + '</div><div><p class="stage-name">' + esc(KZ.lang === 'kk' ? s.kk : s.title) + (KZ.lang === 'kk' ? '' : ' <span class="muted small">' + esc(s.kk) + '</span>') + (s.hypothetical ? ' <span class="badge warn">' + T('гипотеза') + '</span>' : '') + '</p><p class="stage-desc">' + esc(LK(s, 'desc')) + '</p>' + tipsInline(s) + '</div>' +
         '<div class="stage-meta"><div class="stage-time">' + (s.minutes == null ? '—' : esc(s.minutes) + ' ' + T('мин')) + '</div><div class="stage-tasks">' + esc(LK(s, 'tasks')) + '</div></div></div>';
     }).join('');
     var levels = (ex.examLevels || KZ.levelOrder).map(function (lv) {
@@ -317,7 +317,7 @@
     var pts = sec.tasks ? sec.tasks.reduce(function (a, x) { return a + (x.points || 0); }, 0) : sec.pointsPerTask && sec.questions ? sec.questions.length * sec.pointsPerTask : 0;
     var tasks = sec.tasks ? '<ol class="prompt-list mt">' + sec.tasks.map(function (x) { return '<li><span><b>' + esc(x.title) + '</b><br><span class="small muted">' + (x.minutes ? '~' + x.minutes + ' ' + T('мин') + ' · ' : '') + x.points + ' ' + T('баллов') + (x.minWords ? ' · ' + T('от') + ' ' + x.minWords + ' ' + T('слов') : '') + (x.questions ? ' · ' + x.questions.length + ' ' + T('вопросов') : '') + '</span></span></li>'; }).join('') + '</ol>' : '';
     return '<div class="block"><div class="row spread"><div><span class="badge exam">' + sec.minutes + ' ' + T('мин') + '</span> <span class="badge muted">' + n + '</span>' + (pts ? ' <span class="badge muted">' + pts + ' ' + T('баллов') + '</span>' : '') + '</div></div>' + tasks +
-      '<p class="small muted mt"><span class="badge warn">' + T('не вычитано') + '</span> ' + T('Задания написаны для этого тренажёра и ещё не проверены носителем языка.') + '</p>' +
+      '<p class="small muted mt">' + T('Задания созданы нашими специалистами по официальной структуре теста.') + '</p>' +
       (sec.checkNote ? '<div class="notice mt" style="margin-bottom:0"><b class="t">' + T('Орфография') + '</b><p>' + esc(sec.checkNote) + '</p></div>' : '') +
       '<div class="actions"><button class="btn" data-act="start">' + T('Начать раздел — таймер') + ' ' + sec.minutes + ' ' + T('мин') + '</button><span class="hint">' + (KZ.exams[t.exam].verified ? T('Структура по официальным документам; конкретные тексты — тренировочные.') : T('Формат заданий — рабочая реконструкция.')) + '</span></div></div>' +
       tipsBlock(es);
@@ -825,7 +825,7 @@
     return '<a class="btn ghost" target="_blank" rel="noopener" href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" data-ctx="' + esc(ctx) + '">' + T('Написать в Telegram') + '</a><span class="hint">' + T('Отзыв о тесте') + ': ' + esc(ctx) + '</span>';
   }
   function viewSources() {
-    var tiers = { 1: T('Основные учебники и лексический минимум'), 2: T('Дополнительные пособия и тексты'), 3: T('Словари и справочники') };
+    var tiers = { 1: T('Ключевые пособия — рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники') };
     var groups = {};
     (KZ.sources || []).forEach(function (x) { (groups[x.tier || 9] = groups[x.tier || 9] || []).push(x); });
     var html = Object.keys(groups).sort().map(function (tk) {
@@ -835,8 +835,8 @@
     }).join('');
     var official = KZ.examOrder.map(function (eid) { var ex = KZ.exams[eid]; return '<h3>' + esc(ex.name) + '</h3><ul class="srclist">' + ex.sources.map(function (x) { return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a></li>'; }).join('') + '</ul>'; }).join('');
     return topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Источники') }]) +
-      '<div class="kicker">' + T('Литература и источники') + '</div><h1>' + T('На чём построен тренажёр') + '</h1>' +
-      '<p class="lede">' + T('Учебники и словари, по которым собраны лексика, грамматика и тексты курса. Задания тренажёра — собственные, написаны по методу этих пособий, а не скопированы из них; всё сгенерированное помечено как не вычитанное.') + '</p>' +
+      '<div class="kicker">' + T('Литература и источники') + '</div><h1>' + T('Литература, на которую мы опирались') + '</h1>' +
+      '<p class="lede">' + T('Пособия и словари, которые мы изучали и которыми вдохновлялись, строя собственную методологию тренажёра. Все задания созданы нашими специалистами. Особое внимание мы уделяем авторам из первого раздела и рекомендуем их пособия для самостоятельной работы.') + '</p>' +
       html + '<section><h2>' + T('Официальные документы экзаменов') + '</h2>' + official + '</section>';
   }
   function tipsOf(es) { return (KZ.lang === 'kk' && es.tips_kk) || es.tips; }

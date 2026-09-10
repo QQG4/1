@@ -263,7 +263,7 @@
       (ex.scoring ? scoringTable(ex) : '') +
       '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>' +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
-      '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title) + '</a></li>'; }).join('') + '</ul></footer>';
+      '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
   }
 
   /* ---------------- views: test ---------------- */
@@ -302,7 +302,7 @@
     var head = topbar([{ label: T('Хаб'), href: '#/' }, { label: ex.short, href: '#/exam/' + ex.id }, { label: t.level + ' · ' + LK(t, 'title'), href: '#/test/' + t.id }, { label: (KZ.lang === 'kk' && es.kk) || es.title || type }],
       '<span class="badge level">' + t.level + '</span>' + sectionDots(t, type));
     var title = '<div class="kicker">' + T('Раздел') + ' ' + (es.num || '') + ' · ' + es.kk + '</div><h1>' + esc((KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[type], 'label')) + '</h1>' +
-      '<p class="lede' + (run.phase === 'ready' ? '' : ' hintx') + '">' + esc(sec.intro) + '</p>';
+      '<p class="lede' + (run.phase === 'ready' ? '' : ' hintx') + '">' + esc(LK(sec, 'intro')) + '</p>';
     var body;
     if (run.phase === 'ready') body = viewReady(t, sec, es);
     else if (run.phase === 'review') body = viewReview(t, sec, es, saved);
@@ -315,10 +315,10 @@
   function viewReady(t, sec, es) {
     var n = sec.questions ? sec.questions.length + ' ' + T('заданий') : sec.tasks ? sec.tasks.length + ' ' + T('задания') : sec.prompts ? sec.prompts.length + ' ' + T('темы на выбор') : sec.sets ? sec.sets.length + ' ' + T('комплекта × 3 вопроса') : '';
     var pts = sec.tasks ? sec.tasks.reduce(function (a, x) { return a + (x.points || 0); }, 0) : sec.pointsPerTask && sec.questions ? sec.questions.length * sec.pointsPerTask : 0;
-    var tasks = sec.tasks ? '<ol class="prompt-list mt">' + sec.tasks.map(function (x) { return '<li><span><b>' + esc(x.title) + '</b><br><span class="small muted">' + (x.minutes ? '~' + x.minutes + ' ' + T('мин') + ' · ' : '') + x.points + ' ' + T('баллов') + (x.minWords ? ' · ' + T('от') + ' ' + x.minWords + ' ' + T('слов') : '') + (x.questions ? ' · ' + x.questions.length + ' ' + T('вопросов') : '') + '</span></span></li>'; }).join('') + '</ol>' : '';
+    var tasks = sec.tasks ? '<ol class="prompt-list mt">' + sec.tasks.map(function (x) { return '<li><span><b>' + esc(LK(x, 'title')) + '</b><br><span class="small muted">' + (x.minutes ? '~' + x.minutes + ' ' + T('мин') + ' · ' : '') + x.points + ' ' + T('баллов') + (x.minWords ? ' · ' + T('от') + ' ' + x.minWords + ' ' + T('слов') : '') + (x.questions ? ' · ' + x.questions.length + ' ' + T('вопросов') : '') + '</span></span></li>'; }).join('') + '</ol>' : '';
     return '<div class="block"><div class="row spread"><div><span class="badge exam">' + sec.minutes + ' ' + T('мин') + '</span> <span class="badge muted">' + n + '</span>' + (pts ? ' <span class="badge muted">' + pts + ' ' + T('баллов') + '</span>' : '') + '</div></div>' + tasks +
       '<p class="small muted mt">' + T('Задания созданы нашими специалистами по официальной структуре теста.') + '</p>' +
-      (sec.checkNote ? '<div class="notice mt" style="margin-bottom:0"><b class="t">' + T('Орфография') + '</b><p>' + esc(sec.checkNote) + '</p></div>' : '') +
+      (sec.checkNote ? '<div class="notice mt" style="margin-bottom:0"><b class="t">' + T('Орфография') + '</b><p>' + esc(LK(sec, 'checkNote')) + '</p></div>' : '') +
       '<div class="actions"><button class="btn" data-act="start">' + T('Начать раздел — таймер') + ' ' + sec.minutes + ' ' + T('мин') + '</button><span class="hint">' + (KZ.exams[t.exam].verified ? T('Структура по официальным документам; конкретные тексты — тренировочные.') : T('Формат заданий — рабочая реконструкция.')) + '</span></div></div>' +
       tipsBlock(es);
   }
@@ -328,7 +328,7 @@
   }
   function tipsBlock(es) {
     if (!tipsOf(es) || !tipsOf(es).length) return '';
-    return '<div class="notice info hintx"><b class="t">' + T('По опыту сдававших') + '</b><ul>' + tipsOf(es).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><p class="small muted" style="margin-top:8px">' + esc(KZ.tipsSource) + '</p></div>';
+    return '<div class="notice info hintx"><b class="t">' + T('По опыту сдававших') + '</b><ul>' + tipsOf(es).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><p class="small muted" style="margin-top:8px">' + esc((KZ.lang === 'kk' && KZ.tipsSource_kk) || KZ.tipsSource) + '</p></div>';
   }
   function scoringTable(ex) {
     var sc = ex.scoring;
@@ -356,7 +356,7 @@
         html += '<li><label class="' + cls + '"><input type="radio" name="' + q.id + '" value="' + j + '"' + (j === chosen ? ' checked' : '') + (locked ? ' disabled' : '') + '><span class="k">' + letter(j) + '</span><span>' + esc(o) + '</span></label></li>';
       });
       html += '</ul>';
-      if (locked) html += '<div class="explain' + (chosen === q.answer ? '' : ' bad') + '"><b>' + letter(q.answer) + '.</b> ' + esc(q.explain) + '</div>';
+      if (locked) html += '<div class="explain' + (chosen === q.answer ? '' : ' bad') + '"><b>' + letter(q.answer) + '.</b> ' + esc(LK(q, 'explain')) + '</div>';
       return html + '</div>';
     }).join('');
   }
@@ -461,14 +461,14 @@
     var body = '';
     if (run.sub === 'script' && !run.promptId) {
       body = '<div class="block"><span class="setlabel">' + T('Выберите тему') + '</span><div class="prompt-pick">' + sec.prompts.map(function (p, i) { return '<label class="opt"><input type="radio" name="prompt" value="' + p.id + '"><span class="k">' + (i + 1) + '</span><span>' + esc(p.text) + '</span></label>'; }).join('') + '</div>' +
-        '<p class="small muted mt">' + esc(sec.targetNote || '') + '</p><div class="actions"><button class="btn" data-act="pick-prompt">' + T('Начать писать') + '</button><span class="hint" id="submit-msg"></span></div></div>';
+        '<p class="small muted mt">' + esc(LK(sec, 'targetNote') || '') + '</p><div class="actions"><button class="btn" data-act="pick-prompt">' + T('Начать писать') + '</button><span class="hint" id="submit-msg"></span></div></div>';
       run.afterRender = function () { if (!timer.iv) startTimer(sec.minutes * 60); else tick(); };
       return timerBar(sec) + body;
     }
     var prompt = sec.prompts.filter(function (p) { return p.id === run.promptId; })[0];
     if (run.sub !== 'check') {
       var acc = 0;
-      var skel = sec.scaffold.map(function (s) { var from = acc; acc += s.minutes; return '<div class="skel" data-from="' + from * 60 + '" data-to="' + acc * 60 + '"><span class="tag">' + esc(s.label) + '<br>~' + s.minutes + ' ' + T('мин') + '</span><span><b>' + esc(s.label) + '.</b> <span class="hint hintx">' + esc(s.hint) + '</span></span></div>'; }).join('');
+      var skel = sec.scaffold.map(function (s) { var from = acc; acc += s.minutes; return '<div class="skel" data-from="' + from * 60 + '" data-to="' + acc * 60 + '"><span class="tag">' + esc(LK(s, 'label')) + '<br>~' + s.minutes + ' ' + T('мин') + '</span><span><b>' + esc(LK(s, 'label')) + '.</b> <span class="hint hintx">' + esc(LK(s, 'hint')) + '</span></span></div>'; }).join('');
       body = '<div class="block"><span class="setlabel">' + T('Тема') + '</span><p style="font-size:16.5px;font-weight:600">' + esc(prompt.text) + '</p>' +
         '<div class="skeleton" id="skel">' + skel + '</div>' +
         '<div class="tags">' + sec.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
@@ -481,7 +481,7 @@
       return timerBar(sec) + body;
     }
     body = '<div class="block"><span class="setlabel">' + T('Ваш текст') + '</span><p class="small muted">' + esc(prompt.text) + '</p><div class="essay-view">' + esc(run.text) + '</div><div class="wc">' + wordCount(run.text) + ' ' + T('слов') + ' · ' + mmss(run.secondsUsed || 0) + '</div></div>' +
-      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + sec.checklist.map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
+      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
       '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button><button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button></div></div>';
     run.afterRender = null;
     return body;
@@ -504,7 +504,7 @@
     if (run.qdone == null) run.qdone = {};
     var body;
     if (!run.setId) {
-      body = '<div class="block"><span class="setlabel">' + T('Выберите комплект') + '</span><div class="prompt-pick">' + sec.sets.map(function (s, i) { return '<label class="opt"><input type="radio" name="set" value="' + s.id + '"' + (i === 0 ? ' checked' : '') + '><span class="k">' + (i + 1) + '</span><span>' + esc(s.title) + (s.main ? ' <span class="badge level">' + T('основной') + '</span>' : '') + '</span></label>'; }).join('') + '</div>' +
+      body = '<div class="block"><span class="setlabel">' + T('Выберите комплект') + '</span><div class="prompt-pick">' + sec.sets.map(function (s, i) { return '<label class="opt"><input type="radio" name="set" value="' + s.id + '"' + (i === 0 ? ' checked' : '') + '><span class="k">' + (i + 1) + '</span><span>' + esc(LK(s, 'title')) + (s.main ? ' <span class="badge level">' + T('основной') + '</span>' : '') + '</span></label>'; }).join('') + '</div>' +
         '<div class="actions"><button class="btn" data-act="pick-set">' + T('Начать интервью') + '</button></div></div>';
       run.afterRender = function () { if (!timer.iv) startTimer(sec.minutes * 60); else tick(); };
       return timerBar(sec) + body;
@@ -513,7 +513,7 @@
     var totalF = sec.answerFrame.reduce(function (a, f) { return a + f.seconds; }, 0);
     if (run.sub !== 'check') {
       var bar = '<div class="timebar">' + sec.answerFrame.map(function (f) { return '<span style="flex:' + f.seconds + '">~' + f.seconds + T('с') + '</span>'; }).join('') + '</div><div class="timebar-labels">' + sec.answerFrame.map(function (f) { return '<span>' + esc(f.label) + '</span>'; }).join('') + '</div>';
-      body = micNotice() + '<div class="block"><span class="setlabel">' + esc(set.title) + '</span><p class="small muted">' + T('Каркас одного ответа (') + mmss(totalF) + '):</p>' + bar +
+      body = micNotice() + '<div class="block"><span class="setlabel">' + esc(LK(set, 'title')) + '</span><p class="small muted">' + T('Каркас одного ответа (') + mmss(totalF) + '):</p>' + bar +
         '<div class="mt">' + set.questions.map(function (q, i) {
           return '<div class="sq' + (run.qdone[i] ? ' done' : '') + '" id="sq' + i + '"><p class="qt"><span class="qn">' + (i + 1) + '.</span>' + esc(q) + '</p><div class="row">' +
             (run.qdone[i] ? '<span class="badge ok">' + T('отвечен') + ' · ' + mmss(run.qdone[i]) + '</span>' :
@@ -523,8 +523,8 @@
       run.afterRender = function () { if (!timer.iv) startTimer(sec.minutes * 60); else tick(); };
       return timerBar(sec) + body;
     }
-    body = '<div class="block"><span class="setlabel">' + esc(set.title) + '</span><ol class="prompt-list">' + set.questions.map(function (q, i) { return '<li><span>' + esc(q) + '<div class="row mt"><span class="rec-slot" data-rec-key="' + esc(recKey(set.id + '-' + i)) + '"></span></div></span></li>'; }).join('') + '</ol></div>' +
-      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + sec.checklist.map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
+    body = '<div class="block"><span class="setlabel">' + esc(LK(set, 'title')) + '</span><ol class="prompt-list">' + set.questions.map(function (q, i) { return '<li><span>' + esc(q) + '<div class="row mt"><span class="rec-slot" data-rec-key="' + esc(recKey(set.id + '-' + i)) + '"></span></div></span></li>'; }).join('') + '</ol></div>' +
+      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
       '<div class="actions"><button class="btn" data-act="save-speaking">' + T('Сохранить результат') + '</button></div></div>';
     run.afterRender = null;
     return body;
@@ -557,7 +557,7 @@
     var rows = criteria.map(function (c, i) {
       max += c.max; if (values[i] != null) sum += values[i];
       var btns = ''; for (var v = 0; v <= c.max; v++) btns += '<button type="button" class="cb' + (values[i] === v ? ' on' : '') + '" data-act="crit" data-task="' + taskId + '" data-i="' + i + '" data-v="' + v + '">' + v + '</button>';
-      return '<div class="crit-row"><div class="crit-name"><b>' + esc(c.name) + '</b><span>' + esc(c.top) + '</span></div><div class="crit-btns">' + btns + '</div></div>';
+      return '<div class="crit-row"><div class="crit-name"><b>' + esc(c.name) + '</b><span>' + esc(LK(c, 'top')) + '</span></div><div class="crit-btns">' + btns + '</div></div>';
     }).join('');
     return '<div class="crit"><div class="crit-head">' + T('Самооценка по официальным критериям') + ' <span class="muted">' + T('(верхний дескриптор = максимум)') + '</span></div>' + rows + '<div class="crit-sum">' + T('Итого за задание:') + ' <b>' + sum + '</b> / ' + max + '</div></div>';
   }
@@ -609,11 +609,11 @@
   function pictureSvg(pic) {
     var scene = SCENES[pic.scene] || SCENES.park;
     var svg = '<svg viewBox="0 0 640 340" role="img" aria-label="' + esc(pic.alt) + '"><title>' + esc(pic.alt) + '</title>' + scene + '</svg>';
-    return '<figure class="picture">' + svg + '<figcaption>' + esc(pic.note || '') + '</figcaption></figure>';
+    return '<figure class="picture">' + svg + '<figcaption>' + esc(LK(pic, 'note') || '') + '</figcaption></figure>';
   }
   function taskSkeleton(task) {
     var acc = 0;
-    return '<div class="skeleton" id="skel">' + (task.scaffold || []).map(function (st) { var from = acc; acc += st.minutes; return '<div class="skel" data-from="' + from * 60 + '" data-to="' + acc * 60 + '"><span class="tag">' + esc(st.label) + '<br>~' + st.minutes + ' ' + T('мин') + '</span><span><b>' + esc(st.label) + '.</b> <span class="hint hintx">' + esc(st.hint) + '</span></span></div>'; }).join('') + '</div>';
+    return '<div class="skeleton" id="skel">' + (task.scaffold || []).map(function (st) { var from = acc; acc += st.minutes; return '<div class="skel" data-from="' + from * 60 + '" data-to="' + acc * 60 + '"><span class="tag">' + esc(LK(st, 'label')) + '<br>~' + st.minutes + ' ' + T('мин') + '</span><span><b>' + esc(LK(st, 'label')) + '.</b> <span class="hint hintx">' + esc(LK(st, 'hint')) + '</span></span></div>'; }).join('') + '</div>';
   }
   function taskElapsed() { return run.taskStart == null ? 0 : elapsed() - run.taskStart; }
   function updateTask(task) {
@@ -636,7 +636,7 @@
       body = '<div class="block">' + taskTabs(sec, run.taskIdx) +
         '<span class="setlabel">' + esc(task.title) + ' · ' + task.points + ' ' + T('баллов · ~') + task.minutes + ' ' + T('мин') + '</span>' +
         (task.picture ? pictureSvg(task.picture) : '') +
-        '<p class="prompt-text">' + esc(task.prompt) + '</p>' + (task.targetNote ? '<p class="small muted">' + esc(task.targetNote) + '</p>' : '') +
+        '<p class="prompt-text">' + esc(task.prompt) + '</p>' + (task.targetNote ? '<p class="small muted">' + esc(LK(task, 'targetNote')) + '</p>' : '') +
         taskSkeleton(task) +
         (task.connectors ? '<div class="tags">' + task.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
         '<textarea class="essay" id="essay" data-task="' + task.id + '" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(txt) + '</textarea><div class="wc" id="wc">' + wordCount(txt) + ' ' + T('слов · для максимума от') + ' ' + task.minWords + '</div>' +
@@ -667,20 +667,20 @@
     var body, clockLbl;
     if (run.sub === 'prep') {
       body = '<div class="block"><span class="setlabel">Дайындық · ' + sec.prepMinutes + ' ' + T('мин') + '</span><p class="small muted">' + T('Прочитайте оба задания и набросайте план: по одному тезису на вопрос и 3–4 опорных слова для темы. Бумагу на реальном тесте не дают — держите план в голове или на экране.') + '</p>' +
-        sec.tasks.map(function (x) { return '<h3 class="mt">' + esc(x.title) + ' <span class="muted small">· ' + x.points + ' ' + T('баллов') + '</span></h3>' + speakTaskHtml(x); }).join('') +
+        sec.tasks.map(function (x) { return '<h3 class="mt">' + esc(LK(x, 'title')) + ' <span class="muted small">· ' + x.points + ' ' + T('баллов') + '</span></h3>' + speakTaskHtml(x); }).join('') +
         '<div class="actions"><button class="btn" data-act="prep-done">' + T('Подготовка окончена → отвечать (') + sec.answerMinutes + ' ' + T('мин)') + '</button></div></div>';
       clockLbl = T('подготовка');
     } else if (run.sub === 'answer') {
       body = micNotice() + '<div class="block"><span class="setlabel">' + T('Жауап беру') + ' · ' + sec.answerMinutes + ' ' + T('мин на оба задания') + '</span>' +
         sec.tasks.map(function (x, i) {
-          return '<div class="sq" id="sq' + i + '"><h3>' + esc(x.title) + ' <span class="muted small">· ~' + x.minutes + ' ' + T('мин') + '</span></h3>' + speakTaskHtml(x) +
+          return '<div class="sq" id="sq' + i + '"><h3>' + esc(LK(x, 'title')) + ' <span class="muted small">· ~' + x.minutes + ' ' + T('мин') + '</span></h3>' + speakTaskHtml(x) +
             '<div class="row mt">' + (run.tdone[x.id] != null ? '<span class="badge ok">' + T('отвечено') + ' · ' + mmss(run.tdone[x.id]) + '</span>' :
               '<button class="btn secondary small" data-act="task-start" data-task="' + x.id + '" data-min="' + x.minutes + '">' + T('Старт таймера') + '</button><span class="clock" id="tk-' + x.id + '"></span>') + ' ' + recButton(x.id) + '</div></div>';
         }).join('') +
         '<div class="actions"><button class="btn" data-act="finish-speaking-tasks">' + T('Завершить говорение → самооценка') + '</button><span class="hint">' + T('Запишите ответ на телефон, оценивать будете по записи.') + '</span></div></div>';
       clockLbl = T('ответ');
     } else {
-      body = sec.tasks.map(function (x) { return '<div class="block"><span class="setlabel">' + esc(x.title) + ' · ' + x.points + ' ' + T('баллов') + '</span>' + speakTaskHtml(x) + '<div class="row mt"><span class="rec-slot" data-rec-key="' + esc(recKey(x.id)) + '"></span><span class="small muted">' + T('таймер:') + ' ' + mmss(run.tdone[x.id] || 0) + '</span></div>' + critScorer(x.id, sec.criteria, run.crit[x.id] || []) + '</div>'; }).join('') +
+      body = sec.tasks.map(function (x) { return '<div class="block"><span class="setlabel">' + esc(LK(x, 'title')) + ' · ' + x.points + ' ' + T('баллов') + '</span>' + speakTaskHtml(x) + '<div class="row mt"><span class="rec-slot" data-rec-key="' + esc(recKey(x.id)) + '"></span><span class="small muted">' + T('таймер:') + ' ' + mmss(run.tdone[x.id] || 0) + '</span></div>' + critScorer(x.id, sec.criteria, run.crit[x.id] || []) + '</div>'; }).join('') +
         '<div class="actions"><button class="btn" data-act="save-speaking-tasks">' + T('Сохранить результат') + '</button></div>';
       run.afterRender = null;
       return body;
@@ -799,7 +799,7 @@
       head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Самооценка по официальным критериям') + (pct2 >= 80 ? ' — ' + T('уровень C1.') : pct2 >= 60 ? ' — ' + T('уровень B2.') : pct2 >= 50 ? ' — ' + T('уровень B1.') : pct2 >= 40 ? ' — ' + T('уровень A2.') : pct2 >= 30 ? ' — ' + T('уровень A1.') : ' — ' + T('ниже порога A1.')) + '</b><div class="m">' + T('Пороги блока: B1 от 50 %, B2 от 60 %, C1 от 80 %') + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
       body = sec.tasks.map(function (x) {
         var crit = x.criteria || sec.criteria;
-        return '<div class="block"><span class="setlabel">' + esc(x.title) + ' · ' + x.points + ' ' + T('баллов') + '</span>' +
+        return '<div class="block"><span class="setlabel">' + esc(LK(x, 'title')) + ' · ' + x.points + ' ' + T('баллов') + '</span>' +
           (sec.type === 'writing' ? '<p class="small muted">' + esc(x.prompt) + '</p><div class="essay-view">' + esc((saved.texts || {})[x.id] || '') + '</div><div class="wc">' + wordCount((saved.texts || {})[x.id]) + ' ' + T('слов') + '</div>' : speakTaskHtml(x) + '<div class="row mt"><span class="rec-slot" data-rec-key="' + esc(t.id + '/speaking/' + x.id) + '"></span></div>') +
           critView(crit, (saved.crit || {})[x.id]) + '</div>';
       }).join('');
@@ -807,12 +807,12 @@
       var prompt = sec.prompts.filter(function (p) { return p.id === saved.promptId; })[0] || {};
       head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Чек-лист самопроверки.') + '</b><div class="m">' + wordCount(saved.text) + ' ' + T('слов') + ' · ' + mmss(saved.secondsUsed || 0) + ' ' + T('из') + ' ' + sec.minutes + ':00 · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
       body = '<div class="block"><span class="setlabel">' + T('Тема') + '</span><p>' + esc(prompt.text) + '</p><div class="essay-view">' + esc(saved.text) + '</div></div>' +
-        '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + sec.checklist.map(function (c, i) { return '<li class="static" style="' + (saved.checks && saved.checks[i] ? 'color:var(--good)' : '') + '">' + esc(c) + (saved.checks && saved.checks[i] ? ' ✓' : '') + '</li>'; }).join('') + '</ul></div>';
+        '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li class="static" style="' + (saved.checks && saved.checks[i] ? 'color:var(--good)' : '') + '">' + esc(c) + (saved.checks && saved.checks[i] ? ' ✓' : '') + '</li>'; }).join('') + '</ul></div>';
     } else {
       var set = sec.sets.filter(function (s) { return s.id === saved.setId; })[0] || { title: '', questions: [] };
-      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Чек-лист самопроверки.') + '</b><div class="m">' + esc(set.title) + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
+      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Чек-лист самопроверки.') + '</b><div class="m">' + esc(LK(set, 'title')) + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
       body = '<div class="block"><span class="setlabel">' + T('Вопросы и записи') + '</span><ol class="prompt-list">' + set.questions.map(function (q, i) { return '<li><span>' + esc(q) + '<div class="row mt"><span class="rec-slot" data-rec-key="' + esc(t.id + '/speaking/' + set.id + '-' + i) + '"></span></div></span></li>'; }).join('') + '</ol></div>' +
-        '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + sec.checklist.map(function (c, i) { return '<li class="static" style="' + (saved.checks && saved.checks[i] ? 'color:var(--good)' : '') + '">' + esc(c) + (saved.checks && saved.checks[i] ? ' ✓' : '') + '</li>'; }).join('') + '</ul></div>';
+        '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li class="static" style="' + (saved.checks && saved.checks[i] ? 'color:var(--good)' : '') + '">' + esc(c) + (saved.checks && saved.checks[i] ? ' ✓' : '') + '</li>'; }).join('') + '</ul></div>';
     }
     var next = nextSection(t, sec.type);
     run.afterRender = null;
@@ -830,15 +830,16 @@
     (KZ.sources || []).forEach(function (x) { (groups[x.tier || 9] = groups[x.tier || 9] || []).push(x); });
     var html = Object.keys(groups).sort().map(function (tk) {
       return '<section><h2>' + esc(tiers[tk] || T('Прочее')) + '</h2><ol class="prompt-list">' + groups[tk].map(function (x) {
-        return '<li><span><b lang="kk">' + esc(x.title) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(T(x.kind)) : '') + (x.level ? ' · ' + esc(x.level) : '') + '</span></span></li>';
+        return '<li><span><b lang="kk">' + esc(LK(x, 'title')) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(T(x.kind)) : '') + (x.level ? ' · ' + esc(x.level) : '') + '</span></span></li>';
       }).join('') + '</ol></section>';
     }).join('');
-    var official = KZ.examOrder.map(function (eid) { var ex = KZ.exams[eid]; return '<h3>' + esc(ex.name) + '</h3><ul class="srclist">' + ex.sources.map(function (x) { return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a></li>'; }).join('') + '</ul>'; }).join('');
+    var official = KZ.examOrder.map(function (eid) { var ex = KZ.exams[eid]; return '<h3>' + esc(ex.name) + '</h3><ul class="srclist">' + ex.sources.map(function (x) { return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(LK(x, 'title')) + '</a></li>'; }).join('') + '</ul>'; }).join('');
     return topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Источники') }]) +
       '<div class="kicker">' + T('Литература и источники') + '</div><h1>' + T('Литература, на которую мы опирались') + '</h1>' +
       '<p class="lede">' + T('Пособия и словари, которые мы изучали и которыми вдохновлялись, строя собственную методологию тренажёра. Все задания созданы нашими специалистами. Особое внимание мы уделяем авторам из первого раздела и рекомендуем их пособия для самостоятельной работы.') + '</p>' +
       html + '<section><h2>' + T('Официальные документы экзаменов') + '</h2>' + official + '</section>';
   }
+  function checklistOf(sec) { return (KZ.lang === 'kk' && sec.checklist_kk) || sec.checklist; }
   function tipsOf(es) { return (KZ.lang === 'kk' && es.tips_kk) || es.tips; }
   function nextSection(t, type) { for (var i = 0; i < t.sections.length - 1; i++) if (t.sections[i].type === type) return t.sections[i + 1]; return null; }
 

@@ -12,7 +12,7 @@
 - Настройки сайта — `src/data/site.js` (`KZ.site`: `feedbackTelegram`, `analyticsSnippet`, `siteUrl`); пустые значения выключают кнопки.
 - Локализация интерфейса: `src/i18n.js` — `T('русский текст')` возвращает казахский перевод из словаря `KZ.i18n.kk`
   (ключ = русская строка), `LK(obj,'field')` берёт `field_kk` из данных (exams.js: `label_kk`, `name_kk`, `units_kk`,
-  `tagline_kk`, `desc_kk`, `tasks_kk`, `verifiedNote_kk`, `focus_kk`, `tips_kk`; tests: `summary_kk`; course: `note_kk`, `coverage_kk`). Новую русскую строку интерфейса оборачивать в `T(...)` и добавлять перевод в словарь
+  `tagline_kk`, `desc_kk`, `tasks_kk`, `verifiedNote_kk`, `focus_kk`, `tips_kk`; tests: `summary_kk`, а также `intro_kk`, `explain_kk`, `hint_kk`, `top_kk`, `targetNote_kk`, `checkNote_kk`, `label_kk`, `title_kk`, `note_kk` у картинки и `checklist_kk` — их вставляет `python3 tools/apply_tests_kk.py` из словарей `tools/tests_kk/*.json` (ключ = русская строка; новый русский текст в тесте → добавить перевод в словарь и перезапустить, `--report` покажет непереведённое); course: `note_kk`, `coverage_kk`). Новую русскую строку интерфейса оборачивать в `T(...)` и добавлять перевод в словарь
   (или прогнать `python3 tools/i18n_wrap.py --write` — он оборачивает русские фрагменты автоматически, казахские не трогает).
   Содержание испытаний (тексты, вопросы, аудио) всегда на казахском, через T не проходит. Казахские переводы интерфейса
   написаны Claude и не вычитаны носителем.

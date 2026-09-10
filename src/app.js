@@ -71,11 +71,32 @@
     var lbl = r.kind === 'points' ? r.score + '/' + r.total + ' ' + T('баллов') : (sec.type === 'writing' || sec.type === 'speaking') ? T('чек-лист') + ' ' + r.score + '/' + r.total : r.score + '/' + r.total;
     return { label: lbl, cls: cls, pct: pct };
   }
+  /* Вердикт по строгой шкале (KZ.strict): все разделы пройдены и в каждом pct >= порога уровня */
+  function verdict(t) {
+    var need = KZ.strict && KZ.strict.pct && KZ.strict.pct[t.level]; if (!need || !t.sections.length) return null;
+    var ex = KZ.exams[t.exam], rows = [], done = 0, pass = true;
+    t.sections.forEach(function (s) {
+      var r = sp(t.id, s.type), es = examSection(ex, s.type) || {};
+      var name = (KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[s.type], 'label');
+      var self = s.type === 'writing' || s.type === 'speaking';
+      if (r && r.status === 'done' && r.total) { done++; var pct = Math.round(100 * r.score / r.total); var ok = pct >= need; if (!ok) pass = false; rows.push({ name: name, pct: pct, ok: ok, self: self }); }
+      else { pass = false; rows.push({ name: name, pct: null, ok: false, self: self }); }
+    });
+    return { need: need, rows: rows, done: done, all: done === t.sections.length, pass: pass && done === t.sections.length };
+  }
+  function verdictCard(t) {
+    var v = verdict(t); if (!v) return '';
+    var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok; }).map(function (r) { return r.name; }).join(', ');
+    var head = v.pass ? T('Уровень подтверждён по строгой шкале тренажёра.') : v.all ? T('Уровень не подтверждён: ниже строгого порога в разделах') + ' ' + failed + '.' : T('Пройдите все разделы — тогда тренажёр вынесет вердикт по строгой шкале.');
+    return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Строгая шкала') + ' · ' + t.level + ' ' + T('от') + ' ' + v.need + ' %</b><p><b>' + head + '</b></p><ul>' +
+      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка') + '</span>' : '') + '</li>'; }).join('') +
+      '</ul><p class="small muted" style="margin-top:8px">' + esc(LK(KZ.strict, 'note')) + '</p></div>';
+  }
   function testStatus(test) {
     if (test.status === 'draft') return { label: T('в разработке'), cls: 'muted' };
     var done = 0, any = false;
     test.sections.forEach(function (s) { var r = sp(test.id, s.type); if (r && r.status === 'done') done++; if (r) any = true; });
-    if (done === test.sections.length) return { label: T('пройден'), cls: 'ok', done: done };
+    if (done === test.sections.length) { var v = verdict(test); if (v) return { label: v.pass ? T('уровень подтверждён') : T('не подтверждён'), cls: v.pass ? 'ok' : 'bad', done: done }; return { label: T('пройден'), cls: 'ok', done: done }; }
     if (any || done) return { label: done + '/' + test.sections.length + ' ' + T('разделов'), cls: 'warn', done: done };
     return { label: T('не начат'), cls: 'muted', done: 0 };
   }
@@ -261,6 +282,7 @@
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(ex.mockNote) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
+      (KZ.strict ? '<section><h2>' + T('Строгая шкала тренажёра') + '</h2><p class="sub">' + esc(LK(KZ.strict, 'note')) + '</p></section>' : '') +
       (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
       '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
@@ -283,6 +305,7 @@
         '<span class="badge level">' + t.level + '</span><span class="badge ' + st.cls + '">' + st.label + '</span>') +
       '<div class="kicker">' + esc(ex.kicker) + ' · ' + T('уровень') + ' ' + t.level + '</div><h1>' + esc(LK(t, 'title')) + ' — ' + esc(LK(KZ.levels[t.level], 'name')) + '</h1>' +
       '<p class="lede">' + esc(LK(t, 'summary')) + ' ' + T('Разделы можно проходить по порядку, как на экзамене, или по одному. Ответы фиксируются один раз, после этого открывается разбор.') + '</p>' +
+      verdictCard(t) +
       '<div class="stages">' + stages + '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + total + ' ' + T('минут') + ' · ' + t.sections.length + (t.sections.length === 4 ? ' ' + T('блока') : ' ' + T('разделов')) + '</b></div></div>' +
       '<div class="actions"><button class="btn danger small" data-act="reset-test" data-test="' + t.id + '">' + T('Сбросить результаты этого теста') + '</button>' +
       (tp(t.id).updatedAt ? '<span class="hint">' + T('последнее изменение:') + ' ' + fmtDate(tp(t.id).updatedAt) + '</span>' : '') + '</div>';
@@ -371,7 +394,7 @@
     return timerBar(sec) + body;
   }
   function runListening(t, sec, es) {
-    var plays = sec.plays || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
     if (run.playsUsed == null) run.playsUsed = 0;
     var voice = kkVoice(), left = plays - run.playsUsed;
     var head;
@@ -407,7 +430,7 @@
       (ui.transcript ? '<div class="script" lang="kk" aria-live="off">' + esc(sec.script.text) + '</div>' : '');
   }
   function playAudio(t, sec, btn) {
-    var plays = sec.plays || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
     if (run.playsUsed >= plays || run.playing) return;
     var a = document.getElementById('au'); if (!a) return;
     run.playing = true; btn.disabled = true; btn.textContent = '▶ ' + T('Звучит…');
@@ -422,7 +445,7 @@
     var pr = a.play(); if (pr && pr.catch) pr.catch(function (e) { run.playing = false; btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Браузер заблокировал воспроизведение:') + ' ' + (e && e.name ? e.name : e); });
   }
   function playScript(t, sec) {
-    var plays = sec.plays || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
     if (run.playsUsed >= plays || run.playing) return;
     run.playing = true;
     var ok = speak(sec.script.text, function () { run.playing = false; run.playsUsed++; route(); });
@@ -430,7 +453,7 @@
     route();
   }
   function showScriptTimed(t, sec) {
-    var plays = sec.plays || (t.exam === 'kaztest' ? 2 : 1);
+    var plays = sec.plays || (KZ.strict && KZ.strict.plays) || (t.exam === 'kaztest' ? 2 : 1);
     if (run.playsUsed >= plays || run.scriptVisible) return;
     run.scriptVisible = true; route();
     var secs = sec.script.readSeconds || 90, t0 = Date.now();

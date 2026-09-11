@@ -342,3 +342,25 @@ figure.picture figcaption{font-size:12.5px;color:var(--ink-faint);padding:8px 12
 .vchip{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border-radius:6px;font-family:var(--mono);font-size:11.5px;font-weight:600;border:1px solid var(--border);color:var(--ink-muted);background:var(--surface)}
 .vchip:hover,.vchip:focus-visible{border-color:var(--accent);color:var(--accent)}
 .vchip.ok{color:var(--good);border-color:var(--good)}.vchip.warn{color:var(--gold);border-color:var(--gold)}
+
+/* чек-лист эксперта (#/review) */
+.rv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rv-grid label{font-size:13.5px;font-weight:600;display:flex;flex-direction:column;gap:5px}
+.rv-grid input,.rv-issue input,.rv-issue textarea,.rv-item textarea,.rv-out,[data-rv=free]{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;box-sizing:border-box}
+.rv-item{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:start;padding:14px 0;border-top:1px solid var(--border)}
+.rv-item:first-of-type{border-top:none}
+.rv-item .q{font-weight:600}
+.rv-seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;background:var(--surface)}
+.rv-seg label{position:relative;padding:6px 10px;font-family:var(--mono);font-size:12px;cursor:pointer;border-left:1px solid var(--border);white-space:nowrap}
+.rv-seg label:first-child{border-left:none}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-seg label.ok.on{background:var(--good-soft);color:var(--good)}.rv-seg label.warn.on{background:var(--gold-soft);color:var(--gold)}.rv-seg label.bad.on{background:var(--bad-soft);color:var(--bad)}
+.rv-item textarea,.rv-more{grid-column:1 / -1}
+.rv-item textarea{min-height:44px;display:none}
+.rv-item.open textarea{display:block}
+.rv-more,.rv-rm{background:none;border:none;color:var(--accent);font:inherit;font-size:13.5px;padding:0;cursor:pointer;justify-self:start}
+.rv-rm{color:var(--ink-muted);justify-self:end}
+.rv-issue{display:grid;grid-template-columns:1.1fr 1fr .6fr;gap:10px;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px}
+.rv-issue textarea,.rv-issue .full,.rv-issue .rv-rm{grid-column:1 / -1}
+.rv-out{min-height:200px;font-family:var(--mono);font-size:12.5px;margin-top:10px}
+@media (max-width:560px){.rv-grid,.rv-issue,.rv-item{grid-template-columns:1fr}}

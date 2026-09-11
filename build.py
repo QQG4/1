@@ -36,7 +36,7 @@ def audio_js(mode):
         bundle[tid] = {'src': srcv, 'voices': m['voices'], 'seconds': m['seconds']}
     return 'KZ.audio = ' + json.dumps(bundle, ensure_ascii=False) + ';'
 
-app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
+app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') + '\n' + read(src / 'review.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js') + '\n' + read(src / 'review.js')
 def body(mode):
     extra = ['KZ.site.demo = true;'] if mode == 'demo' else course_data
     return tpl.replace('/*STYLES*/', css).replace('/*DATA*/', '\n'.join(data + extra + [audio_js(mode)])).replace('/*APP*/', app)

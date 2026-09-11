@@ -1,0 +1,247 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Сараптама Qazaq Trainer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#f6f3ec; --surface:#fffdf9; --ink:#1e2a30; --muted:#66757c; --line:#ddd6c8; --line-strong:#c9bfa9;
+  --accent:#2f6f7e; --on-accent:#ffffff; --accent-soft:#e3eef0; --good:#2f7d4f; --good-soft:#e4f1e8; --warn:#9a6b00; --warn-soft:#f6ecd2; --bad:#b23a3a; --bad-soft:#f5e0e0;
+  --serif:"Literata",Georgia,"Times New Roman",serif; --sans:"Source Sans 3","Helvetica Neue",Arial,sans-serif; --mono:"JetBrains Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#151a1d; --surface:#1d2428; --ink:#e8e4da; --muted:#9aa5aa; --line:#2f3a40; --line-strong:#465358; --accent:#7fbccb; --on-accent:#151a1d; --accent-soft:#1f3239; --good:#7cc99a; --good-soft:#1c3126; --warn:#e0b45a; --warn-soft:#3a2f14; --bad:#e58a8a; --bad-soft:#3d2022; } }
+:root[data-theme="dark"]{ --bg:#151a1d; --surface:#1d2428; --ink:#e8e4da; --muted:#9aa5aa; --line:#2f3a40; --line-strong:#465358; --accent:#7fbccb; --on-accent:#151a1d; --accent-soft:#1f3239; --good:#7cc99a; --good-soft:#1c3126; --warn:#e0b45a; --warn-soft:#3a2f14; --bad:#e58a8a; --bad-soft:#3d2022; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+main{max-width:760px;margin:0 auto;padding:40px 20px 80px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:28px;height:1px;background:var(--accent)}
+h1{font-family:var(--serif);font-weight:700;font-size:38px;line-height:1.12;margin:10px 0 12px;text-wrap:balance;letter-spacing:-.01em}
+h2{font-family:var(--serif);font-weight:500;font-size:22px;margin:0 0 4px}
+.lede{color:var(--muted);font-size:17px;max-width:62ch;margin:0 0 8px}
+.lede a{color:var(--accent)}
+.meta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:34px}
+section{margin:0 0 30px;padding:0 0 30px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:none}
+.sub{color:var(--muted);margin:0 0 16px;max-width:65ch}
+label.f{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
+input[type=text],textarea,select{width:100%;font:inherit;font-size:15.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px}
+textarea{min-height:64px;resize:vertical}
+input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.chip{position:relative;font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);cursor:pointer;user-select:none}
+.chip input{position:absolute;opacity:0;width:1px;height:1px}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.item{display:grid;grid-template-columns:1fr auto;gap:12px 18px;align-items:start;padding:16px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:none}
+.item .q{font-weight:600}
+.item .h{color:var(--muted);font-size:14px;margin-top:2px;max-width:56ch}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg label{position:relative;padding:7px 11px;font-family:var(--mono);font-size:12px;cursor:pointer;border-left:1px solid var(--line);white-space:nowrap}
+.seg label:first-child{border-left:none}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg label.ok.on{background:var(--good-soft);color:var(--good)}
+.seg label.warn.on{background:var(--warn-soft);color:var(--warn)}
+.seg label.bad.on{background:var(--bad-soft);color:var(--bad)}
+.item textarea{grid-column:1 / -1;min-height:44px;display:none}
+.item.open textarea,.item.warn textarea,.item.bad textarea{display:block}
+.item .more{grid-column:1 / -1;background:none;border:none;color:var(--accent);font:inherit;font-size:13.5px;padding:0;cursor:pointer;text-align:left;justify-self:start}
+@media (max-width:560px){.item{grid-template-columns:1fr}}
+.issue{display:grid;grid-template-columns:1.1fr 1fr .7fr;gap:10px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:10px}
+.issue textarea,.issue .full{grid-column:1 / -1}
+.issue .rm{grid-column:1 / -1;justify-self:end;background:none;border:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer}
+@media (max-width:560px){.issue{grid-template-columns:1fr}}
+.btn{font:inherit;font-weight:600;font-size:15px;padding:10px 18px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.hint{font-size:13.5px;color:var(--muted)}
+.done{display:none;padding:18px 20px;border-radius:10px;background:var(--good-soft);border:1px solid var(--good);color:var(--ink)}
+.done b{color:var(--good)}
+.err{display:none;padding:14px 16px;border-radius:10px;background:var(--bad-soft);border:1px solid var(--bad)}
+.progress{position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 0 8px;font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;border-bottom:1px solid var(--line);margin-bottom:26px}
+.progress b{color:var(--accent);font-variant-numeric:tabular-nums}
+.copybox{width:100%;min-height:200px;font-family:var(--mono);font-size:12.5px;display:none;margin-top:10px}
+@media (prefers-reduced-motion:no-preference){.chip,.seg label{transition:background .12s,color .12s}}
+</style></head><body>
+<main>
+  <div class="eyebrow">Qazaq Trainer · сараптама</div>
+  <h1>Чек-лист эксперта по содержанию</h1>
+  <p class="lede">Пройдите один или несколько мок-тестов на сайте <a href="https://qqg4.github.io/1/demo/" target="_blank" rel="noopener">qqg4.github.io/1/demo</a>, затем отметьте пункты ниже и добавьте найденные ошибки. Заполнение занимает около 10 минут; в конце нажмите «Отправить письмом» — откроется письмо с готовым текстом.</p>
+  <p class="meta">22 мок-теста · QRT A1–C2 · ҚАЗТЕСТ A1–C1</p>
+
+  <div class="progress"><span>Заполнено пунктов чек-листа</span><span><b id="pdone">0</b> / 10</span></div>
+
+  <section>
+    <h2>Кто проверяет</h2>
+    <p class="sub">Имя нужно, чтобы вернуться к вам с уточнениями. Роль помогает понять, на что вы смотрели прежде всего.</p>
+    <div class="grid2">
+      <div><label class="f" for="name">Имя</label><input type="text" id="name" autocomplete="name" placeholder="Айгүл Сейітова"></div>
+      <div><label class="f" for="role">Роль</label><select id="role">
+        <option value="">— выберите —</option>
+        <option>Методист / тестолог</option>
+        <option>Преподаватель казахского языка</option>
+        <option>Носитель языка, редактор</option>
+        <option>Сдавал(а) ҚАЗТЕСТ или QRT</option>
+        <option>Другое</option></select></div>
+    </div>
+    <label class="f" style="margin-top:14px">Что проверяли</label>
+    <div class="chips" id="scope">
+      <label class="chip"><input type="checkbox" value="QRT">QRT</label>
+      <label class="chip"><input type="checkbox" value="ҚАЗТЕСТ">ҚАЗТЕСТ</label>
+      <label class="chip"><input type="checkbox" value="A1">A1</label>
+      <label class="chip"><input type="checkbox" value="A2">A2</label>
+      <label class="chip"><input type="checkbox" value="B1">B1</label>
+      <label class="chip"><input type="checkbox" value="B2">B2</label>
+      <label class="chip"><input type="checkbox" value="C1">C1</label>
+      <label class="chip"><input type="checkbox" value="C2">C2</label>
+      <label class="chip"><input type="checkbox" value="Казахский интерфейс">Казахский интерфейс</label>
+    </div>
+    <div class="grid2">
+      <div><label class="f" for="browser">Браузер и устройство</label><input type="text" id="browser" placeholder="Safari на iPhone, Chrome на ноутбуке…"></div>
+      <div><label class="f" for="tests">Какие именно тесты прошли</label><input type="text" id="tests" placeholder="QRT B1 вариант 1, ҚАЗТЕСТ B2 варианты 1 и 2"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Чек-лист</h2>
+    <p class="sub">По каждому пункту одна из трёх оценок. «Есть замечания» и «Критично» открывают поле для пояснения: напишите, где именно и что не так.</p>
+    <div id="items"></div>
+  </section>
+
+  <section>
+    <h2>Найденные ошибки</h2>
+    <p class="sub">Каждую ошибку отдельной строкой: так их проще исправить. Укажите тест и номер задания, если помните.</p>
+    <div id="issues"></div>
+    <button class="btn ghost" type="button" id="addIssue">+ Добавить ошибку</button>
+  </section>
+
+  <section>
+    <h2>Дополнительные комментарии</h2>
+    <p class="sub">Свободная форма: всё, что не уместилось в пункты выше — наблюдения, сомнения, идеи, сравнение с реальным экзаменом.</p>
+    <textarea id="free" style="min-height:140px" placeholder="Пишите как удобно, хоть списком, хоть сплошным текстом."></textarea>
+  </section>
+
+  <section>
+    <div class="actions">
+      <button class="btn" type="button" id="send">Отправить письмом</button>
+      <button class="btn ghost" type="button" id="copy">Скопировать текстом</button>
+      <span class="hint" id="draft">Черновик сохраняется в этом браузере автоматически.</span>
+    </div>
+    <div class="done" id="done" role="status"><b>Письмо подготовлено.</b> Если почтовая программа не открылась, скопируйте текст ниже и отправьте на <a href="mailto:k.k.g.inter@gmail.com">k.k.g.inter@gmail.com</a> или в мессенджер.</div>
+    <div class="err" id="err" role="alert"></div>
+    <textarea class="copybox" id="copybox" readonly></textarea>
+  </section>
+</main>
+
+<script>
+(function () {
+  var ITEMS = [
+    { k: 'level', q: 'Тексты и вопросы соответствуют заявленному уровню', h: 'A1–A2: бытовые темы, простые предложения; B1–B2: официально-деловая и общественная лексика; C1–C2: абстрактная лексика, позиция автора.' },
+    { k: 'format', q: 'Формат соответствует реальному экзамену', h: 'Типы заданий, число вариантов ответа, формулировки («Мәтінге сәйкес емес ақпаратты табыңыз»…), хронометраж разделов.' },
+    { k: 'keys', q: 'Ключи верны и ответ единственный', h: 'Правильный ответ действительно правильный, и ни один дистрактор нельзя защитить как тоже верный.' },
+    { k: 'distractors', q: 'Дистракторы правдоподобны', h: 'Неверные варианты не выдают себя длиной, стилем или явной нелепостью.' },
+    { k: 'language', q: 'Язык заданий: орфография, грамматика, естественность', h: 'Ошибки в написании, кальки с русского, неестественные обороты в вопросах и вариантах ответа.' },
+    { k: 'texts', q: 'Тексты для чтения и аудирования звучат естественно', h: 'Похожи ли на реальную речь и публицистику, нет ли искусственных или странных фраз.' },
+    { k: 'audio', q: 'Озвучка: произношение, ударение, темп', h: 'Голоса Aigul и Daulet. Отметьте слова с неверным ударением или интонацией — их можно поправить точечно.' },
+    { k: 'explain', q: 'Разбор после ответа верен и понятен', h: 'Пояснения к правильному ответу не содержат ошибок и помогают понять, почему.' },
+    { k: 'writing', q: 'Письмо и говорение: темы, каркас, критерии', h: 'Темы реалистичны для экзамена, чек-листы самопроверки и критерии ҚАЗТЕСТ отражены верно.' },
+    { k: 'ui', q: 'Казахский интерфейс и удобство прохождения', h: 'Переводы кнопок и подсказок корректны, таймер, плеер и навигация не мешают.' }
+  ];
+  var RATES = [['ok', 'Норма'], ['warn', 'Есть замечания'], ['bad', 'Критично']];
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+
+  // --- чек-лист
+  var itemsEl = $('items');
+  ITEMS.forEach(function (it) {
+    var d = document.createElement('div'); d.className = 'item'; d.id = 'it-' + it.k;
+    d.innerHTML = '<div><div class="q">' + esc(it.q) + '</div><div class="h">' + esc(it.h) + '</div></div>' +
+      '<div class="seg" role="radiogroup" aria-label="' + esc(it.q) + '">' + RATES.map(function (r) { return '<label class="' + r[0] + '"><input type="radio" name="r-' + it.k + '" value="' + r[0] + '">' + r[1] + '</label>'; }).join('') + '</div>' +
+      '<button class="more" type="button">+ комментарий</button>' +
+      '<textarea id="c-' + it.k + '" placeholder="Где именно и что не так"></textarea>';
+    itemsEl.appendChild(d);
+    d.querySelector('.more').addEventListener('click', function () { d.classList.add('open'); d.querySelector('textarea').focus(); });
+    d.addEventListener('change', function (e) {
+      if (e.target.type !== 'radio') return;
+      d.classList.remove('ok', 'warn', 'bad'); d.classList.add(e.target.value);
+      d.querySelectorAll('.seg label').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
+      if (e.target.value !== 'ok') d.classList.add('open');
+      progress(); saveDraft();
+    });
+  });
+  function progress() { var n = 0; ITEMS.forEach(function (it) { if (document.querySelector('input[name="r-' + it.k + '"]:checked')) n++; }); $('pdone').textContent = n; }
+
+  // --- чипы
+  $('scope').addEventListener('change', function (e) { if (e.target.type === 'checkbox') { e.target.closest('.chip').classList.toggle('on', e.target.checked); saveDraft(); } });
+
+  // --- ошибки
+  var issuesEl = $('issues');
+  function addIssue(v) {
+    v = v || {};
+    var d = document.createElement('div'); d.className = 'issue';
+    d.innerHTML = '<input type="text" class="i-test" placeholder="Тест или тема (QRT B1 вариант 2)" value="' + esc(v.test) + '">' +
+      '<input type="text" class="i-sec" placeholder="Раздел (Оқылым, Жазылым…)" value="' + esc(v.section) + '">' +
+      '<input type="text" class="i-num" placeholder="№ задания" value="' + esc(v.num) + '">' +
+      '<textarea class="i-what" placeholder="Что не так">' + esc(v.what) + '</textarea>' +
+      '<input type="text" class="full i-fix" placeholder="Как правильно (если знаете)" value="' + esc(v.fix) + '">' +
+      '<button class="rm" type="button">убрать</button>';
+    d.querySelector('.rm').addEventListener('click', function () { d.remove(); saveDraft(); });
+    issuesEl.appendChild(d);
+  }
+  $('addIssue').addEventListener('click', function () { addIssue(); issuesEl.lastElementChild.querySelector('input').focus(); });
+
+  // --- сбор данных
+  function collect() {
+    var items = {};
+    ITEMS.forEach(function (it) { var r = document.querySelector('input[name="r-' + it.k + '"]:checked'); items[it.k] = { rate: r ? r.value : null, comment: $('c-' + it.k).value.trim() }; });
+    var issues = [].map.call(issuesEl.querySelectorAll('.issue'), function (d) {
+      return { test: d.querySelector('.i-test').value.trim(), section: d.querySelector('.i-sec').value.trim(), num: d.querySelector('.i-num').value.trim(), what: d.querySelector('.i-what').value.trim(), fix: d.querySelector('.i-fix').value.trim() };
+    }).filter(function (i) { return i.what || i.test; });
+    return {
+      expert: $('name').value.trim(), role: $('role').value, scope: [].map.call(document.querySelectorAll('#scope input:checked'), function (i) { return i.value; }),
+      browser: $('browser').value.trim(), tests: $('tests').value.trim(), items: items, issues: issues,
+      free: $('free').value.trim()
+    };
+  }
+  function restore(v) {
+    if (!v) return;
+    ['name', 'browser', 'tests', 'free'].forEach(function (id) { if (v[id === 'name' ? 'expert' : id] != null) $(id).value = v[id === 'name' ? 'expert' : id]; });
+    ['role'].forEach(function (id) { if (v[id]) $(id).value = v[id]; });
+    (v.scope || []).forEach(function (s) { var i = document.querySelector('#scope input[value="' + s + '"]'); if (i) { i.checked = true; i.closest('.chip').classList.add('on'); } });
+    ITEMS.forEach(function (it) { var x = v.items && v.items[it.k]; if (!x) return; if (x.rate) { var r = document.querySelector('input[name="r-' + it.k + '"][value="' + x.rate + '"]'); if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); } } if (x.comment) { $('c-' + it.k).value = x.comment; $('it-' + it.k).classList.add('open'); } });
+    (v.issues || []).forEach(addIssue);
+    progress();
+  }
+  var draftTO = null;
+  function saveDraft() { clearTimeout(draftTO); draftTO = setTimeout(function () { try { localStorage.setItem('qt-expert-draft', JSON.stringify(collect())); } catch (e) {} }, 300); }
+  document.addEventListener('input', saveDraft); document.addEventListener('change', saveDraft);
+  try { restore(JSON.parse(localStorage.getItem('qt-expert-draft') || 'null')); } catch (e) {}
+  if (!issuesEl.children.length) addIssue();
+
+  // --- текстовая версия
+  function asText(v) {
+    var L = ['Сараптама Qazaq Trainer', 'Эксперт: ' + v.expert + (v.role ? ' (' + v.role + ')' : ''), 'Проверял(а): ' + v.scope.join(', ') + (v.tests ? ' — ' + v.tests : ''), 'Браузер: ' + v.browser, ''];
+    ITEMS.forEach(function (it) { var x = v.items[it.k]; var r = x.rate ? { ok: 'норма', warn: 'есть замечания', bad: 'КРИТИЧНО' }[x.rate] : '—'; L.push('• ' + it.q + ': ' + r + (x.comment ? ' — ' + x.comment : '')); });
+    if (v.issues.length) { L.push('', 'Ошибки:'); v.issues.forEach(function (i, n) { L.push((n + 1) + '. ' + [i.test, i.section, i.num ? '№' + i.num : ''].filter(Boolean).join(' · ') + ': ' + i.what + (i.fix ? ' → ' + i.fix : '')); }); }
+    L.push('', 'Дополнительно: ' + v.free);
+    return L.join('\n');
+  }
+  $('copy').addEventListener('click', function () {
+    var box = $('copybox'); box.value = asText(collect()); box.style.display = 'block'; box.select();
+    try { navigator.clipboard.writeText(box.value); $('draft').textContent = 'Скопировано. Отправьте текст команде любым удобным способом.'; } catch (e) {}
+  });
+
+  // --- отправка: письмо на адрес команды (сервера у сайта нет)
+  var TO = 'k.k.g.inter@gmail.com';
+  $('send').addEventListener('click', function () {
+    var v = collect(); var err = $('err'); err.style.display = 'none';
+    if (!v.expert) { err.textContent = 'Укажите имя: без него мы не сможем вернуться к вам с уточнениями.'; err.style.display = 'block'; $('name').focus(); return; }
+    var answered = ITEMS.filter(function (it) { return v.items[it.k].rate; }).length;
+    if (answered < 5) { err.textContent = 'Отмечено ' + answered + ' пунктов из 10. Оцените хотя бы половину — иначе по ответам трудно судить.'; err.style.display = 'block'; return; }
+    var text = asText(v); var box = $('copybox'); box.value = text; box.style.display = 'block';
+    try { navigator.clipboard.writeText(text); } catch (e) {}
+    $('done').style.display = 'block';
+    location.href = 'mailto:' + TO + '?subject=' + encodeURIComponent('Сараптама Qazaq Trainer — ' + v.expert) + '&body=' + encodeURIComponent(text.slice(0, 1800) + (text.length > 1800 ? '\n\n[текст обрезан — полная версия скопирована в буфер обмена, вставьте её сюда]' : ''));
+  });
+})();
+</script>
+</body></html>

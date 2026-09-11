@@ -60,6 +60,8 @@ except Exception: site_cfg['analytics'] = ''
 docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
+(docs / 'review').mkdir(exist_ok=True)
+shutil.copyfile(src / 'review' / 'index.html', docs / 'review' / 'index.html')  # анкета эксперта — отдельная статическая страница <siteUrl>review/
 (docs / 'demo').mkdir(exist_ok=True)
 (docs / 'demo' / 'index.html').write_text(full('demo', site_cfg['analytics']), encoding='utf-8')
 (docs / 'audio').mkdir(exist_ok=True)

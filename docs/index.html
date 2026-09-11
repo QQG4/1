@@ -345,28 +345,6 @@ figure.picture figcaption{font-size:12.5px;color:var(--ink-faint);padding:8px 12
 .vchip:hover,.vchip:focus-visible{border-color:var(--accent);color:var(--accent)}
 .vchip.ok{color:var(--good);border-color:var(--good)}.vchip.warn{color:var(--gold);border-color:var(--gold)}
 
-/* чек-лист эксперта (#/review) */
-.rv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.rv-grid label{font-size:13.5px;font-weight:600;display:flex;flex-direction:column;gap:5px}
-.rv-grid input,.rv-issue input,.rv-issue textarea,.rv-item textarea,.rv-out,[data-rv=free]{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;box-sizing:border-box}
-.rv-item{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:start;padding:14px 0;border-top:1px solid var(--border)}
-.rv-item:first-of-type{border-top:none}
-.rv-item .q{font-weight:600}
-.rv-seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;background:var(--surface)}
-.rv-seg label{position:relative;padding:6px 10px;font-family:var(--mono);font-size:12px;cursor:pointer;border-left:1px solid var(--border);white-space:nowrap}
-.rv-seg label:first-child{border-left:none}
-.seg input{position:absolute;opacity:0;width:1px;height:1px}
-.rv-seg label.ok.on{background:var(--good-soft);color:var(--good)}.rv-seg label.warn.on{background:var(--gold-soft);color:var(--gold)}.rv-seg label.bad.on{background:var(--bad-soft);color:var(--bad)}
-.rv-item textarea,.rv-more{grid-column:1 / -1}
-.rv-item textarea{min-height:44px;display:none}
-.rv-item.open textarea{display:block}
-.rv-more,.rv-rm{background:none;border:none;color:var(--accent);font:inherit;font-size:13.5px;padding:0;cursor:pointer;justify-self:start}
-.rv-rm{color:var(--ink-muted);justify-self:end}
-.rv-issue{display:grid;grid-template-columns:1.1fr 1fr .6fr;gap:10px;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px}
-.rv-issue textarea,.rv-issue .full,.rv-issue .rv-rm{grid-column:1 / -1}
-.rv-out{min-height:200px;font-family:var(--mono);font-size:12.5px;margin-top:10px}
-@media (max-width:560px){.rv-grid,.rv-issue,.rv-item{grid-template-columns:1fr}}
-
 </style>
 <div class="wrap"><div id="app"></div></div>
 <script>
@@ -547,8 +525,7 @@ KZ.examOrder = ['qrt', 'kaztest'];
 
 /* Настройки сайта. Пустые значения выключают соответствующие кнопки. */
 KZ.site = {
-  feedbackTelegram: '',
-  feedbackEmail: 'k.k.g.inter@gmail.com',   // адрес для писем из чек-листа эксперта (#/review, только основной сайт)            // например 'qazaq_trainer' → кнопка «Написать в Telegram» после теста (https://t.me/<handle>)
+  feedbackTelegram: '',            // например 'qazaq_trainer' → кнопка «Написать в Telegram» после теста (https://t.me/<handle>)
   analyticsSnippet: '',            // тег скрипта приватной аналитики без cookies (Cloudflare Web Analytics / GoatCounter); вставляется build.py только в сайт
   siteUrl: 'https://qqg4.github.io/1/'                      // адрес опубликованного сайта (для ссылки «открыть отдельной вкладкой» из артефакта)
 };
@@ -3661,7 +3638,6 @@ window.KZ = window.KZ || {};
   KZ.T = function (s) { if (KZ.lang === 'ru') return s; var d = KZ.i18n[KZ.lang]; return (d && d[s]) || s; };
   KZ.LK = function (obj, field) { if (!obj) return ''; if (KZ.lang !== 'ru' && obj[field + '_' + KZ.lang] != null) return obj[field + '_' + KZ.lang]; return KZ.T(obj[field]); };
   KZ.i18n = { kk: {
-    'Экспертам: чек-лист замечаний': 'Сарапшыларға: ескертпелер чек-листі', 'Чек-лист эксперта': 'Сарапшы чек-листі', 'Сараптама': 'Сараптама', 'Чек-лист эксперта по содержанию': 'Мазмұн бойынша сарапшы чек-листі', 'Пройдите один или несколько мок-тестов, затем отметьте пункты ниже и добавьте найденные ошибки. Это займёт около 10 минут. Черновик сохраняется в этом браузере.': 'Бір немесе бірнеше сынама тестті өтіп, төмендегі тармақтарды белгілеңіз және табылған қателерді қосыңыз. Бұл шамамен 10 минут алады. Жоба осы браузерде сақталады.', 'Кто проверяет': 'Кім тексереді', 'Имя': 'Аты', 'Роль': 'Рөлі', 'методист, преподаватель, носитель…': 'әдіскер, оқытушы, тіл иесі…', 'Что проверяли': 'Нені тексердіңіз', 'QRT B1 варианты 1 и 2, курс A2…': 'QRT B1 1 және 2-нұсқа, A2 курсы…', 'Браузер и устройство': 'Браузер және құрылғы', 'Safari на iPhone, Chrome на ноутбуке…': 'iPhone-дағы Safari, ноутбуктегі Chrome…', 'Чек-лист': 'Чек-лист', 'По каждому пункту одна из трёх оценок. «Есть замечания» и «Критично» открывают поле для пояснения.': 'Әр тармаққа үш бағаның бірі. «Ескертпе бар» және «Маңызды» түсіндірме өрісін ашады.', 'Норма': 'Норма', 'Есть замечания': 'Ескертпе бар', 'Критично': 'Маңызды', 'комментарий': 'түсініктеме', 'Где именно и что не так': 'Дәл қай жерде және не дұрыс емес', 'Найденные ошибки': 'Табылған қателер', 'Каждую ошибку отдельной строкой: так их проще исправить.': 'Әр қатені жеке жолмен: осылай түзету оңай.', 'Тест или тема (QRT B1 вариант 2)': 'Тест немесе тақырып (QRT B1 2-нұсқа)', 'Раздел (Оқылым, Жазылым…)': 'Бөлім (Оқылым, Жазылым…)', '№ задания': 'Тапсырма №', 'Что не так': 'Не дұрыс емес', 'Как правильно (если знаете)': 'Дұрысы қалай (білсеңіз)', 'убрать': 'алып тастау', 'Добавить ошибку': 'Қате қосу', 'Дополнительные комментарии': 'Қосымша түсініктемелер', 'Свободная форма: наблюдения, сомнения, идеи, сравнение с реальным экзаменом.': 'Еркін түрде: байқаулар, күмәндар, идеялар, нақты емтиханмен салыстыру.', 'Отправить письмом': 'Хатпен жіберу', 'Отправить в Telegram': 'Telegram-ға жіберу', 'Скопировать текстом': 'Мәтін ретінде көшіру', 'Скопировано. Отправьте текст команде любым удобным способом.': 'Көшірілді. Мәтінді командаға ыңғайлы жолмен жіберіңіз.', 'Выделите текст ниже и скопируйте.': 'Төмендегі мәтінді белгілеп, көшіріңіз.', 'Укажите имя, чтобы мы могли вернуться с уточнениями.': 'Нақтылау үшін хабарласа алуымыз үшін атыңызды жазыңыз.', 'Текст длинный: письмо откроется с началом, остальное скопируйте из поля ниже.': 'Мәтін ұзын: хат басымен ашылады, қалғанын төмендегі өрістен көшіріңіз.', 'Текст скопирован — вставьте его в чат.': 'Мәтін көшірілді — чатқа қойыңыз.', 'Тексты и вопросы соответствуют заявленному уровню': 'Мәтіндер мен сұрақтар көрсетілген деңгейге сәйкес', 'Формат соответствует реальному экзамену': 'Формат нақты емтиханға сәйкес', 'Ключи верны и ответ единственный': 'Кілттер дұрыс және жауап жалғыз', 'Дистракторы правдоподобны': 'Дистракторлар шынайы', 'Язык заданий: орфография, грамматика, естественность': 'Тапсырма тілі: емле, грамматика, табиғилық', 'Тексты для чтения и аудирования звучат естественно': 'Оқылым мен тыңдалым мәтіндері табиғи', 'Озвучка: произношение, ударение, темп': 'Дыбыстау: айтылым, екпін, қарқын', 'Разбор после ответа верен и понятен': 'Жауаптан кейінгі талдау дұрыс әрі түсінікті', 'Письмо и говорение: темы, каркас, критерии': 'Жазылым мен айтылым: тақырыптар, қаңқа, критерийлер', 'Казахский интерфейс и удобство прохождения': 'Қазақша интерфейс және өту ыңғайлылығы', 'A1–A2: бытовые темы, простые предложения; B1–B2: официально-деловая и общественная лексика; C1–C2: абстрактная лексика, позиция автора.': 'A1–A2: тұрмыстық тақырыптар, жай сөйлемдер; B1–B2: ресми-іскерлік және қоғамдық лексика; C1–C2: абстрактілі лексика, автор ұстанымы.', 'Типы заданий, число вариантов ответа, формулировки, хронометраж разделов.': 'Тапсырма түрлері, жауап нұсқаларының саны, тұжырымдар, бөлімдер уақыты.', 'Правильный ответ действительно правильный, и ни один дистрактор нельзя защитить как тоже верный.': 'Дұрыс жауап шынымен дұрыс, ешбір дистракторды да дұрыс деп қорғауға болмайды.', 'Неверные варианты не выдают себя длиной, стилем или явной нелепостью.': 'Қате нұсқалар ұзындығымен, стилімен немесе айқын мағынасыздығымен байқалмайды.', 'Ошибки в написании, кальки с русского, неестественные обороты в вопросах и вариантах.': 'Жазылу қателері, орыс тілінен калькалар, сұрақтар мен нұсқалардағы табиғи емес тіркестер.', 'Похожи ли на реальную речь и публицистику, нет ли искусственных фраз.': 'Нақты сөйлеу мен публицистикаға ұқсай ма, жасанды сөз тіркестері жоқ па.', 'Отметьте слова с неверным ударением или интонацией — их можно поправить точечно.': 'Екпіні немесе интонациясы қате сөздерді белгілеңіз — оларды нақты түзетуге болады.', 'Пояснения к правильному ответу не содержат ошибок и помогают понять, почему.': 'Дұрыс жауапқа түсіндірмелер қатесіз және неге екенін түсінуге көмектеседі.', 'Темы реалистичны для экзамена, чек-листы самопроверки и критерии отражены верно.': 'Тақырыптар емтиханға сай, өзін-өзі тексеру чек-листтері мен критерийлер дұрыс көрсетілген.', 'Переводы кнопок и подсказок корректны, таймер, плеер и навигация не мешают.': 'Түймелер мен кеңестердің аудармасы дұрыс, таймер, плеер және навигация кедергі жасамайды.',
     'Открыть аудио отдельной вкладкой': 'Аудионы жеке қойындыда ашу',
     'повтор доступен, пока идёт время раздела': 'бөлім уақыты біткенше қайта тыңдауға болады', 'Время вышло': 'Уақыт бітті', 'Раздел закрыт по таймеру, как на экзамене: ответы зафиксированы, оцените то, что успели.': 'Бөлім емтихандағыдай таймер бойынша жабылды: жауаптар бекітілді, үлгергеніңізді бағалаңыз.', 'Результат': 'Нәтиже', 'Уровень подтверждён:': 'Деңгей расталды:', 'Уровень не подтверждён: недостаточно баллов в разделах': 'Деңгей расталмады: мына бөлімдерде балл жеткіліксіз —', 'Пройдите все разделы, чтобы получить результат по уровню.': 'Деңгей бойынша нәтиже алу үшін барлық бөлімді өтіңіз.',
     'Строгая шкала': 'Қатаң шкала', 'Строгая шкала тренажёра': 'Жаттықтырғыштың қатаң шкаласы', 'Уровень подтверждён по строгой шкале тренажёра.': 'Деңгей жаттықтырғыштың қатаң шкаласы бойынша расталды.', 'Уровень не подтверждён: ниже строгого порога в разделах': 'Деңгей расталмады: мына бөлімдерде қатаң шектен төмен —', 'Пройдите все разделы — тогда тренажёр вынесет вердикт по строгой шкале.': 'Барлық бөлімді өтіңіз — сонда жаттықтырғыш қатаң шкала бойынша вердикт шығарады.', 'самооценка': 'өзін-өзі бағалау', 'уровень подтверждён': 'деңгей расталды', 'не подтверждён': 'расталмады',
@@ -4038,7 +4014,7 @@ window.KZ = window.KZ || {};
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
       '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
       '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-level">' + lv + '</div><div class="rung-name">' + esc(LK(L, 'name')) + '</div><div class="rung-units">' + esc(LK(L, 'units')) + '</div><div class="rung-focus">' + esc(LK(L, 'focus')) + '</div></div>'; }).join('') + '</div></section>' +
-      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.demo ? '' : ' · <a href="#/review">' + T('Экспертам: чек-лист замечаний') + '</a>') + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + '</footer>';
+      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + '</footer>';
   }
   function courseCards() {
     if (!KZ.courses) return '';
@@ -5009,120 +4985,6 @@ window.KZ = window.KZ || {};
     var ul = el.closest('.opts'); Array.prototype.forEach.call(ul.querySelectorAll('.opt'), function (o) { o.classList.remove('selected'); }); el.closest('.opt').classList.add('selected');
     e.stopPropagation();
   }, true);
-})();
-
-/* ============================================================
-   Чек-лист эксперта по содержанию: маршрут #/review (только основной сайт, не демо).
-   Сервера нет — ответы уходят готовым письмом (mailto на KZ.site.feedbackEmail), в Telegram
-   (KZ.site.feedbackTelegram) или копируются текстом. Черновик — localStorage 'kz-trainer:review'.
-   ============================================================ */
-(function () {
-  'use strict';
-  var T = KZ.T, U = KZ.util, esc = U.esc;
-  var ITEMS = [
-    ['level', 'Тексты и вопросы соответствуют заявленному уровню', 'A1–A2: бытовые темы, простые предложения; B1–B2: официально-деловая и общественная лексика; C1–C2: абстрактная лексика, позиция автора.'],
-    ['format', 'Формат соответствует реальному экзамену', 'Типы заданий, число вариантов ответа, формулировки, хронометраж разделов.'],
-    ['keys', 'Ключи верны и ответ единственный', 'Правильный ответ действительно правильный, и ни один дистрактор нельзя защитить как тоже верный.'],
-    ['distractors', 'Дистракторы правдоподобны', 'Неверные варианты не выдают себя длиной, стилем или явной нелепостью.'],
-    ['language', 'Язык заданий: орфография, грамматика, естественность', 'Ошибки в написании, кальки с русского, неестественные обороты в вопросах и вариантах.'],
-    ['texts', 'Тексты для чтения и аудирования звучат естественно', 'Похожи ли на реальную речь и публицистику, нет ли искусственных фраз.'],
-    ['audio', 'Озвучка: произношение, ударение, темп', 'Отметьте слова с неверным ударением или интонацией — их можно поправить точечно.'],
-    ['explain', 'Разбор после ответа верен и понятен', 'Пояснения к правильному ответу не содержат ошибок и помогают понять, почему.'],
-    ['writing', 'Письмо и говорение: темы, каркас, критерии', 'Темы реалистичны для экзамена, чек-листы самопроверки и критерии отражены верно.'],
-    ['ui', 'Казахский интерфейс и удобство прохождения', 'Переводы кнопок и подсказок корректны, таймер, плеер и навигация не мешают.']
-  ];
-  var RATES = [['ok', 'Норма'], ['warn', 'Есть замечания'], ['bad', 'Критично']];
-  var KEY = 'kz-trainer:review';
-  var d = null;
-  function load() { if (d) return d; try { d = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {} d = d || { name: '', role: '', scope: '', browser: '', items: {}, issues: [{}], free: '' }; return d; }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
-
-  function view() {
-    var v = load();
-    var items = ITEMS.map(function (it) {
-      var x = v.items[it[0]] || {};
-      return '<div class="rv-item' + (x.rate ? ' ' + x.rate : '') + (x.comment || (x.rate && x.rate !== 'ok') ? ' open' : '') + '" data-k="' + it[0] + '">' +
-        '<div><div class="q">' + T(it[1]) + '</div><div class="small muted">' + T(it[2]) + '</div></div>' +
-        '<div class="rv-seg" role="radiogroup">' + RATES.map(function (r) { return '<label class="' + r[0] + (x.rate === r[0] ? ' on' : '') + '"><input type="radio" name="rv-' + it[0] + '" value="' + r[0] + '"' + (x.rate === r[0] ? ' checked' : '') + '>' + T(r[1]) + '</label>'; }).join('') + '</div>' +
-        '<button class="rv-more" type="button" data-act="rv-more">+ ' + T('комментарий') + '</button>' +
-        '<textarea data-rv="c-' + it[0] + '" placeholder="' + T('Где именно и что не так') + '">' + esc(x.comment || '') + '</textarea></div>';
-    }).join('');
-    var issues = (v.issues.length ? v.issues : [{}]).map(function (i, n) {
-      return '<div class="rv-issue" data-i="' + n + '">' +
-        '<input type="text" data-rv="i-test" placeholder="' + T('Тест или тема (QRT B1 вариант 2)') + '" value="' + esc(i.test || '') + '">' +
-        '<input type="text" data-rv="i-section" placeholder="' + T('Раздел (Оқылым, Жазылым…)') + '" value="' + esc(i.section || '') + '">' +
-        '<input type="text" data-rv="i-num" placeholder="' + T('№ задания') + '" value="' + esc(i.num || '') + '">' +
-        '<textarea data-rv="i-what" placeholder="' + T('Что не так') + '">' + esc(i.what || '') + '</textarea>' +
-        '<input type="text" data-rv="i-fix" class="full" placeholder="' + T('Как правильно (если знаете)') + '" value="' + esc(i.fix || '') + '">' +
-        '<button class="rv-rm" type="button" data-act="rv-rm" data-i="' + n + '">' + T('убрать') + '</button></div>';
-    }).join('');
-    var done = ITEMS.filter(function (it) { return v.items[it[0]] && v.items[it[0]].rate; }).length;
-    var tg = KZ.site && KZ.site.feedbackTelegram, mail = KZ.site && KZ.site.feedbackEmail;
-    return U.topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Чек-лист эксперта') }]) +
-      '<div class="kicker">' + T('Сараптама') + '</div><h1>' + T('Чек-лист эксперта по содержанию') + '</h1>' +
-      '<p class="lede">' + T('Пройдите один или несколько мок-тестов, затем отметьте пункты ниже и добавьте найденные ошибки. Это займёт около 10 минут. Черновик сохраняется в этом браузере.') + '</p>' +
-      '<div class="block"><span class="setlabel">' + T('Кто проверяет') + '</span><div class="rv-grid">' +
-        '<label>' + T('Имя') + '<input type="text" data-rv="name" value="' + esc(v.name) + '"></label>' +
-        '<label>' + T('Роль') + '<input type="text" data-rv="role" placeholder="' + T('методист, преподаватель, носитель…') + '" value="' + esc(v.role) + '"></label>' +
-        '<label>' + T('Что проверяли') + '<input type="text" data-rv="scope" placeholder="' + T('QRT B1 варианты 1 и 2, курс A2…') + '" value="' + esc(v.scope) + '"></label>' +
-        '<label>' + T('Браузер и устройство') + '<input type="text" data-rv="browser" placeholder="' + T('Safari на iPhone, Chrome на ноутбуке…') + '" value="' + esc(v.browser) + '"></label>' +
-      '</div></div>' +
-      '<div class="block"><span class="setlabel">' + T('Чек-лист') + ' · ' + done + ' / ' + ITEMS.length + '</span><p class="small muted">' + T('По каждому пункту одна из трёх оценок. «Есть замечания» и «Критично» открывают поле для пояснения.') + '</p>' + items + '</div>' +
-      '<div class="block"><span class="setlabel">' + T('Найденные ошибки') + '</span><p class="small muted">' + T('Каждую ошибку отдельной строкой: так их проще исправить.') + '</p>' + issues +
-        '<div class="actions"><button class="btn ghost small" data-act="rv-add">+ ' + T('Добавить ошибку') + '</button></div></div>' +
-      '<div class="block"><span class="setlabel">' + T('Дополнительные комментарии') + '</span><p class="small muted">' + T('Свободная форма: наблюдения, сомнения, идеи, сравнение с реальным экзаменом.') + '</p>' +
-        '<textarea data-rv="free" style="min-height:140px">' + esc(v.free) + '</textarea></div>' +
-      '<div class="block"><div class="actions">' +
-        (mail ? '<button class="btn" data-act="rv-mail">' + T('Отправить письмом') + '</button>' : '') +
-        (tg ? '<button class="btn secondary" data-act="rv-tg">' + T('Отправить в Telegram') + '</button>' : '') +
-        '<button class="btn ghost" data-act="rv-copy">' + T('Скопировать текстом') + '</button><span class="hint" id="rv-msg"></span></div>' +
-        '<textarea id="rv-out" class="rv-out" readonly hidden></textarea></div>';
-  }
-
-  function asText() {
-    var v = load(), L = ['Сараптама Qazaq Trainer', 'Эксперт: ' + v.name + (v.role ? ' (' + v.role + ')' : ''), 'Проверял(а): ' + v.scope, 'Браузер: ' + v.browser, ''];
-    ITEMS.forEach(function (it) { var x = v.items[it[0]] || {}; L.push('• ' + it[1] + ': ' + (x.rate ? { ok: 'норма', warn: 'есть замечания', bad: 'КРИТИЧНО' }[x.rate] : '—') + (x.comment ? ' — ' + x.comment : '')); });
-    var iss = v.issues.filter(function (i) { return i.what || i.test; });
-    if (iss.length) { L.push('', 'Ошибки:'); iss.forEach(function (i, n) { L.push((n + 1) + '. ' + [i.test, i.section, i.num ? '№' + i.num : ''].filter(Boolean).join(' · ') + ': ' + (i.what || '') + (i.fix ? ' → ' + i.fix : '')); }); }
-    if (v.free) L.push('', 'Дополнительно: ' + v.free);
-    return L.join('\n');
-  }
-  function msg(s) { var m = document.getElementById('rv-msg'); if (m) m.textContent = s; }
-  function showOut() { var o = document.getElementById('rv-out'); if (o) { o.value = asText(); o.hidden = false; o.select(); } }
-
-  KZ.registerRoute(function (p) { if (p[0] !== 'review' || (KZ.site && KZ.site.demo)) return null; return view(); });
-
-  document.addEventListener('input', function (e) {
-    var el = e.target, k = el.getAttribute && el.getAttribute('data-rv'); if (!k) return;
-    var v = load();
-    if (k.indexOf('c-') === 0) { v.items[k.slice(2)] = v.items[k.slice(2)] || {}; v.items[k.slice(2)].comment = el.value; }
-    else if (k.indexOf('i-') === 0) { var n = +el.closest('.rv-issue').getAttribute('data-i'); v.issues[n] = v.issues[n] || {}; v.issues[n][k.slice(2)] = el.value; }
-    else v[k] = el.value;
-    save();
-  });
-  document.addEventListener('change', function (e) {
-    var el = e.target; if (!(el.name && el.name.indexOf('rv-') === 0)) return;
-    var v = load(), k = el.name.slice(3); v.items[k] = v.items[k] || {}; v.items[k].rate = el.value; save();
-    var it = el.closest('.rv-item'); it.classList.remove('ok', 'warn', 'bad'); it.classList.add(el.value); if (el.value !== 'ok') it.classList.add('open');
-    it.querySelectorAll('.rv-seg label').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
-    var lbl = document.querySelector('.block .setlabel:nth-of-type(1)');
-    var done = ITEMS.filter(function (x) { return v.items[x[0]] && v.items[x[0]].rate; }).length;
-    document.querySelectorAll('.setlabel').forEach(function (s) { if (s.textContent.indexOf(T('Чек-лист')) === 0) s.textContent = T('Чек-лист') + ' · ' + done + ' / ' + ITEMS.length; });
-  });
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-act^="rv-"]'); if (!b) return;
-    var act = b.getAttribute('data-act'), v = load();
-    if (act === 'rv-more') { b.closest('.rv-item').classList.add('open'); b.closest('.rv-item').querySelector('textarea').focus(); }
-    else if (act === 'rv-add') { v.issues.push({}); save(); KZ.route(); }
-    else if (act === 'rv-rm') { v.issues.splice(+b.getAttribute('data-i'), 1); if (!v.issues.length) v.issues.push({}); save(); KZ.route(); }
-    else if (act === 'rv-copy') { showOut(); try { navigator.clipboard.writeText(asText()); msg(T('Скопировано. Отправьте текст команде любым удобным способом.')); } catch (x) { msg(T('Выделите текст ниже и скопируйте.')); } }
-    else if (act === 'rv-mail') {
-      if (!v.name) { msg(T('Укажите имя, чтобы мы могли вернуться с уточнениями.')); return; }
-      var body = asText(); if (body.length > 1800) { showOut(); msg(T('Текст длинный: письмо откроется с началом, остальное скопируйте из поля ниже.')); }
-      location.href = 'mailto:' + KZ.site.feedbackEmail + '?subject=' + encodeURIComponent('Сараптама Qazaq Trainer — ' + v.name) + '&body=' + encodeURIComponent(body.slice(0, 1800));
-    }
-    else if (act === 'rv-tg') { showOut(); try { navigator.clipboard.writeText(asText()); } catch (x) {} msg(T('Текст скопирован — вставьте его в чат.')); window.open('https://t.me/' + KZ.site.feedbackTelegram, '_blank', 'noopener'); }
-  });
 })();
 
 </script>

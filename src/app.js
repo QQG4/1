@@ -297,7 +297,7 @@
       '<div class="notice ' + (ex.verified ? 'good' : '') + '"><b class="t">' + (ex.verified ? T('Подтверждено') : T('Не подтверждено')) + '</b><p>' + esc(LK(ex, 'verifiedNote')) + '</p></div>' +
       '<section><h2>' + T('Структура теста') + '</h2><p class="sub">' + (ex.verified ? T('По официальному описанию.') : T('Рабочая гипотеза по вторичным источникам — звёздочкой помечены цифры, требующие сверки.')) + '</p>' +
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
-      (ex.mockNote ? '<p class="small muted mt">' + esc(ex.mockNote) + '</p>' : '') + '</section>' +
+      (ex.mockNote ? '<p class="small muted mt">' + esc(LK(ex, 'mockNote')) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
       (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
@@ -312,7 +312,7 @@
       var es = examSection(ex, s.type) || {};
       var r = sectionResult(t.id, s);
       var meta = es.num || ('0' + (i + 1));
-      return '<a class="stage" href="#/test/' + t.id + '/' + s.type + '"><div class="stage-num">' + meta + '</div><div><p class="stage-name">' + esc((KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[s.type], 'label')) + '</p><p class="stage-desc">' + esc(s.intro).slice(0, 140) + '…</p></div>' +
+      return '<a class="stage" href="#/test/' + t.id + '/' + s.type + '"><div class="stage-num">' + meta + '</div><div><p class="stage-name">' + esc((KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[s.type], 'label')) + '</p><p class="stage-desc">' + esc(LK(s, 'intro')).slice(0, 140) + '…</p></div>' +
         '<div class="stage-meta"><div class="stage-time">' + s.minutes + ' ' + T('мин') + '</div><div class="stage-tasks">' + esc(LK(es, 'tasks') || '') + '</div>' +
         (r ? '<div class="stage-score ' + r.cls + '">' + esc(r.label) + '</div>' : '<div class="stage-score muted">' + T('не пройден') + '</div>') + '</div></a>';
     }).join('');
@@ -374,8 +374,8 @@
     var sc = ex.scoring;
     var head = '<tr><th>' + T('Блок') + '</th><th>' + T('Макс.') + '</th>' + sc.levels.map(function (l, i) { return '<th>' + l + '<br><span class="muted">' + sc.pct[i] + ' %</span></th>'; }).join('') + '</tr>';
     var rows = sc.blocks.map(function (b) { return '<tr><td>' + esc(b.title) + '</td><td>' + b.max + '</td>' + b.min.map(function (m) { return '<td>' + m + '</td>'; }).join('') + '</tr>'; }).join('');
-    return '<section><h2>' + T('Баллы и пороги уровней') + '</h2><p class="sub">' + esc(sc.note) + '</p><div class="tablewrap"><table class="scoring"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>' +
-      (ex.certificateNote ? '<p class="small muted mt">' + esc(ex.certificateNote) + '</p>' : '') + '</section>';
+    return '<section><h2>' + T('Баллы и пороги уровней') + '</h2><p class="sub">' + esc(LK(sc, 'note')) + '</p><div class="tablewrap"><table class="scoring"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>' +
+      (ex.certificateNote ? '<p class="small muted mt">' + esc(LK(ex, 'certificateNote')) + '</p>' : '') + '</section>';
   }
   function timerBar(sec, extra) {
     return '<div class="timerbar"><span class="lbl">' + esc(LK(KZ.sectionTypes[sec.type], 'label')) + ' · ' + T('лимит') + ' ' + sec.minutes + ' ' + T('мин') + '</span><div class="right">' + (extra || '') + '<span id="clock" class="clock">' + mmss(sec.minutes * 60) + '</span></div></div>';
@@ -403,7 +403,7 @@
   function runQuiz(t, sec, es) {
     var body = '';
     if (sec.passage) {
-      body += '<div class="block"><div class="passage-title">Мәтін · ' + esc(sec.passage.title) + '</div><div class="passage">' + sec.passage.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div><p class="script-note">' + esc(sec.passage.note || '') + '</p></div>';
+      body += '<div class="block"><div class="passage-title">Мәтін · ' + esc(sec.passage.title) + '</div><div class="passage">' + sec.passage.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div></div>';  // passage.note — служебная пометка о калибровке, в интерфейс не выводится
     }
     body += '<div class="block"><span class="setlabel">' + T('Задания') + '</span>' + renderQuestions(sec, run.answers, false) +
       '<div class="actions"><button class="btn" data-act="submit">' + T('Зафиксировать ответы') + '</button><span class="hint" id="submit-msg"></span></div></div>';
@@ -459,7 +459,14 @@
     a.onended = finish;
     a.onpause = function () { if (!finished && a.duration && a.currentTime >= a.duration - 0.75) finish(); };
     a.onerror = function () { run.playing = false; var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Не удалось воспроизвести аудио.'); btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); };
-    var pr = a.play(); if (pr && pr.catch) pr.catch(function (e) { run.playing = false; btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Браузер заблокировал воспроизведение:') + ' ' + (e && e.name ? e.name : e); });
+    var pr = a.play(); if (pr && pr.catch) pr.catch(function (e) {
+      run.playing = false; btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести');
+      if (!run.audioRetried) { // вторая попытка с абсолютным адресом и явной загрузкой (Safari иногда отвечает NotSupportedError на первый play())
+        run.audioRetried = true; try { a.src = new URL(a.getAttribute('src'), location.href).href; a.load(); } catch (x) {}
+        setTimeout(function () { playAudio(t, sec, btn); }, 400); return;
+      }
+      var m = document.getElementById('tts-msg'); if (m) m.innerHTML = esc(T('Браузер заблокировал воспроизведение:') + ' ' + (e && e.name ? e.name : e)) + ' <a href="' + esc(a.currentSrc || a.src) + '" target="_blank" rel="noopener">' + T('Открыть аудио отдельной вкладкой') + '</a>';
+    });
   }
   function playScript(t, sec) {
     var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
@@ -552,7 +559,7 @@
     var set = sec.sets.filter(function (s) { return s.id === run.setId; })[0];
     var totalF = sec.answerFrame.reduce(function (a, f) { return a + f.seconds; }, 0);
     if (run.sub !== 'check') {
-      var bar = '<div class="timebar">' + sec.answerFrame.map(function (f) { return '<span style="flex:' + f.seconds + '">~' + f.seconds + T('с') + '</span>'; }).join('') + '</div><div class="timebar-labels">' + sec.answerFrame.map(function (f) { return '<span>' + esc(f.label) + '</span>'; }).join('') + '</div>';
+      var bar = '<div class="timebar">' + sec.answerFrame.map(function (f) { return '<span style="flex:' + f.seconds + '">~' + f.seconds + T('с') + '</span>'; }).join('') + '</div><div class="timebar-labels">' + sec.answerFrame.map(function (f) { return '<span>' + esc(LK(f, 'label')) + '</span>'; }).join('') + '</div>';
       body = micNotice() + '<div class="block"><span class="setlabel">' + esc(LK(set, 'title')) + '</span><p class="small muted">' + T('Каркас одного ответа (') + mmss(totalF) + '):</p>' + bar +
         '<div class="mt">' + set.questions.map(function (q, i) {
           return '<div class="sq' + (run.qdone[i] ? ' done' : '') + '" id="sq' + i + '"><p class="qt"><span class="qn">' + (i + 1) + '.</span>' + esc(q) + '</p><div class="row">' +
@@ -581,7 +588,7 @@
       if (!c) { clearInterval(qTimer); return; }
       c.textContent = mmss(e); c.className = 'clock' + (e > total ? ' over' : '');
       var acc = 0, label = T('время вышло');
-      for (var k = 0; k < frames.length; k++) { acc += frames[k].seconds; if (e < acc) { label = frames[k].label; break; } }
+      for (var k = 0; k < frames.length; k++) { acc += frames[k].seconds; if (e < acc) { label = LK(frames[k], 'label'); break; } }
       p.textContent = '→ ' + label;
       run.qElapsed = e;
     }, 250);

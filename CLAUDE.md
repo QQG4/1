@@ -22,6 +22,16 @@
   у демо `robots: noindex` (дублирует тесты сайта). Адрес везде берётся из `siteUrl` — при смене домена править только `site.js`.
   Картинку превью и иконки рисует `python3 tools/make_og.py` (PIL, системные Georgia/Arial) → `docs/og.png`, `docs/favicon.svg`,
   `docs/apple-touch-icon.png`; перезапускать только при смене названия или подписи. `docs/robots.txt` и `docs/sitemap.xml` пишет build.py.
+- Статистика (`KZ.track(name, props)` и `trackPage(path)` в app.js): работает только в публичной сборке (`build === 'site'`),
+  чтобы лаборатория и локальные прогоны не пачкали цифры. Два необязательных приёмника: `KZ.site.eventsUrl` (свой
+  Worker, `tools/events-worker/`) и счётчик из `analyticsSnippet` (GoatCounter / Umami / Plausible — что подключено).
+  Тело маяка отправляется с типом `text/plain` **намеренно**: с `application/json` браузер делает предварительный запрос
+  CORS, а `sendBeacon` уходит с credentials и ответ с `*` не принимает — события молча теряются (проверено 15.09.2026).
+  События: `pageview`, `section-start`, `section-done` (единая точка — `setSection` при `status:'done'`), `test-done`,
+  `answers` (разбор по вопросам, только на свой endpoint), `audio-play`, `lang`, `setting`. В `answers` индекс выбранного
+  варианта приводится к порядку исходного файла теста через `q._perm` (на экране варианты перемешаны). Персональных
+  данных нет: `sid` случайный и живёт до закрытия вкладки. Пока оба приёмника пусты, не отправляется ничего, а строка
+  о статистике в подвале не показывается.
 - Локальный просмотр в Claude Code: `.claude/launch.json` (профиль `qazaq-trainer` → `python3 serve.py`, порт 8765).
 - Локализация интерфейса: `src/i18n.js` — `T('русский текст')` возвращает казахский перевод из словаря `KZ.i18n.kk`
   (ключ = русская строка), `LK(obj,'field')` берёт `field_kk` из данных (exams.js: `label_kk`, `name_kk`, `units_kk`,

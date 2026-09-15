@@ -11,6 +11,54 @@
   'use strict';
   var T = KZ.T, LK = KZ.LK;
 
+  /* ---------------- статистика ----------------
+     KZ.track(name, props) и trackPage(path) — единственная точка отправки. Работает только в публичной сборке
+     (KZ.site.build === 'site'), чтобы лаборатория и локальные прогоны не пачкали цифры.
+     Персональных данных не отправляем: идентификатор сессии случайный, живёт до закрытия вкладки и никуда не привязан.
+     Два приёмника, оба необязательные: KZ.site.eventsUrl (свой endpoint — POST JSON, шлём sendBeacon,
+     чтобы уход со страницы не терял событие) и счётчик из analyticsSnippet (GoatCounter / Umami / Plausible —
+     что подключено, то и используется). Не настроено ничего → все вызовы молча ничего не делают. */
+  var TRACK_ON = !!(KZ.site && KZ.site.build === 'site');
+  var SID = (function () {
+    if (!TRACK_ON) return '';
+    try {
+      var k = 'kz-trainer:sid', v = sessionStorage.getItem(k);
+      if (!v) { v = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); sessionStorage.setItem(k, v); }
+      return v;
+    } catch (e) { return 'nostore'; }
+  })();
+  function sendEvent(name, props) {
+    var url = KZ.site && KZ.site.eventsUrl; if (!url) return;
+    var body = JSON.stringify({ e: name, sid: SID, lang: KZ.lang, ts: Date.now(), p: props || {} });
+    /* тип тела — text/plain намеренно: это один из типов, не требующих предварительного запроса CORS.
+       С application/json браузер шлёт preflight, а sendBeacon уходит с credentials, и ответ с '*' он не принимает —
+       событие молча теряется. Приёмник разбирает тело как JSON независимо от заголовка. */
+    try {
+      if (navigator.sendBeacon) navigator.sendBeacon(url, new Blob([body], { type: 'text/plain;charset=UTF-8' }));
+      else fetch(url, { method: 'POST', body: body, keepalive: true, headers: { 'Content-Type': 'text/plain;charset=UTF-8' } });
+    } catch (e) {}
+  }
+  function track(name, props) {
+    if (!TRACK_ON) return;
+    sendEvent(name, props);
+    try {
+      if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'event/' + name, title: name, event: true });
+      else if (window.umami && window.umami.track) window.umami.track(name, props || {});
+      else if (window.plausible) window.plausible(name, { props: props || {} });
+    } catch (e) {}
+  }
+  var lastPage = null;
+  function trackPage(path) {
+    if (!TRACK_ON || path === lastPage) return;
+    lastPage = path;
+    sendEvent('pageview', { path: path });
+    try {
+      if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: '/' + path });
+      else if (window.plausible) window.plausible('pageview', { u: location.origin + location.pathname + '#/' + path });
+    } catch (e) {}   // Umami считает переходы по history сам
+  }
+  KZ.track = track;
+
   /* ---------------- store ---------------- */
   var STORE_KEY = (KZ.site && KZ.site.build === 'lab') ? 'kz-trainer:lab:v1' : 'kz-trainer:v1'; // лаборатория хранит прогресс отдельно от сайта
   function loadState() {
@@ -48,7 +96,19 @@
     t.sections[type] = Object.assign({}, t.sections[type] || {}, data);
     t.updatedAt = Date.now();
     saveState();
+    if (data && data.status === 'done') {   // завершение любого раздела — единая точка учёта
+      var r = t.sections[type], tt = findTest(testId);
+      track('section-done', {
+        test: testId, exam: tt && tt.exam, level: tt && tt.level, section: type,
+        pct: r.total ? Math.round(100 * r.score / r.total) : null,
+        seconds: r.secondsUsed || 0, practice: !!r.practice, timedOut: !!(run && run.timedOut),
+        self: type === 'writing' || type === 'speaking'
+      });
+      var v = tt && verdict(tt);
+      if (v && v.all && !doneFired[testId]) { doneFired[testId] = 1; track('test-done', { test: testId, exam: tt.exam, level: tt.level, pass: v.pass }); }
+    }
   }
+  var doneFired = {};
   function clearSection(testId, type) { var t = tp(testId); delete t.sections[type]; saveState(); }
 
   /* ---------------- настройки интерфейса: язык, размер текста, шрифт, подсказки, транскрипт ---------------- */
@@ -216,6 +276,7 @@
     var perm = seededPerm(q.options.length, seedOf(key));
     q.options = perm.map(function (i) { return q.options[i]; });
     q.answer = perm.indexOf(q.answer); q._shuffled = true;
+    q._perm = perm;   // позиция на экране → индекс в исходных данных теста (нужно статистике по дистракторам)
   }
   KZ.shuffleQuestion = shuffleQuestion;
   KZ.tests.forEach(function (t) { t.sections.forEach(function (sec) { (sec.questions || []).forEach(function (q) { shuffleQuestion(q, t.id + '/' + sec.type + '/' + q.id); }); }); });
@@ -271,6 +332,7 @@
     else window.scrollTo(0, 0);
     if (run && run.afterRender) run.afterRender();
     fillRecSlots();
+    trackPage(h || '');
   }
   window.addEventListener('hashchange', function () { if (location.hash === '#main') return; route(); });
   /* ссылка «К содержимому»: фокус на начало контента без смены маршрута (иначе роутер перерисовал бы хаб и сбросил раздел) */
@@ -329,7 +391,7 @@
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
       '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
       '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-level">' + lv + '</div><div class="rung-name">' + esc(LK(L, 'name')) + '</div><div class="rung-units">' + esc(LK(L, 'units')) + '</div><div class="rung-focus">' + esc(LK(L, 'focus')) + '</div></div>'; }).join('') + '</div></section>' +
-      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + '</footer>';
+      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных — ответы нужны, чтобы находить неудачные вопросы и чинить их.') + '</p>' : '') + '</footer>';
   }
   function courseCards() {
     if (!KZ.courses) return '';
@@ -576,6 +638,12 @@
     if (missing && !run.confirmSkip) { run.confirmSkip = true; if (msg) msg.textContent = T('Без ответа:') + ' ' + missing + '. ' + T('Нажмите ещё раз, чтобы зафиксировать как есть.'); return; }
     var score = 0; sec.questions.forEach(function (q) { if (run.answers[q.id] === q.answer) score++; });
     setSection(t.id, sec.type, { status: 'done', score: score, total: sec.questions.length, answers: run.answers, secondsUsed: Math.round(elapsed()), finishedAt: Date.now(), practice: !!ui.practice, startedAt: undefined });
+    /* подробность по вопросам — ради неё всё и затевалось: видно, какой дистрактор выбирают и какой не выбирает никто */
+    sendEvent('answers', { test: t.id, section: sec.type, level: t.level, exam: t.exam,
+      q: sec.questions.map(function (q) {
+        var a = run.answers[q.id];
+        return { id: q.id, a: a == null ? -1 : (q._perm ? q._perm[a] : a), ok: a === q.answer ? 1 : 0 };   // a — индекс в исходных данных, не на экране
+      }) });
     run.phase = 'review'; route();
   }
 
@@ -981,9 +1049,9 @@
     if (t) t.sections.forEach(function (s) { if (s.type === run.type) sec = s; });
 
     if (act === 'go') { e.preventDefault(); location.hash = b.getAttribute('data-href'); return; }
-    if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); saveUi(); route(); return; }
+    if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); track('lang', { to: KZ.lang }); saveUi(); route(); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
-    else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
+    else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
     if (act === 'io') { var p = document.getElementById('io-panel'); p.hidden = !p.hidden; }
     else if (act === 'io-copy') {
       var ta = document.getElementById('io-text'), im = document.getElementById('io-msg');
@@ -994,9 +1062,9 @@
     else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s || typeof s !== 'object' || typeof s.tests !== 'object' || Array.isArray(s.tests)) throw 0; var nT = Object.keys(s.tests).length, nC = s.course ? Object.keys(s.course).length : 0; if (!confirm(T('Заменить текущий прогресс импортированным?') + ' (' + T('тестов') + ': ' + nT + ', ' + T('курсов') + ': ' + nC + ')')) return; state = cleanState(s); saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
     else if (act === 'io-reset') { if (confirm(T('Удалить весь сохранённый прогресс?'))) { state = { version: 1, tests: {} }; saveState(); route(); } }
     else if (act === 'reset-test') { if (confirm(T('Сбросить результаты этого теста?'))) { delete state.tests[b.getAttribute('data-test')]; saveState(); route(); } }
-    else if (act === 'start') { run.phase = 'run'; route(); }
+    else if (act === 'start') { run.phase = 'run'; track('section-start', { test: t.id, exam: t.exam, level: t.level, section: sec.type, practice: !!ui.practice }); route(); }
     else if (act === 'tts') { playScript(t, sec); }
-    else if (act === 'au-play') { playAudio(t, sec, b); }
+    else if (act === 'au-play') { track('audio-play', { test: t.id, section: sec.type, n: (run.playsUsed || 0) + 1 }); playAudio(t, sec, b); }
     else if (act === 'tts-stop') { stopSpeak(); run.playing = false; run.playsUsed++; route(); }
     else if (act === 'tts-pause') { if (window.speechSynthesis) { if (speechSynthesis.paused) { speechSynthesis.resume(); b.textContent = '⏸ ' + T('Пауза'); } else { speechSynthesis.pause(); b.textContent = '▶ ' + T('Продолжить'); } } }
     else if (act === 'au-pause') { var au = document.getElementById('au'); if (au) { if (au.paused) { au.play(); b.textContent = '⏸ ' + T('Пауза'); } else { au.pause(); b.textContent = '▶ ' + T('Продолжить'); } } }

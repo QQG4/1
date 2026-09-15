@@ -1,0 +1,8 @@
+name = "qazaq-trainer-stats"
+main = "worker.js"
+compatibility_date = "2026-09-15"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "qazaq-trainer-stats"
+database_id = "ЗАПОЛНИТЬ_ПОСЛЕ_СОЗДАНИЯ_БАЗЫ"

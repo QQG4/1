@@ -9,5 +9,10 @@
   "assets": {
     "directory": "docs",
     "not_found_handling": "single-page-application"
-  }
+  },
+  // свой домен: DNS-записи Cloudflare создаёт сам при деплое, сертификат выпускает тоже сам
+  "routes": [
+    { "pattern": "qazaqtrainer.com", "custom_domain": true },
+    { "pattern": "www.qazaqtrainer.com", "custom_domain": true }
+  ]
 }

@@ -6,5 +6,5 @@ KZ.site = {
   // приёмник событий (Cloudflare Worker, tools/events-worker): «начал раздел», «завершил раздел», разбор по вопросам;
   // пусто → не отправляется ничего. При смене адреса сайта добавить новый домен в ALLOWED в worker.js и задеплоить заново.
   eventsUrl: 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev',
-  siteUrl: 'https://qqg4.github.io/1/'   // адрес опубликованного сайта (canonical, og:image, ссылка «открыть отдельной вкладкой»)
+  siteUrl: 'https://qazaqtrainer.com/'   // адрес опубликованного сайта (canonical, og:image, ссылка «открыть отдельной вкладкой»)
 };

@@ -12,7 +12,7 @@
   var T = KZ.T, LK = KZ.LK;
 
   /* ---------------- store ---------------- */
-  var STORE_KEY = (KZ.site && KZ.site.demo) ? 'kz-trainer:demo:v1' : 'kz-trainer:v1'; // демо хранит прогресс отдельно от сайта (общий origin)
+  var STORE_KEY = (KZ.site && KZ.site.build === 'lab') ? 'kz-trainer:lab:v1' : 'kz-trainer:v1'; // лаборатория хранит прогресс отдельно от сайта
   function loadState() {
     try { var s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.tests) return s; } catch (e) {}
     return { version: 1, tests: {} };
@@ -367,7 +367,7 @@
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(LK(ex, 'mockNote')) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
-      (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ((KZ.lang === 'kk' && ex.unverified_kk) || ex.unverified).map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
+      ('<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ((KZ.lang === 'kk' && ex.unverified_kk) || ex.unverified).map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
       '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
   }

@@ -5,11 +5,16 @@
 
 ## Стек
 - Чистый HTML/CSS/JS, без фреймворков и без node (на машине его нет).
-- Исходники в `src/`, сборка `python3 build.py` → `docs/index.html` + `docs/audio/*.mp3` (сайт, GitHub Pages публикует
-  папку `docs/` ветки main), `docs/demo/index.html` (демо для показа клиентам: только мок-тесты, без курса — данные курса
-  не включаются, `KZ.site.demo = true` скрывает блок «что официально не опубликовано»; адрес `<siteUrl>demo/`, аудио общее `../audio/`;
-  локально http://localhost:8765/demo/), `dist/index.html` (всё одним файлом, открывать локально) и `dist/artifact.html`
-  (Artifact той же ссылкой; аудио data-URI, потому что внешние файлы в артефакте запрещены). `dist/` не в git.
+- Исходники в `src/`, сборка `python3 build.py` → три площадки (решение пользователя 15.09.2026):
+  - `docs/index.html` + `docs/audio/*.mp3` — **публичный сайт** (GitHub Pages публикует папку `docs/` ветки main):
+    только бесплатные мок-тесты, без курса и без платного материала. Старый адрес `<siteUrl>demo/` оставлен как редирект на главную.
+  - `lab-site/index.html` — **лаборатория**: тесты + курс + `src/data/paid/*.js`, `noindex`, свой ключ прогресса
+    `kz-trainer:lab:v1`. Это рабочая копия приватного репозитория (Cloudflare Pages + Access), в публичный git не входит.
+  - `dist/index.html` (всё одним файлом, открывать локально) и `dist/artifact.html` (Artifact той же ссылкой; аудио data-URI,
+    потому что внешние файлы в артефакте запрещены). `dist/` не в git.
+- Режим сборки виден приложению как `KZ.site.build` = `site` | `lab` | `inline`.
+- **Платный материал вне публичного git**: `src/data/course/`, `src/data/paid/`, `lab-site/` в `.gitignore`. Курс на диске лежит
+  там же, где раньше, и собирается `база/scripts/build_app_data.py`, но в публичный репозиторий и в публичную сборку не попадает.
 - Локальный сервер `serve.py` отдаёт `docs/`; после пересборки открывать с `?v=N`.
 - Настройки сайта — `src/data/site.js` (`KZ.site`: `feedbackTelegram`, `analyticsSnippet`, `siteUrl`); пустые значения выключают кнопки.
 - `<head>` собирает `head(mode)` в build.py: `<title>`/описание своё у сайта и у демо (словари `TITLES`/`DESCS`), `canonical`,

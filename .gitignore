@@ -7,3 +7,8 @@ audio/*-trial.mp3
 audio/*-t[0-9].mp3
 audio/*-google*.mp3
 __pycache__/
+
+# Платный материал и лаборатория — вне публичного репозитория (build.py собирает их в lab-site/)
+src/data/course/
+src/data/paid/
+lab-site/

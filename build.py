@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Собирает src/ в четыре файла:
-   docs/index.html    — сайт (GitHub Pages публикует папку docs/): аудио — отдельные файлы docs/audio/*.mp3
-   docs/demo/index.html — демо для показа клиентам: только мок-тесты, без курса (данные курса не включаются, KZ.site.demo = true),
-                        аудио — те же файлы ../audio/*.mp3; адрес <siteUrl>demo/
-   dist/index.html    — то же одним файлом (аудио data-URI), открывается локально без сервера
-   dist/artifact.html — тело без <html>/<head>, для публикации как Artifact (аудио data-URI: внешние файлы в артефакте запрещены)
+"""Собирает src/ в три площадки:
+   docs/index.html    — ПУБЛИЧНЫЙ САЙТ (GitHub Pages, папка docs/): только бесплатные мок-тесты, без курса
+                        и без платного материала; аудио — отдельные файлы docs/audio/*.mp3
+   lab-site/index.html — ЛАБОРАТОРИЯ (приватный репозиторий + Cloudflare Pages, доступ по списку почт через Access):
+                        тесты + курс + платный материал (src/data/paid/*.js), noindex, свой ключ прогресса.
+                        Папка lab-site/ в публичный репозиторий не входит — это рабочая копия приватного репозитория.
+   dist/index.html    — всё одним файлом (аудио data-URI), открывается локально без сервера
+   dist/artifact.html — тело без <html>/<head>, для публикации как Artifact (внешние файлы в артефакте запрещены)
 Источники литературы берутся из ../база/sources.json → KZ.sources (страница #/sources).
+Курс и платные данные лежат вне git публичного репозитория (см. .gitignore): материал, за который планируем брать деньги,
+не должен попадать ни в публичную сборку, ни в историю публичного репозитория.
 """
 import pathlib, glob, json, base64, shutil
 root = pathlib.Path(__file__).parent
@@ -17,6 +21,7 @@ def read(p): return pathlib.Path(p).read_text(encoding='utf-8')
 data = [read(src / 'data' / 'exams.js'), read(src / 'data' / 'site.js')]
 for f in sorted(glob.glob(str(src / 'data' / 'tests' / '*.js'))): data.append(read(f))
 course_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'course' / '*.js')))]
+paid_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'paid' / '*.js')))]   # платные моки и прочее «в разработке» — только лаборатория
 
 # источники литературы
 srcs = root.parent / 'база' / 'sources.json'
@@ -32,7 +37,7 @@ def audio_js(mode):
     for tid, m in manifest.items():
         mp3 = root / 'audio' / (tid + '.mp3')
         if not mp3.exists(): continue
-        srcv = ('audio/' if mode == 'site' else '../audio/') + tid + '.mp3' if mode in ('site', 'demo') else 'data:audio/mpeg;base64,' + base64.b64encode(mp3.read_bytes()).decode()
+        srcv = 'audio/' + tid + '.mp3' if mode in ('site', 'lab') else 'data:audio/mpeg;base64,' + base64.b64encode(mp3.read_bytes()).decode()
         bundle[tid] = {'src': srcv, 'voices': m['voices'], 'seconds': m['seconds']}
     return 'KZ.audio = ' + json.dumps(bundle, ensure_ascii=False) + ';'
 
@@ -44,17 +49,19 @@ for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl')):
 
 app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
 def body(mode):
-    extra = ['KZ.site.demo = true;'] if mode == 'demo' else course_data
-    return tpl.replace('/*STYLES*/', css).replace('/*DATA*/', '\n'.join(data + extra + [audio_js(mode)])).replace('/*APP*/', app)
+    # публичный сайт — только тесты; лаборатория и локальная сборка — плюс курс и платный материал
+    extra = [] if mode == 'site' else course_data + (paid_data if mode == 'lab' else [])
+    flag = ["KZ.site.build = '" + mode + "';"]
+    return tpl.replace('/*STYLES*/', css).replace('/*DATA*/', '\n'.join(data + flag + extra + [audio_js(mode)])).replace('/*APP*/', app)
 SITE_NAME = 'Qazaq Trainer'
 TITLES = {
     'site': 'Qazaq Trainer — мок-тесты ҚАЗТЕСТ и QazResmiTest',
-    'demo': 'Qazaq Trainer — демо: мок-тесты ҚАЗТЕСТ и QazResmiTest',
+    'lab': 'Qazaq Trainer · лаборатория',
     'inline': 'Qazaq Trainer',
 }
 DESCS = {
     'site': 'Бесплатные мок-тесты ҚАЗТЕСТ и QazResmiTest по уровням A1–C2: аудирование с озвучкой, чтение, письмо и говорение с таймером, как на экзамене. Без регистрации.',
-    'demo': 'Демо-версия: мок-тесты ҚАЗТЕСТ и QazResmiTest по уровням A1–C2 с аудированием, письмом и говорением.',
+    'lab': 'Внутренняя сборка: мок-тесты, курс по уровням и материал в разработке. Не для публикации.',
     'inline': 'Qazaq Trainer — тренажёр для подготовки к ҚАЗТЕСТ и QazResmiTest: мок-тесты по уровням, курс лексики и грамматики',
 }
 
@@ -63,17 +70,16 @@ def head(mode, extra_head=''):
        иконки. Адрес берётся из KZ.site.siteUrl — при смене домена править только src/data/site.js."""
     base = (site_cfg.get('url') or '').strip()
     if base and not base.endswith('/'): base += '/'
-    page = base + ('demo/' if mode == 'demo' else '')
-    ico = '../' if mode == 'demo' else ''
+    page = base
     h = ('<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
          '<title>' + TITLES[mode] + '</title>'
          '<meta name="description" content="' + DESCS[mode] + '">'
          '<meta name="theme-color" content="#0e6e86">')
-    if mode in ('site', 'demo'):
-        h += ('<link rel="icon" href="' + ico + 'favicon.svg" type="image/svg+xml">'
-              '<link rel="apple-touch-icon" href="' + ico + 'apple-touch-icon.png">')
-        if mode == 'demo': h += '<meta name="robots" content="noindex,follow">'   # демо дублирует тесты сайта — в поиск не пускаем
-        if base:
+    if mode in ('site', 'lab'):
+        h += ('<link rel="icon" href="favicon.svg" type="image/svg+xml">'
+              '<link rel="apple-touch-icon" href="apple-touch-icon.png">')
+        if mode == 'lab': h += '<meta name="robots" content="noindex,nofollow">'   # лаборатория в поиск не попадает ни при каких условиях
+        if base and mode == 'site':
             h += ('<link rel="canonical" href="' + page + '">'
                   '<meta property="og:type" content="website"><meta property="og:site_name" content="' + SITE_NAME + '">'
                   '<meta property="og:locale" content="ru_RU">'
@@ -92,25 +98,43 @@ def full(mode, extra_head=''):
 (root / 'dist').mkdir(exist_ok=True)
 (root / 'dist' / 'artifact.html').write_text(body('inline'), encoding='utf-8')
 (root / 'dist' / 'index.html').write_text(full('inline'), encoding='utf-8')
+
+def put_audio(dest):
+    dest.mkdir(parents=True, exist_ok=True)
+    for tid in manifest:
+        mp3 = root / 'audio' / (tid + '.mp3')
+        if mp3.exists(): shutil.copyfile(mp3, dest / (tid + '.mp3'))
+
+# ---- публичный сайт ----
 docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
 (docs / 'review').mkdir(exist_ok=True)
 shutil.copyfile(src / 'review' / 'index.html', docs / 'review' / 'index.html')  # анкета эксперта — отдельная статическая страница <siteUrl>review/
-(docs / 'demo').mkdir(exist_ok=True)
-(docs / 'demo' / 'index.html').write_text(full('demo', site_cfg['analytics']), encoding='utf-8')
-# robots.txt и sitemap.xml: демо закрыто от индексации, в карту сайта — только главная и анкета эксперта
 _base = (site_cfg.get('url') or '').strip()
 if _base and not _base.endswith('/'): _base += '/'
+# бывшее демо для клиентов: публичный сайт теперь сам показывает только мок-тесты, поэтому старые ссылки уводим на главную
+(docs / 'demo').mkdir(exist_ok=True)
+(docs / 'demo' / 'index.html').write_text(
+    '<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Qazaq Trainer</title>'
+    '<meta http-equiv="refresh" content="0; url=' + (_base or '../') + '">'
+    '<p>Демо переехало на <a href="' + (_base or '../') + '">главную страницу сайта</a>.</p>', encoding='utf-8')
 if _base:
     (docs / 'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /demo/\nSitemap: ' + _base + 'sitemap.xml\n', encoding='utf-8')
     import datetime
     _d = datetime.date.today().isoformat()
     _urls = ''.join('<url><loc>%s</loc><lastmod>%s</lastmod></url>' % (_base + u, _d) for u in ('', 'review/'))
     (docs / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + _urls + '</urlset>\n', encoding='utf-8')
+put_audio(docs / 'audio')
 
-(docs / 'audio').mkdir(exist_ok=True)
-for tid in manifest:
-    mp3 = root / 'audio' / (tid + '.mp3')
-    if mp3.exists(): shutil.copyfile(mp3, docs / 'audio' / (tid + '.mp3'))
-print('built: docs/index.html (%d KB, сайт), docs/demo/index.html (%d KB, демо без курса), dist/index.html (%d KB), dist/artifact.html' % ((docs / 'index.html').stat().st_size // 1024, (docs / 'demo' / 'index.html').stat().st_size // 1024, (root / 'dist' / 'index.html').stat().st_size // 1024))
+# ---- лаборатория (рабочая копия приватного репозитория) ----
+lab = root / 'lab-site'; lab.mkdir(exist_ok=True)
+(lab / 'index.html').write_text(full('lab'), encoding='utf-8')
+(lab / 'robots.txt').write_text('User-agent: *\nDisallow: /\n', encoding='utf-8')
+for ico in ('favicon.svg', 'apple-touch-icon.png'):
+    if (docs / ico).exists(): shutil.copyfile(docs / ico, lab / ico)
+put_audio(lab / 'audio')
+
+kb = lambda p: p.stat().st_size // 1024
+print('built: docs/index.html (%d KB, сайт — только мок-тесты), lab-site/index.html (%d KB, лаборатория: +курс%s), dist/index.html (%d KB), dist/artifact.html'
+      % (kb(docs / 'index.html'), kb(lab / 'index.html'), ' +платное' if paid_data else '', kb(root / 'dist' / 'index.html')))

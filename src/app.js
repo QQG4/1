@@ -354,8 +354,26 @@
     });
     return '<div class="crumbs">' + out.join('') + '</div>';
   }
+  /* Обратная связь: кнопка в углу на каждой странице. Свободный текст — на случай, когда дело не в конкретном
+     вопросе: съехала вёрстка, не играет аудио, опечатка в диалоге, предложение. Вместе с текстом уходит адрес
+     страницы и строка браузера — без них «у меня не открывается» невозможно разобрать. */
+  var fbCtx = null;   // если форму открыли из жалобы на вопрос — сюда кладётся его контекст
+  function feedbackWidget() {
+    if (!(KZ.site && KZ.site.eventsUrl)) return '';
+    return '<div class="fb" id="fb">' +
+      '<button class="btn small fb-tab" data-act="fb-open">' + T('Сообщить об ошибке') + '</button>' +
+      '<div class="fb-panel" hidden>' +
+        '<div class="row spread"><b>' + T('Ошибка или предложение') + '</b>' +
+        '<button class="btn ghost small" data-act="fb-close" aria-label="' + T('Закрыть') + '">✕</button></div>' +
+        '<p class="small muted" id="fb-ctx"></p>' +
+        '<textarea id="fb-text" rows="4" placeholder="' + T('Что не так или что улучшить? Чем конкретнее, тем быстрее починим.') + '"></textarea>' +
+        '<div class="actions"><button class="btn small" data-act="fb-send">' + T('Отправить') + '</button>' +
+        '<span class="hint" id="fb-msg" role="status"></span></div>' +
+        '<p class="small muted">' + T('Отправляется текст, адрес страницы и название браузера. Имени и почты не спрашиваем — ответить не сможем, но прочитаем всё.') + '</p>' +
+      '</div></div>';
+  }
   function topbar(items, right) {
-    return '<a class="skip" href="#main">' + T('К содержимому') + '</a><div class="topbar"><nav aria-label="' + T('Навигация') + '">' + crumbs(items) + '</nav><div class="row">' + (right || '') + uiButtons() + '</div></div>' + uiPanel() + '<div id="main"></div>';
+    return '<a class="skip" href="#main">' + T('К содержимому') + '</a><div class="topbar"><nav aria-label="' + T('Навигация') + '">' + crumbs(items) + '</nav><div class="row">' + (right || '') + uiButtons() + '</div></div>' + uiPanel() + feedbackWidget() + '<div id="main"></div>';
   }
 
   /* ---------------- views: hub ---------------- */
@@ -1066,9 +1084,37 @@
     var t = run && findTest(run.testId), sec = null;
     if (t) t.sections.forEach(function (s) { if (s.type === run.type) sec = s; });
 
+    if (act === 'fb-open' || act === 'fb-close') {
+      var fb = document.getElementById('fb'); if (!fb) return;
+      var panel = fb.querySelector('.fb-panel'), tab = fb.querySelector('.fb-tab'), open = act === 'fb-open';
+      panel.hidden = !open; tab.hidden = open;
+      if (open) {
+        var c = document.getElementById('fb-ctx');
+        if (c) c.textContent = fbCtx ? T('Вопрос:') + ' ' + fbCtx.test + ' · ' + fbCtx.section + ' · ' + fbCtx.qid : '';
+        var ta = document.getElementById('fb-text'); if (ta) ta.focus();
+      } else fbCtx = null;
+      return;
+    }
+    if (act === 'fb-send') {
+      var ta2 = document.getElementById('fb-text'), msg = document.getElementById('fb-msg');
+      var txt = (ta2 && ta2.value || '').trim();
+      if (txt.length < 5) { if (msg) msg.textContent = T('Напишите хотя бы пару слов.'); return; }
+      sendEvent('feedback', { text: txt.slice(0, 1000), path: location.hash.replace(/^#\/?/, ''), ua: navigator.userAgent,
+        test: fbCtx && fbCtx.test, section: fbCtx && fbCtx.section, qid: fbCtx && fbCtx.qid });
+      fbCtx = null;
+      var panel2 = document.getElementById('fb').querySelector('.fb-panel');
+      panel2.innerHTML = '<p role="status"><b>' + T('Спасибо — прочитаем.') + '</b></p>' +
+        '<div class="actions"><button class="btn ghost small" data-act="fb-close">' + T('Закрыть') + '</button></div>';
+      return;
+    }
     if (act === 'report-open') { var box = b.closest('.report'); if (box) { b.hidden = true; var w = box.querySelector('.rep-why'); if (w) w.hidden = false; } return; }
     if (act === 'report-send') {
       var box2 = b.closest('.report'); if (!box2) return;
+      if (b.getAttribute('data-why') === 'other') {   // «Другое» — просим написать словами, иначе жалоба бесполезна
+        fbCtx = { test: box2.getAttribute('data-test'), section: box2.getAttribute('data-section'), qid: box2.getAttribute('data-qid') };
+        var ob = document.querySelector('.fb-tab'); if (ob) ob.click();
+        return;
+      }
       sendEvent('report', { test: box2.getAttribute('data-test'), section: box2.getAttribute('data-section'), qid: box2.getAttribute('data-qid'),
         why: b.getAttribute('data-why'), a: +box2.getAttribute('data-a'), ok: +box2.getAttribute('data-ok') });
       box2.innerHTML = '<span class="small good-text" role="status">' + T('Спасибо — отметили, проверим этот вопрос.') + '</span>';

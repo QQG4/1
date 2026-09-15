@@ -352,3 +352,12 @@ figure.picture figcaption{font-size:0.7812rem;color:var(--ink-faint);padding:8px
 .report .cb{font-family:inherit;font-weight:500;min-width:0;padding:0 10px}
 .rep-why{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .good-text{color:var(--good)}
+
+/* обратная связь: кнопка в углу на каждой странице */
+.fb{position:fixed;right:12px;bottom:12px;z-index:40;max-width:min(360px,calc(100vw - 24px))}
+.fb-tab{box-shadow:var(--shadow);opacity:.85}
+.fb-tab:hover{opacity:1}
+.fb-panel{background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:12px;box-shadow:var(--shadow)}
+.fb-panel textarea{width:100%;margin-top:6px;font:inherit;font-size:0.875rem;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--ink)}
+.fb-panel .actions{margin-top:8px}
+@media print{.fb{display:none}}

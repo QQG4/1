@@ -97,32 +97,40 @@
     var lbl = r.kind === 'points' ? sc + ' ' + T('баллов') : (sec.type === 'writing' || sec.type === 'speaking') ? T('чек-лист') + ' ' + sc : sc;
     return { label: lbl, cls: cls, pct: pct };
   }
-  /* Вердикт по строгой шкале (KZ.strict): все разделы пройдены и в каждом pct >= порога уровня */
+  /* Вердикт по строгой шкале (KZ.strict): вывод об уровне считается ТОЛЬКО по разделам с автоматической проверкой
+     (аудирование, чтение, лексика). Письмо и говорение оценивает сам пользователь — они показываются в списке,
+     но на вывод не влияют: обещать точность там, где оценку ставит себе сам сдающий, нельзя. */
   function verdict(t) {
     var need = KZ.strict && KZ.strict.pct && KZ.strict.pct[t.level]; if (!need || !t.sections.length) return null;
-    var ex = KZ.exams[t.exam], rows = [], done = 0, pass = true;
+    var ex = KZ.exams[t.exam], rows = [], done = 0, autoTotal = 0, pass = true;
     t.sections.forEach(function (s) {
       var r = sp(t.id, s.type), es = examSection(ex, s.type) || {};
       var name = (KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[s.type], 'label');
       var self = s.type === 'writing' || s.type === 'speaking';
-      if (r && r.status === 'done' && r.total) { done++; var pct = Math.round(100 * r.score / r.total); var ok = pct >= need && !r.practice; if (!ok) pass = false; rows.push({ name: name, pct: pct, ok: ok, self: self, practice: !!r.practice }); }
-      else { pass = false; rows.push({ name: name, pct: null, ok: false, self: self }); }
+      if (!self) autoTotal++;
+      if (r && r.status === 'done' && r.total) {
+        var pct = Math.round(100 * r.score / r.total), ok = pct >= need && !r.practice;
+        if (!self) { done++; if (!ok) pass = false; }
+        rows.push({ name: name, pct: pct, ok: ok, self: self, practice: !!r.practice });
+      } else { if (!self) pass = false; rows.push({ name: name, pct: null, ok: false, self: self }); }
     });
-    return { need: need, rows: rows, done: done, all: done === t.sections.length, pass: pass && done === t.sections.length };
+    var all = autoTotal > 0 && done === autoTotal;
+    return { need: need, rows: rows, done: done, autoTotal: autoTotal, all: all, pass: pass && all };
   }
   function verdictCard(t) {
     var v = verdict(t); if (!v) return '';
     var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok; }).map(function (r) { return r.name; }).join(', ');
-    var head = v.pass ? T('Уровень подтверждён:') + ' ' + t.level : v.all ? T('Уровень не подтверждён: недостаточно баллов в разделах') + ' ' + failed + '.' : T('Пройдите все разделы, чтобы получить результат по уровню.');
-    return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Результат') + ' · ' + t.level + '</b><p><b>' + head + '</b></p><ul>' +
-      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка') + '</span>' : '') + (r.practice ? ' <span class="muted">· ' + T('тренировка без таймера — для подтверждения пройдите как на экзамене') + '</span>' : '') + '</li>'; }).join('') +
+    var head = v.pass ? T('Ваш уровень по чтению и аудированию:') + ' ' + t.level : v.all ? t.level + ' ' + T('— баллов не хватило в разделах:') + ' ' + failed + '.' : T('Пройдите разделы с автоматической проверкой, чтобы увидеть результат по уровню.');
+    var selfNote = v.rows.some(function (r) { return r.self; }) ? '<p class="small muted">' + T('Письмо и говорение вы оцениваете сами, поэтому в вывод об уровне они не входят.') + '</p>' : '';
+    return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Результат') + ' · ' + t.level + '</b><p><b>' + head + '</b></p>' + selfNote + '<ul>' +
+      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка, в вывод не входит') + '</span>' : '') + (r.practice ? ' <span class="muted">· ' + T('тренировка без таймера — для подтверждения пройдите как на экзамене') + '</span>' : '') + '</li>'; }).join('') +
       '</ul></div>';
   }
   function testStatus(test) {
     if (test.status === 'draft') return { label: T('в разработке'), cls: 'muted' };
     var done = 0, any = false;
     test.sections.forEach(function (s) { var r = sp(test.id, s.type); if (r && r.status === 'done') done++; if (r) any = true; });
-    if (done === test.sections.length) { var v = verdict(test); if (v) return { label: v.pass ? T('уровень подтверждён') : T('не подтверждён'), cls: v.pass ? 'ok' : 'bad', done: done }; return { label: T('пройден'), cls: 'ok', done: done }; }
+    if (done === test.sections.length) { var v = verdict(test); if (v) return { label: v.pass ? '✓ ' + test.level : T('баллов не хватило'), cls: v.pass ? 'ok' : 'bad', done: done }; return { label: T('пройден'), cls: 'ok', done: done }; }
     if (any || done) return { label: done + '/' + test.sections.length + ' ' + T('разделов'), cls: 'warn', done: done };
     return { label: T('не начат'), cls: 'muted', done: 0 };
   }

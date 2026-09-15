@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /demo/
+Sitemap: https://qqg4.github.io/1/sitemap.xml

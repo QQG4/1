@@ -35,9 +35,11 @@
   варианта приводится к порядку исходного файла теста через `q._perm` (на экране варианты перемешаны). Персональных
   данных нет: `sid` случайный и живёт до закрытия вкладки. Пока оба приёмника пусты, не отправляется ничего, а строка
   о статистике в подвале не показывается.
-- Публичный сайт продублирован на Cloudflare (статика на Workers — то, во что Cloudflare превратил Pages):
-  конфиг `wrangler.jsonc` в корне, `assets.directory = docs`, деплой `python3 build.py && npx wrangler deploy` →
-  `https://qazaq-trainer.k-k-g-inter.workers.dev`. GitHub Pages пока работает параллельно. Воркер статистики —
+- Публичный сайт живёт на Cloudflare (статика на Workers — то, во что Cloudflare превратил Pages):
+  конфиг `wrangler.jsonc` в корне, `assets.directory = docs`, `routes` с `custom_domain` на `qazaqtrainer.com` и `www`
+  (DNS и сертификат Cloudflare делает сам). Деплой: `python3 build.py && npx wrangler deploy`.
+  Домен куплен 15.09.2026 в Cloudflare Registrar. GitHub Pages остался и по файлу `docs/CNAME` отдаёт 301 со старого
+  адреса `qqg4.github.io/1/` на новый — старые ссылки не ломаются. Воркер статистики —
   отдельный проект, его деплоить только с `--config wrangler.toml` из `tools/events-worker/`, иначе wrangler возьмёт
   корневой `wrangler.jsonc` и молча задеплоит сайт вместо приёмника (поймано 15.09.2026).
 - Локальный просмотр в Claude Code: `.claude/launch.json` (профиль `qazaq-trainer` → `python3 serve.py`, порт 8765).

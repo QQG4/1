@@ -24,7 +24,7 @@ section:last-of-type{border-bottom:none}
 label.f{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
 input[type=text],textarea,select{width:100%;font:inherit;font-size:15.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px}
 textarea{min-height:64px;resize:vertical}
-input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within,.seg label:focus-within{outline:2px solid var(--accent);outline-offset:1px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media (max-width:560px){.grid2{grid-template-columns:1fr}}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
@@ -236,7 +236,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within{
     var v = collect(); var err = $('err'); err.style.display = 'none';
     if (!v.expert) { err.textContent = 'Укажите имя: без него мы не сможем вернуться к вам с уточнениями.'; err.style.display = 'block'; $('name').focus(); return; }
     var answered = ITEMS.filter(function (it) { return v.items[it.k].rate; }).length;
-    if (answered < 5) { err.textContent = 'Отмечено ' + answered + ' пунктов из 10. Оцените хотя бы половину — иначе по ответам трудно судить.'; err.style.display = 'block'; return; }
+    if (answered < 5) { err.textContent = 'Отмечено пунктов: ' + answered + ' из 10. Оцените хотя бы половину — иначе по ответам трудно судить.'; err.style.display = 'block'; return; }
     var text = asText(v); var box = $('copybox'); box.value = text; box.style.display = 'block';
     try { navigator.clipboard.writeText(text); } catch (e) {}
     $('done').style.display = 'block';

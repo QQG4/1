@@ -61,7 +61,7 @@
     var pr = courseProgress(course);
     var rows = course.topics.map(function (tp) {
       var r = topicProgress(course.level, tp);
-      return '<a class="level-row" href="#/course/' + course.level + '/' + tp.id + '"><span class="lvl">' + tp.order + '</span><span><div class="nm">' + esc(tp.kk) + ' <span class="muted small">· ' + esc(tp.ru) + '</span></div><div class="dsc">' + tp.words.length + ' ' + T('слов') + ' · ' + tp.grammar.length + ' ' + T('грам.') + ' ' + (tp.grammar.length === 1 ? T('тема') : T('темы')) + ' · ' + tp.texts.length + ' ' + (tp.texts.length === 1 ? T('текст') : T('текста(ов)')) + (tp.lessons.length ? ' · ' + T('уроки') + ' ' + tp.lessons.map(function (l) { return l.section + '.' + l.lesson; }).join(', ') : '') + '</div></span><span class="st"><span class="badge ' + (r.done ? 'ok' : r.pct ? 'warn' : 'muted') + '">' + (r.done ? T('пройдена') : r.pct + ' %') + '</span></span></a>';
+      return '<a class="level-row" href="#/course/' + course.level + '/' + tp.id + '"><span class="lvl">' + tp.order + '</span><span><div class="nm">' + esc(tp.kk) + ' <span class="muted small">· ' + esc(tp.ru) + '</span></div><div class="dsc">' + tp.words.length + ' ' + T('слов') + ' · ' + tp.grammar.length + ' ' + T('грам.') + ' ' + (tp.grammar.length === 1 ? T('тема') : T('темы')) + ' · ' + tp.texts.length + ' ' + KZ.plural(tp.texts.length, T('текст'), T('текста'), T('текстов')) + (tp.lessons.length ? ' · ' + T('уроки') + ' ' + tp.lessons.map(function (l) { return l.section + '.' + l.lesson; }).join(', ') : '') + '</div></span><span class="st"><span class="badge ' + (r.done ? 'ok' : r.pct ? 'warn' : 'muted') + '">' + (r.done ? T('пройдена') : r.pct + ' %') + '</span></span></a>';
     }).join('');
     return U.topbar([{ label: T('Хаб'), href: '#/' }, { label: course.title }], '<span class="badge level">' + course.level + '</span>') +
       '<div class="kicker">' + esc(course.kk) + ' · ' + esc(course.ru) + '</div><h1>' + esc(course.title) + ': ' + course.topics.length + ' ' + T('тем по официальной программе') + '</h1>' +
@@ -118,7 +118,7 @@
       var ds = shuffle(pool.filter(function (x) { return x.l !== w.l && x.p === w.p; })).filter(fresh).slice(0, 3);
       if (ds.length < 3) ds = ds.concat(shuffle(pool.filter(function (x) { return x.l !== w.l && ds.indexOf(x) < 0; })).filter(fresh).slice(0, 3 - ds.length));
       var opts = shuffle([w].concat(ds));
-      return { id: 'v' + i, stem: dir === 'kk-ru' ? '«' + w.l + '» сөзінің аудармасын таңдаңыз.' : '«' + w.ru + '» сөзінің қазақша баламасын таңдаңыз.',
+      return { id: 'v' + i, text: dir === 'kk-ru' ? '«' + w.l + '» сөзінің аудармасын таңдаңыз.' : '«' + w.ru + '» сөзінің қазақша баламасын таңдаңыз.',
         options: opts.map(function (o) { return dir === 'kk-ru' ? o.ru : o.l; }), answer: opts.indexOf(w), explain: w.l + ' — ' + w.ru + (w.ex ? ' · ' + w.ex : ''), w: w.l };
     });
   }

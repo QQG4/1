@@ -12,13 +12,34 @@
   var T = KZ.T, LK = KZ.LK;
 
   /* ---------------- store ---------------- */
-  var STORE_KEY = 'kz-trainer:v1';
+  var STORE_KEY = (KZ.site && KZ.site.demo) ? 'kz-trainer:demo:v1' : 'kz-trainer:v1'; // демо хранит прогресс отдельно от сайта (общий origin)
   function loadState() {
     try { var s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.tests) return s; } catch (e) {}
     return { version: 1, tests: {} };
   }
   function saveState() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
   var state = loadState();
+  /* другая вкладка изменила прогресс — перечитать, если здесь не идёт раздел */
+  window.addEventListener('storage', function (e) { if (e.key === STORE_KEY && !(run && run.phase === 'run')) { state = loadState(); route(); } });
+  /* импорт: оставляем только известные тесты, числовые поля приводим к числу (защита от мусора и разметки в JSON) */
+  function cleanState(s) {
+    var NUM = ['score', 'total', 'secondsUsed', 'finishedAt', 'startedAt', 'playsUsed', 'taskIdx'];
+    var out = { version: 1, tests: {}, course: {} };
+    if (typeof s.voice === 'string') out.voice = s.voice;
+    Object.keys(s.tests).forEach(function (id) {
+      var t = s.tests[id]; if (!findTest(id) || !t || typeof t.sections !== 'object') return;
+      var o = { sections: {}, updatedAt: +t.updatedAt || 0 };
+      Object.keys(t.sections).forEach(function (ty) {
+        var r = t.sections[ty]; if (!r || typeof r !== 'object' || !KZ.sectionTypes[ty]) return;
+        var c = {};
+        Object.keys(r).forEach(function (k) { var v = r[k]; if (NUM.indexOf(k) >= 0) c[k] = +v || 0; else if (k === 'status') c[k] = v === 'done' ? 'done' : 'draft'; else if (typeof v === 'string' || typeof v === 'boolean' || (v && typeof v === 'object')) c[k] = v; });
+        o.sections[ty] = c;
+      });
+      out.tests[id] = o;
+    });
+    if (s.course && typeof s.course === 'object' && !Array.isArray(s.course)) out.course = s.course;
+    return out;
+  }
 
   function tp(testId) { return state.tests[testId] || (state.tests[testId] = { sections: {} }); }
   function sp(testId, type) { return tp(testId).sections[type] || null; }
@@ -32,7 +53,7 @@
 
   /* ---------------- настройки интерфейса: язык, размер текста, шрифт, подсказки, транскрипт ---------------- */
   var UI_KEY = 'kz-trainer:ui';
-  var ui = { size: 'm', font: 'std', hints: false, transcript: false };
+  var ui = { size: 'm', font: 'std', hints: false, transcript: false, practice: false };
   try { var u0 = JSON.parse(localStorage.getItem(UI_KEY)); if (u0) Object.keys(ui).forEach(function (k) { if (u0[k] != null) ui[k] = u0[k]; }); } catch (e) {}
   function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} applyUi(); }
   function applyUi() { var h = document.documentElement; h.setAttribute('data-size', ui.size); h.setAttribute('data-font', ui.font); h.classList.toggle('hints', !!ui.hints); h.lang = KZ.lang; }
@@ -44,6 +65,7 @@
       '<div class="row"><span class="lbl">' + T('Шрифт') + '</span>' + seg('ui-font', 'font', ['std', 'dys'], [T('обычный'), T('для дислексии')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Транскрипт аудирования') + '</span>' + seg('ui-transcript', 'transcript', [false, true], [T('скрыт'), T('показан')]) + '<span class="hint">' + T('для слабослышащих: текст виден во время звучания') + '</span></div>' +
+      '<div class="row"><span class="lbl">' + T('Таймер') + '</span>' + seg('ui-practice', 'practice', [false, true], [T('как на экзамене'), T('тренировка')]) + '<span class="hint">' + T('тренировка: время показывается, но раздел не закрывается; уровень в этом режиме не подтверждается') + '</span></div>' +
       '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + '</p></div>';
   }
   function uiButtons() {
@@ -55,6 +77,9 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function mmss(sec) { sec = Math.max(0, Math.round(sec)); var m = Math.floor(sec / 60), s = sec % 60; return m + ':' + (s < 10 ? '0' : '') + s; }
   function letter(i) { return String.fromCharCode(65 + i); }
+  /* русская плюрализация: 1 тема / 2 темы / 5 тем; в казахском интерфейсе форма одна */
+  function plural(n, one, few, many) { if (KZ.lang === 'kk') return many; n = Math.abs(n) % 100; var d = n % 10; if (n > 10 && n < 20) return many; if (d === 1) return one; if (d >= 2 && d <= 4) return few; return many; }
+  KZ.plural = plural;
   function findTest(id) { for (var i = 0; i < KZ.tests.length; i++) if (KZ.tests[i].id === id) return KZ.tests[i]; return null; }
   function examSection(exam, type) { for (var i = 0; i < exam.sections.length; i++) if (exam.sections[i].type === type) return exam.sections[i]; return null; }
   function testsFor(examId, level) { return KZ.tests.filter(function (t) { return t.exam === examId && (!level || t.level === level); }); }
@@ -68,7 +93,8 @@
     if (r.status === 'draft') return { label: T('черновик'), cls: 'mid', pct: null };
     var pct = r.total ? Math.round(100 * r.score / r.total) : null;
     var cls = pct == null ? 'good' : pct >= 80 ? 'good' : pct >= 50 ? 'mid' : 'bad';
-    var lbl = r.kind === 'points' ? r.score + '/' + r.total + ' ' + T('баллов') : (sec.type === 'writing' || sec.type === 'speaking') ? T('чек-лист') + ' ' + r.score + '/' + r.total : r.score + '/' + r.total;
+    var sc = esc(r.score) + '/' + esc(r.total);
+    var lbl = r.kind === 'points' ? sc + ' ' + T('баллов') : (sec.type === 'writing' || sec.type === 'speaking') ? T('чек-лист') + ' ' + sc : sc;
     return { label: lbl, cls: cls, pct: pct };
   }
   /* Вердикт по строгой шкале (KZ.strict): все разделы пройдены и в каждом pct >= порога уровня */
@@ -79,7 +105,7 @@
       var r = sp(t.id, s.type), es = examSection(ex, s.type) || {};
       var name = (KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[s.type], 'label');
       var self = s.type === 'writing' || s.type === 'speaking';
-      if (r && r.status === 'done' && r.total) { done++; var pct = Math.round(100 * r.score / r.total); var ok = pct >= need; if (!ok) pass = false; rows.push({ name: name, pct: pct, ok: ok, self: self }); }
+      if (r && r.status === 'done' && r.total) { done++; var pct = Math.round(100 * r.score / r.total); var ok = pct >= need && !r.practice; if (!ok) pass = false; rows.push({ name: name, pct: pct, ok: ok, self: self, practice: !!r.practice }); }
       else { pass = false; rows.push({ name: name, pct: null, ok: false, self: self }); }
     });
     return { need: need, rows: rows, done: done, all: done === t.sections.length, pass: pass && done === t.sections.length };
@@ -89,7 +115,7 @@
     var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok; }).map(function (r) { return r.name; }).join(', ');
     var head = v.pass ? T('Уровень подтверждён:') + ' ' + t.level : v.all ? T('Уровень не подтверждён: недостаточно баллов в разделах') + ' ' + failed + '.' : T('Пройдите все разделы, чтобы получить результат по уровню.');
     return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Результат') + ' · ' + t.level + '</b><p><b>' + head + '</b></p><ul>' +
-      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка') + '</span>' : '') + '</li>'; }).join('') +
+      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка') + '</span>' : '') + (r.practice ? ' <span class="muted">· ' + T('тренировка без таймера — для подтверждения пройдите как на экзамене') + '</span>' : '') + '</li>'; }).join('') +
       '</ul></div>';
   }
   function testStatus(test) {
@@ -102,12 +128,17 @@
   }
 
   /* ---------------- timer ---------------- */
-  var timer = { iv: null, start: 0, limit: 0, el: null, onTick: null };
+  var timer = { iv: null, start: 0, limit: 0, el: null, onTick: null, warned: false };
   function stopTimer() { if (timer.iv) clearInterval(timer.iv); timer.iv = null; }
   function startTimer(limitSec, onTick) {
     stopTimer();
-    timer.start = Date.now(); timer.limit = limitSec; timer.onTick = onTick;
+    timer.start = Date.now(); timer.limit = limitSec; timer.onTick = onTick; timer.warned = false;
     timer.iv = setInterval(tick, 500); tick();
+  }
+  /* объявление для скринридера (aria-live), не видно на экране */
+  function announce(msg) {
+    var el = document.getElementById('live'); if (!el) { el = document.createElement('div'); el.id = 'live'; el.className = 'sr'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'assertive'); document.body.appendChild(el); }
+    el.textContent = ''; setTimeout(function () { el.textContent = msg; }, 50);
   }
   function elapsed() { return timer.start ? (Date.now() - timer.start) / 1000 : 0; }
   function tick() {
@@ -115,14 +146,16 @@
     var left = timer.limit - elapsed();
     el.textContent = left >= 0 ? mmss(left) : '−' + mmss(-left);
     el.className = 'clock' + (left < 0 ? ' over' : left < 60 ? ' warn' : '');
+    el.setAttribute('aria-label', (left >= 0 ? T('осталось') : T('сверх лимита')) + ' ' + el.textContent);
+    if (left < 60 && left > 0 && !timer.warned) { timer.warned = true; announce(T('Осталась одна минута.')); }
     if (timer.onTick) timer.onTick(elapsed());
-    if (left <= 0 && run && run.phase === 'run' && !run.timedOut) timeUp();
+    if (left <= 0 && run && run.phase === 'run' && !run.timedOut) { if (ui.practice) { if (!timer.overNoted) { timer.overNoted = true; announce(T('Время вышло. Режим тренировки: раздел остаётся открытым.')); } } else timeUp(); }
   }
   /* Время раздела вышло — раздел закрывается, как на экзамене: ответы фиксируются, письмо/говорение переходят к самопроверке */
   function timeUp() {
     var t = findTest(run.testId); if (!t) return;
     var sec = null; t.sections.forEach(function (x) { if (x.type === run.type) sec = x; }); if (!sec) return;
-    run.timedOut = true; run.secondsUsed = Math.round(elapsed()); stopTimer(); stopSpeak(); stopRec();
+    run.timedOut = true; run.secondsUsed = Math.round(elapsed()); stopTimer(); stopSpeak(); stopRec(); announce(T('Время вышло') + '. ' + T('Раздел закрыт по таймеру, как на экзамене: ответы зафиксированы, оцените то, что успели.'));
     var au = document.getElementById('au'); if (au) { try { au.pause(); } catch (e) {} }
     if (qTimer) clearInterval(qTimer); if (tkTimer) clearInterval(tkTimer);
     var ta = document.getElementById('essay'); if (ta) { if (ta.getAttribute('data-task')) { run.texts = run.texts || {}; run.texts[ta.getAttribute('data-task')] = ta.value; } else run.text = ta.value; }
@@ -132,7 +165,7 @@
     run.sub = 'check'; route();
   }
   function timeUpNotice() {
-    return run && run.timedOut ? '<div class="notice"><b class="t">' + T('Время вышло') + '</b><p>' + T('Раздел закрыт по таймеру, как на экзамене: ответы зафиксированы, оцените то, что успели.') + '</p></div>' : '';
+    return run && run.timedOut ? '<div class="notice" role="alert"><b class="t">' + T('Время вышло') + '</b><p>' + T('Раздел закрыт по таймеру, как на экзамене: ответы зафиксированы, оцените то, что успели.') + '</p></div>' : '';
   }
 
   /* ---------------- TTS ---------------- */
@@ -194,9 +227,21 @@
   KZ.resetRun = function (init) { extRun = init || {}; return extRun; };
   KZ.route = function () { route(); };
   KZ.speak = function (text) { return speak(text); };
+  var lastHash = null;
+  /* селектор, по которому вернуть фокус после перерисовки той же страницы */
+  function focusKey(el) {
+    if (!el || el === document.body) return null;
+    if (el.tagName === 'INPUT' && el.name) return 'input[name="' + el.name + '"][value="' + el.value + '"]';
+    if (el.id) return '#' + el.id;
+    var b = el.closest('[data-act]'); if (!b) return null;
+    var s = '[data-act="' + b.getAttribute('data-act') + '"]', s2 = s;
+    ['data-v', 'data-i', 'data-task', 'data-q', 'data-test', 'data-href', 'data-name', 'data-key', 'data-check'].forEach(function (a) { if (b.hasAttribute(a)) s += '[' + a + '="' + b.getAttribute(a).replace(/"/g, '') + '"]'; });
+    return s + ',' + s2;
+  }
   function route() {
     var h = location.hash.replace(/^#\/?/, '');
     var p = h.split('/').filter(Boolean);
+    var samePage = lastHash === h; lastHash = h;
     var sameSection = run && p[0] === 'test' && p[1] === run.testId && p[2] === run.type;
     if (!sameSection) { stopTimer(); if (qTimer) clearInterval(qTimer); if (tkTimer) clearInterval(tkTimer); run = null; stopSpeak(); stopRec(); }
     var app = document.getElementById('app');
@@ -208,13 +253,28 @@
     else if (p[0] === 'exam' && KZ.exams[p[1]]) html = viewExam(KZ.exams[p[1]]);
     else if (p[0] === 'test' && findTest(p[1]) && !p[2]) html = viewTest(findTest(p[1]));
     else if (p[0] === 'test' && findTest(p[1]) && p[2]) html = viewSection(findTest(p[1]), p[2]);
+    else if (p.length && p[0] !== 'main') html = viewNotFound(h);
     else html = viewHub();
+    var keepAu = sameSection && run && run.playing ? document.getElementById('au') : null; // не прерывать звучащее аудио при перерисовке (язык, настройки, транскрипт)
+    var fk = samePage ? focusKey(document.activeElement) : null, sy = window.scrollY;
     app.innerHTML = html;
-    window.scrollTo(0, 0);
+    if (keepAu) { var na = document.getElementById('au'); if (na && na !== keepAu) na.parentNode.replaceChild(keepAu, na); }
+    if (samePage) { window.scrollTo(0, sy); if (fk) { var fe = null; try { fe = document.querySelector(fk); } catch (e) {} if (fe) try { fe.focus({ preventScroll: true }); } catch (e2) {} } }
+    else window.scrollTo(0, 0);
     if (run && run.afterRender) run.afterRender();
     fillRecSlots();
   }
-  window.addEventListener('hashchange', route);
+  window.addEventListener('hashchange', function () { if (location.hash === '#main') return; route(); });
+  /* ссылка «К содержимому»: фокус на начало контента без смены маршрута (иначе роутер перерисовал бы хаб и сбросил раздел) */
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a.skip'); if (!a) return;
+    e.preventDefault(); var m = document.getElementById('main'); if (m) { m.setAttribute('tabindex', '-1'); m.focus(); m.scrollIntoView(); }
+  });
+  function viewNotFound(h) {
+    return topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Страница не найдена') }]) +
+      '<div class="kicker">404</div><h1>' + T('Страница не найдена') + '</h1><p class="lede">' + T('Такого адреса нет:') + ' <code>#/' + esc(h) + '</code></p>' +
+      '<div class="actions"><a class="btn" href="#/">' + T('На хаб') + '</a></div>';
+  }
 
   function crumbs(items) {
     var out = [];
@@ -257,7 +317,7 @@
       '<p class="lede">' + T('Два экзамена, уровни от A1 до C2, по несколько вариантов мок-теста на каждый уровень. Результаты по разделам сохраняются в этом браузере; для переноса на другое устройство есть экспорт.') + '</p>' +
       '<div id="io-panel" hidden>' + ioPanel() + '</div>' +
       courseCards() +
-      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Один полный тест на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
+      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('По два варианта мок-теста на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
       '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
       '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-level">' + lv + '</div><div class="rung-name">' + esc(LK(L, 'name')) + '</div><div class="rung-units">' + esc(LK(L, 'units')) + '</div><div class="rung-focus">' + esc(LK(L, 'focus')) + '</div></div>'; }).join('') + '</div></section>' +
@@ -268,14 +328,14 @@
     var keys = Object.keys(KZ.courses); if (!keys.length) return '';
     return '<section><div class="kicker" style="margin-bottom:8px">' + T('Курс') + '</div><h2>' + T('Учебная программа по уровням') + '</h2><p class="sub">' + T('Программа построена на нашей методологии, разработанной с опорой на официальный лексический минимум ҰТО и типовые учебники уровней; по каждой теме — карточки слов, грамматика с заданиями, тексты с вопросами и итоговый тест.') + '</p><div class="grid2">' + keys.map(function (k) {
       var c = KZ.courses[k], pr = KZ.courseProgress ? KZ.courseProgress(c) : null;
-      return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + (c.stats.uniqueWords || c.stats.words) + ' ' + T('слов') + (c.coverage ? ' (' + LK(c, 'coverage') + ')' : '') + ' · ' + c.stats.grammar + ' ' + T('грамматических тем') + ' · ' + c.stats.texts + ' ' + T('текстов') + (c.stats.textsWithQuestions != null ? ', ' + T('с вопросами') + ' ' + c.stats.textsWithQuestions : '') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
+      return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + (c.stats.uniqueWords || c.stats.words) + ' ' + T('слов') + (c.coverage ? ' (' + LK(c, 'coverage') + ')' : '') + ' · ' + c.stats.grammar + ' ' + plural(c.stats.grammar, T('грамматическая тема'), T('грамматические темы'), T('грамматических тем')) + ' · ' + c.stats.texts + ' ' + T('текстов') + (c.stats.textsWithQuestions != null ? ', ' + T('с вопросами') + ' ' + c.stats.textsWithQuestions : '') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
     }).join('') + '</div></section>';
   }
   function ioPanel() {
     return '<div class="block io"><h3>' + T('Экспорт и импорт прогресса') + '</h3>' +
       '<p class="small muted">' + T('Скопируйте JSON и сохраните где удобно; на другом устройстве вставьте его в поле и нажмите «Импортировать». Импорт заменяет текущий прогресс.') + '</p>' +
       '<textarea id="io-text">' + esc(JSON.stringify(state)) + '</textarea>' +
-      '<div class="actions"><button class="btn small" data-act="io-copy">' + T('Скопировать') + '</button><button class="btn secondary small" data-act="io-import">' + T('Импортировать из поля') + '</button><button class="btn danger small" data-act="io-reset">' + T('Сбросить весь прогресс') + '</button><span class="hint" id="io-msg"></span></div></div>';
+      '<div class="actions"><button class="btn small" data-act="io-copy">' + T('Скопировать') + '</button><button class="btn secondary small" data-act="io-import">' + T('Импортировать из поля') + '</button><button class="btn danger small" data-act="io-reset">' + T('Сбросить весь прогресс') + '</button><span class="hint" id="io-msg" role="status" aria-live="polite"></span></div></div>';
   }
 
   /* ---------------- views: exam ---------------- */
@@ -299,7 +359,7 @@
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(LK(ex, 'mockNote')) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
-      (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ex.unverified.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
+      (KZ.site && KZ.site.demo ? '' : '<section><h2>' + T('Что официально не опубликовано') + '</h2><div class="notice"><b class="t">' + T('Рабочая реконструкция') + '</b><ul>' + ((KZ.lang === 'kk' && ex.unverified_kk) || ex.unverified).map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></div></section>') +
       '<section><h2>' + T('Мок-тесты') + '</h2><div class="levels">' + levels + '</div></section>' +
       '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
   }
@@ -336,7 +396,7 @@
     var saved = sp(t.id, type);
     if (!run || run.testId !== t.id || run.type !== type) {
       run = { testId: t.id, type: type, phase: saved && saved.status === 'done' ? 'review' : 'ready', answers: {}, sub: 'script' };
-      if (saved && saved.status === 'draft') { run.phase = 'run'; run.resume = true; }
+      if (saved && saved.status === 'draft') { run.phase = 'run'; run.resume = true; if (saved.answers) run.answers = Object.assign({}, saved.answers); if (saved.playsUsed != null) run.playsUsed = saved.playsUsed; }
     }
     var head = topbar([{ label: T('Хаб'), href: '#/' }, { label: ex.short, href: '#/exam/' + ex.id }, { label: t.level + ' · ' + LK(t, 'title'), href: '#/test/' + t.id }, { label: (KZ.lang === 'kk' && es.kk) || es.title || type }],
       '<span class="badge level">' + t.level + '</span>' + sectionDots(t, type));
@@ -378,7 +438,7 @@
       (ex.certificateNote ? '<p class="small muted mt">' + esc(LK(ex, 'certificateNote')) + '</p>' : '') + '</section>';
   }
   function timerBar(sec, extra) {
-    return '<div class="timerbar"><span class="lbl">' + esc(LK(KZ.sectionTypes[sec.type], 'label')) + ' · ' + T('лимит') + ' ' + sec.minutes + ' ' + T('мин') + '</span><div class="right">' + (extra || '') + '<span id="clock" class="clock">' + mmss(sec.minutes * 60) + '</span></div></div>';
+    return '<div class="timerbar"><span class="lbl">' + esc(LK(KZ.sectionTypes[sec.type], 'label')) + ' · ' + T('лимит') + ' ' + sec.minutes + ' ' + T('мин') + (ui.practice ? ' · ' + T('тренировка') : '') + '</span><div class="right">' + (extra || '') + '<span id="clock" class="clock">' + mmss(sec.minutes * 60) + '</span></div></div>';
   }
 
   /* --- вопросы с выбором (общие для listening / lexis / reading) --- */
@@ -406,9 +466,22 @@
       body += '<div class="block"><div class="passage-title">Мәтін · ' + esc(sec.passage.title) + '</div><div class="passage">' + sec.passage.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div></div>';  // passage.note — служебная пометка о калибровке, в интерфейс не выводится
     }
     body += '<div class="block"><span class="setlabel">' + T('Задания') + '</span>' + renderQuestions(sec, run.answers, false) +
-      '<div class="actions"><button class="btn" data-act="submit">' + T('Зафиксировать ответы') + '</button><span class="hint" id="submit-msg"></span></div></div>';
-    run.afterRender = function () { startTimer(sec.minutes * 60); };
+      '<div class="actions"><button class="btn" data-act="submit">' + T('Зафиксировать ответы') + '</button><span class="hint" id="submit-msg" role="status" aria-live="polite"></span></div></div>';
+    run.afterRender = function () { quizTimer(t, sec); };
     return timerBar(sec) + body;
+  }
+  /* черновик раздела с выбором ответов: ответы и момент старта таймера переживают перезагрузку и уход со страницы */
+  function quizDraft() {
+    if (!run || run.phase !== 'run' || !timer.start) return;
+    var t = findTest(run.testId), sec = null; if (t) t.sections.forEach(function (s) { if (s.type === run.type) sec = s; });
+    if (!sec || !sec.questions) return;
+    setSection(run.testId, run.type, { status: 'draft', answers: run.answers, startedAt: timer.start, playsUsed: run.playsUsed || 0 });
+  }
+  function quizTimer(t, sec) {
+    if (timer.iv) { tick(); return; }
+    startTimer(sec.minutes * 60);
+    var d = sp(t.id, sec.type);
+    if (run.resume && d && d.startedAt) { timer.start = d.startedAt; tick(); } else quizDraft();
   }
   function runListening(t, sec, es) {
     var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
@@ -420,26 +493,26 @@
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="au-play"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         '<button class="btn ghost small" data-act="au-pause" id="au-pause"' + (run.playing ? '' : ' hidden') + '>⏸ ' + T('Пауза') + '</button>' +
-        '<span class="hint" id="tts-msg">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + T('голоса') + ' ' + esc(au.voices) + '</span></div>' +
+        '<span class="hint" id="tts-msg" role="status" aria-live="polite">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + (/[,\/+]/.test(String(au.voices)) ? T('голоса') : T('голос:')) + ' ' + esc(au.voices) + '</span></div>' +
         '<div class="aubar" aria-hidden="true"><i id="aubar"></i></div><audio id="au" preload="auto" src="' + au.src + '"></audio>' + transcriptBlock(sec) +
-        '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене: читайте вопросы и отмечайте ответы по ходу звучания. Паузу поставить можно, перемотки нет; прослушивание засчитывается, когда запись дозвучала до конца.') + (plays > 1 ? ' В ҚАЗТЕСТ аудио звучит несколько раз, здесь — ' + plays + '.' : ' ' + T('В QRT видео идёт один раз.')) + '</p></div>';
+        '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене: читайте вопросы и отмечайте ответы по ходу звучания. Паузу поставить можно, перемотки нет; прослушивание засчитывается, когда запись дозвучала до конца.') + (plays === Infinity ? ' ' + T('Повторять запись можно, пока идёт время раздела.') : plays > 1 ? ' ' + T('Прослушиваний:') + ' ' + plays + '.' : ' ' + T('Запись звучит один раз.')) + '</p></div>';
     } else if (voice) {
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="tts"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         (run.playing ? '<button class="btn ghost small" data-act="tts-pause">' + (window.speechSynthesis && speechSynthesis.paused ? '▶ ' + T('Продолжить') : '⏸ ' + T('Пауза')) + '</button><button class="btn ghost small" data-act="tts-stop">■ ' + T('Остановить') + '</button>' : '') +
-        '<span class="hint" id="tts-msg">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
+        '<span class="hint" id="tts-msg" role="status" aria-live="polite">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
         transcriptBlock(sec) +
         (kkVoices().length > 1 ? '<div class="row mt small"><span class="muted">' + T('Голос:') + '</span>' + kkVoices().map(function (v) { return '<button class="cb' + (v === voice ? ' on' : '') + '" data-act="voice" data-name="' + esc(v.name) + '">' + esc(v.name.replace(/Microsoft |Online |\(Natural\)| - Kazakh.*$/g, '').trim()) + '</button>'; }).join('') + '</div>' : '') +
-        '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене. Читайте вопросы во время звучания и отмечайте ответы сразу.') + (plays > 1 ? ' В ҚАЗТЕСТ аудио звучит несколько раз, здесь — ' + plays + '.' : ' ' + T('В QRT видео идёт один раз.')) + '</p></div>';
+        '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене. Читайте вопросы во время звучания и отмечайте ответы сразу.') + (plays === Infinity ? ' ' + T('Повторять запись можно, пока идёт время раздела.') : plays > 1 ? ' ' + T('Прослушиваний:') + ' ' + plays + '.' : ' ' + T('Запись звучит один раз.')) + '</p></div>';
     } else {
       head = '<div class="notice"><b class="t">' + T('Казахский голос не найден') + '</b><p>' + T('В этом браузере нет голоса для казахского языка, кнопка воспроизведения отключена. Бесплатно работает в') + ' <b>Microsoft Edge</b> ' + T('(голоса Aigul и Daulet, Windows и macOS): откройте эту же ссылку в Edge.') + (isEdge ? ' ' + T('Похоже, это Edge — подождите пару секунд, голоса подгружаются, или проверьте, что в системе включён «Kazakh» в языках речи.') : '') + '</p>' +
         '<p>' + T('Запасной режим без голоса: текст покажется на') + ' ' + (sec.script.readSeconds || 90) + ' ' + T('секунд, читайте его вслух в темпе диктора и отвечайте по ходу — это слабая замена, но лучше, чем запоминать текст целиком.') + '</p>' +
-        '<div class="actions"><button class="btn secondary small" data-act="show-script"' + (left <= 0 || run.scriptVisible ? ' disabled' : '') + '>' + T('Показать текст на') + ' ' + (sec.script.readSeconds || 90) + ' ' + T('с') + '</button><span class="hint">' + T('показов осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays + '</span></div></div>' +
+        '<div class="actions"><button class="btn secondary small" data-act="show-script"' + (left <= 0 || run.scriptVisible ? ' disabled' : '') + '>' + T('Показать текст на') + ' ' + (sec.script.readSeconds || 90) + ' ' + T('с') + '</button><span class="hint" role="status">' + (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('показов осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) + '</span></div></div>' +
         (run.scriptVisible ? '<div class="block"><span class="setlabel">' + T('Скрипт') + ' · <span id="script-left"></span></span><div class="script">' + esc(sec.script.text) + '</div></div>' : '');
     }
     var body = '<div class="block"><span class="setlabel">' + T('Задания') + '</span>' + renderQuestions(sec, run.answers, false) +
-      '<div class="actions"><button class="btn" data-act="submit">' + T('Зафиксировать ответы') + '</button><span class="hint" id="submit-msg"></span></div></div>';
-    run.afterRender = function () { if (!timer.iv) startTimer(sec.minutes * 60); else tick(); };
+      '<div class="actions"><button class="btn" data-act="submit">' + T('Зафиксировать ответы') + '</button><span class="hint" id="submit-msg" role="status" aria-live="polite"></span></div></div>';
+    run.afterRender = function () { quizTimer(t, sec); };
     return timerBar(sec) + head + body;
   }
   function transcriptBlock(sec) {
@@ -455,7 +528,7 @@
     a.currentTime = 0;
     a.ontimeupdate = function () { var bar = document.getElementById('aubar'); if (bar && a.duration) bar.style.width = (100 * a.currentTime / a.duration) + '%'; };
     var finished = false;
-    function finish() { if (finished) return; finished = true; run.playing = false; run.playsUsed++; route(); }
+    function finish() { if (finished) return; finished = true; run.playing = false; run.playsUsed++; quizDraft(); route(); }
     a.onended = finish;
     a.onpause = function () { if (!finished && a.duration && a.currentTime >= a.duration - 0.75) finish(); };
     a.onerror = function () { run.playing = false; var m = document.getElementById('tts-msg'); if (m) m.textContent = T('Не удалось воспроизвести аудио.'); btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); };
@@ -465,7 +538,7 @@
         run.audioRetried = true; try { a.src = new URL(a.getAttribute('src'), location.href).href; a.load(); } catch (x) {}
         setTimeout(function () { playAudio(t, sec, btn); }, 400); return;
       }
-      var m = document.getElementById('tts-msg'); if (m) m.innerHTML = esc(T('Браузер заблокировал воспроизведение:') + ' ' + (e && e.name ? e.name : e)) + ' <a href="' + esc(a.currentSrc || a.src) + '" target="_blank" rel="noopener">' + T('Открыть аудио отдельной вкладкой') + '</a>';
+      var m = document.getElementById('tts-msg'); if (m) m.innerHTML = esc((e && e.name === 'NotSupportedError') || (a.error && a.error.code === 4) ? T('Аудиофайл не найден или не поддерживается браузером.') : T('Браузер заблокировал воспроизведение:') + ' ' + (e && e.name ? e.name : e)) + ' <a href="' + esc(a.currentSrc || a.src) + '" target="_blank" rel="noopener">' + T('Открыть аудио отдельной вкладкой') + '</a>';
     });
   }
   function playScript(t, sec) {
@@ -494,7 +567,7 @@
     var msg = document.getElementById('submit-msg');
     if (missing && !run.confirmSkip) { run.confirmSkip = true; if (msg) msg.textContent = T('Без ответа:') + ' ' + missing + '. ' + T('Нажмите ещё раз, чтобы зафиксировать как есть.'); return; }
     var score = 0; sec.questions.forEach(function (q) { if (run.answers[q.id] === q.answer) score++; });
-    setSection(t.id, sec.type, { status: 'done', score: score, total: sec.questions.length, answers: run.answers, secondsUsed: Math.round(elapsed()), finishedAt: Date.now() });
+    setSection(t.id, sec.type, { status: 'done', score: score, total: sec.questions.length, answers: run.answers, secondsUsed: Math.round(elapsed()), finishedAt: Date.now(), practice: !!ui.practice, startedAt: undefined });
     run.phase = 'review'; route();
   }
 
@@ -505,10 +578,11 @@
     if (run.promptId == null) run.promptId = saved.promptId || null;
     if (run.text == null) run.text = saved.text || '';
     if (run.checks == null) run.checks = saved.checks || [];
+    if (run.sub === 'script' && run.promptId) run.sub = 'write'; // возврат к черновику: иначе автосохранение (sub === 'write') не работало
     var body = '';
     if (run.sub === 'script' && !run.promptId) {
       body = '<div class="block"><span class="setlabel">' + T('Выберите тему') + '</span><div class="prompt-pick">' + sec.prompts.map(function (p, i) { return '<label class="opt"><input type="radio" name="prompt" value="' + p.id + '"><span class="k">' + (i + 1) + '</span><span>' + esc(p.text) + '</span></label>'; }).join('') + '</div>' +
-        '<p class="small muted mt">' + esc(LK(sec, 'targetNote') || '') + '</p><div class="actions"><button class="btn" data-act="pick-prompt">' + T('Начать писать') + '</button><span class="hint" id="submit-msg"></span></div></div>';
+        '<p class="small muted mt">' + esc(LK(sec, 'targetNote') || '') + '</p><div class="actions"><button class="btn" data-act="pick-prompt">' + T('Начать писать') + '</button><span class="hint" id="submit-msg" role="status" aria-live="polite"></span></div></div>';
       run.afterRender = function () { if (!timer.iv) startTimer(sec.minutes * 60); else tick(); };
       return timerBar(sec) + body;
     }
@@ -519,6 +593,7 @@
       body = '<div class="block"><span class="setlabel">' + T('Тема') + '</span><p style="font-size:16.5px;font-weight:600">' + esc(prompt.text) + '</p>' +
         '<div class="skeleton" id="skel">' + skel + '</div>' +
         '<div class="tags">' + sec.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
+        (sec.sample ? '<details class="sample"><summary>' + T('Образец текста (структура, не копируйте)') + '</summary><div lang="kk" class="script">' + esc(sec.sample) + '</div></details>' : '') +
         '<textarea class="essay" id="essay" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(run.text) + '</textarea><div class="wc" id="wc">' + wordCount(run.text) + ' ' + T('слов') + '</div>' +
         '<div class="actions"><button class="btn" data-act="finish-writing">' + T('Завершить и перейти к самопроверке') + '</button><span class="hint">' + T('Черновик сохраняется автоматически.') + '</span></div></div>';
       run.afterRender = function () {
@@ -843,7 +918,7 @@
         '<div class="block"><span class="setlabel">' + T('Разбор') + '</span>' + renderQuestions(sec, saved.answers || {}, true) + '</div>';
     } else if (sec.tasks) {
       var pct2 = Math.round(100 * saved.score / saved.total);
-      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Самооценка по официальным критериям') + (pct2 >= 80 ? ' — ' + T('уровень C1.') : pct2 >= 60 ? ' — ' + T('уровень B2.') : pct2 >= 50 ? ' — ' + T('уровень B1.') : pct2 >= 40 ? ' — ' + T('уровень A2.') : pct2 >= 30 ? ' — ' + T('уровень A1.') : ' — ' + T('ниже порога A1.')) + '</b><div class="m">' + T('Пороги блока: B1 от 50 %, B2 от 60 %, C1 от 80 %') + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
+      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Самооценка по официальным критериям') + (pct2 >= 80 ? ' — ' + T('уровень C1.') : pct2 >= 60 ? ' — ' + T('уровень B2.') : pct2 >= 50 ? ' — ' + T('уровень B1.') : pct2 >= 40 ? ' — ' + T('уровень A2.') : pct2 >= 30 ? ' — ' + T('уровень A1.') : ' — ' + T('ниже порога A1.')) + '</b><div class="m">' + T('Пороги блока: A1 от 30 %, A2 от 40 %, B1 от 50 %, B2 от 60 %, C1 от 80 %') + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
       body = sec.tasks.map(function (x) {
         var crit = x.criteria || sec.criteria;
         return '<div class="block"><span class="setlabel">' + esc(LK(x, 'title')) + ' · ' + x.points + ' ' + T('баллов') + '</span>' +
@@ -900,10 +975,15 @@
     if (act === 'go') { e.preventDefault(); location.hash = b.getAttribute('data-href'); return; }
     if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); saveUi(); route(); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
-    else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
+    else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
     if (act === 'io') { var p = document.getElementById('io-panel'); p.hidden = !p.hidden; }
-    else if (act === 'io-copy') { var ta = document.getElementById('io-text'); ta.select(); try { navigator.clipboard.writeText(ta.value); } catch (x) { document.execCommand('copy'); } document.getElementById('io-msg').textContent = T('Скопировано.'); }
-    else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s || typeof s !== 'object' || typeof s.tests !== 'object' || Array.isArray(s.tests)) throw 0; var nT = Object.keys(s.tests).length, nC = s.course ? Object.keys(s.course).length : 0; if (!confirm(T('Заменить текущий прогресс импортированным?') + ' (' + T('тестов') + ': ' + nT + ', ' + T('курсов') + ': ' + nC + ')')) return; state = { version: 1, tests: s.tests, course: s.course || {}, voice: s.voice }; saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
+    else if (act === 'io-copy') {
+      var ta = document.getElementById('io-text'), im = document.getElementById('io-msg');
+      function copyFallback() { try { ta.select(); if (document.execCommand('copy')) { im.textContent = T('Скопировано.'); return; } } catch (x) {} im.textContent = T('Не удалось скопировать — выделите текст и скопируйте вручную.'); }
+      var pr = null; try { pr = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(ta.value) : null; } catch (x) {}
+      if (pr && pr.then) pr.then(function () { im.textContent = T('Скопировано.'); }, copyFallback); else copyFallback();
+    }
+    else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s || typeof s !== 'object' || typeof s.tests !== 'object' || Array.isArray(s.tests)) throw 0; var nT = Object.keys(s.tests).length, nC = s.course ? Object.keys(s.course).length : 0; if (!confirm(T('Заменить текущий прогресс импортированным?') + ' (' + T('тестов') + ': ' + nT + ', ' + T('курсов') + ': ' + nC + ')')) return; state = cleanState(s); saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
     else if (act === 'io-reset') { if (confirm(T('Удалить весь сохранённый прогресс?'))) { state = { version: 1, tests: {} }; saveState(); route(); } }
     else if (act === 'reset-test') { if (confirm(T('Сбросить результаты этого теста?'))) { delete state.tests[b.getAttribute('data-test')]; saveState(); route(); } }
     else if (act === 'start') { run.phase = 'run'; route(); }
@@ -921,7 +1001,7 @@
     else if (act === 'pick-prompt') { var r = document.querySelector('input[name="prompt"]:checked'); if (!r) { document.getElementById('submit-msg').textContent = T('Выберите тему.'); return; } run.promptId = r.value; run.sub = 'write'; setSection(t.id, 'writing', { status: 'draft', promptId: run.promptId, text: '' }); route(); }
     else if (act === 'finish-writing') { clearTimeout(draftTO); run.secondsUsed = Math.round(elapsed()); setSection(t.id, 'writing', { status: 'draft', promptId: run.promptId, text: run.text, secondsUsed: run.secondsUsed }); stopTimer(); run.sub = 'check'; route(); }
     else if (act === 'back-writing') { run.sub = 'write'; run.resume = true; route(); }
-    else if (act === 'save-writing') { clearTimeout(draftTO); var n = run.checks.filter(Boolean).length; setSection(t.id, 'writing', { status: 'done', promptId: run.promptId, text: run.text, checks: run.checks, score: n, total: sec.checklist.length, secondsUsed: run.secondsUsed || 0, finishedAt: Date.now() }); run.phase = 'review'; route(); }
+    else if (act === 'save-writing') { clearTimeout(draftTO); var n = run.checks.filter(Boolean).length; setSection(t.id, 'writing', { status: 'done', promptId: run.promptId, text: run.text, checks: run.checks, score: n, total: sec.checklist.length, secondsUsed: run.secondsUsed || 0, finishedAt: Date.now(), practice: !!ui.practice }); run.phase = 'review'; route(); }
     else if (act === 'next-task') {
       var cur = sec.tasks[run.taskIdx]; run.taskSec[cur.id] = Math.round(taskElapsed()); run.taskStart = null; clearTimeout(draftTO);
       if (run.taskIdx < sec.tasks.length - 1) { run.taskIdx++; setSection(t.id, 'writing', { status: 'draft', texts: run.texts, taskIdx: run.taskIdx, taskSec: run.taskSec, secondsUsed: Math.round(elapsed()) }); }
@@ -930,7 +1010,7 @@
     }
     else if (act === 'back-tasks') { run.sub = 'write'; run.taskIdx = 0; run.taskStart = null; route(); }
     else if (act === 'crit') { var tid = b.getAttribute('data-task'); run.crit[tid] = run.crit[tid] || []; run.crit[tid][+b.getAttribute('data-i')] = +b.getAttribute('data-v'); route(); }
-    else if (act === 'save-tasks') { clearTimeout(draftTO); setSection(t.id, 'writing', { status: 'done', kind: 'points', texts: run.texts, crit: run.crit, taskSec: run.taskSec, score: critSum(run.crit), total: tasksTotal(sec), secondsUsed: run.secondsUsed || 0, finishedAt: Date.now() }); run.phase = 'review'; route(); }
+    else if (act === 'save-tasks') { clearTimeout(draftTO); setSection(t.id, 'writing', { status: 'done', kind: 'points', texts: run.texts, crit: run.crit, taskSec: run.taskSec, score: critSum(run.crit), total: tasksTotal(sec), secondsUsed: run.secondsUsed || 0, finishedAt: Date.now(), practice: !!ui.practice }); run.phase = 'review'; route(); }
     else if (act === 'prep-done') { run.answerStart = elapsed(); run.sub = 'answer'; route(); }
     else if (act === 'task-start') { startTaskTimer(b.getAttribute('data-task'), +b.getAttribute('data-min')); }
     else if (act === 'task-stop') { if (tkTimer) clearInterval(tkTimer); run.tdone[b.getAttribute('data-task')] = Math.round(run.tkElapsed || 0); route(); }
@@ -955,6 +1035,7 @@
       run.answers[el.name] = +el.value;
       var ul = el.closest('.opts'); Array.prototype.forEach.call(ul.querySelectorAll('.opt'), function (o) { o.classList.remove('selected'); });
       el.closest('.opt').classList.add('selected');
+      quizDraft();
     }
     if (el.type === 'checkbox' && el.hasAttribute('data-check')) run.checks[+el.getAttribute('data-check')] = el.checked;
   });

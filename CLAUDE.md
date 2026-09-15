@@ -25,6 +25,9 @@
 - Статистика (`KZ.track(name, props)` и `trackPage(path)` в app.js): работает только в публичной сборке (`build === 'site'`),
   чтобы лаборатория и локальные прогоны не пачкали цифры. Два необязательных приёмника: `KZ.site.eventsUrl` (свой
   Worker, `tools/events-worker/`) и счётчик из `analyticsSnippet` (GoatCounter / Umami / Plausible — что подключено).
+  Приёмник развёрнут 15.09.2026: `https://qazaq-trainer-stats.k-k-g-inter.workers.dev` (Worker + D1 `qazaq-trainer-stats`,
+  id `2be00da9-a124-48d7-8929-dc43f17ba07c`), адрес прописан в `site.js`. Разрешённые источники событий — массив `ALLOWED`
+  в `worker.js`: при смене домена сайта добавить новый и `npx wrangler deploy`, иначе браузер события не отпустит.
   Тело маяка отправляется с типом `text/plain` **намеренно**: с `application/json` браузер делает предварительный запрос
   CORS, а `sendBeacon` уходит с credentials и ответ с `*` не принимает — события молча теряются (проверено 15.09.2026).
   События: `pageview`, `section-start`, `section-done` (единая точка — `setSection` при `status:'done'`), `test-done`,

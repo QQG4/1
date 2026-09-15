@@ -1,0 +1,13 @@
+{
+  // Публичный сайт на Cloudflare (статика на Workers — то, во что Cloudflare превратил Pages).
+  // Деплой: python3 build.py && npx wrangler deploy
+  // Приёмник статистики — отдельный проект, tools/events-worker/wrangler.toml.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "qazaq-trainer",
+  "compatibility_date": "2026-09-15",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "docs",
+    "not_found_handling": "single-page-application"
+  }
+}

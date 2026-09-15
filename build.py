@@ -119,6 +119,12 @@ if _base and not _base.endswith('/'): _base += '/'
     '<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Qazaq Trainer</title>'
     '<meta http-equiv="refresh" content="0; url=' + (_base or '../') + '">'
     '<p>Демо переехало на <a href="' + (_base or '../') + '">главную страницу сайта</a>.</p>', encoding='utf-8')
+# свой домен: GitHub Pages берёт его из файла CNAME. Значение выводим из siteUrl, чтобы не держать адрес в двух местах
+_host = _base.split('//')[-1].split('/')[0] if _base else ''
+if _host and not _host.endswith('github.io'):
+    (docs / 'CNAME').write_text(_host + '\n', encoding='utf-8')
+elif (docs / 'CNAME').exists():
+    (docs / 'CNAME').unlink()
 if _base:
     (docs / 'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /demo/\nSitemap: ' + _base + 'sitemap.xml\n', encoding='utf-8')
     import datetime

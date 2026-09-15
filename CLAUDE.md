@@ -35,6 +35,11 @@
   варианта приводится к порядку исходного файла теста через `q._perm` (на экране варианты перемешаны). Персональных
   данных нет: `sid` случайный и живёт до закрытия вкладки. Пока оба приёмника пусты, не отправляется ничего, а строка
   о статистике в подвале не показывается.
+- Публичный сайт продублирован на Cloudflare (статика на Workers — то, во что Cloudflare превратил Pages):
+  конфиг `wrangler.jsonc` в корне, `assets.directory = docs`, деплой `python3 build.py && npx wrangler deploy` →
+  `https://qazaq-trainer.k-k-g-inter.workers.dev`. GitHub Pages пока работает параллельно. Воркер статистики —
+  отдельный проект, его деплоить только с `--config wrangler.toml` из `tools/events-worker/`, иначе wrangler возьмёт
+  корневой `wrangler.jsonc` и молча задеплоит сайт вместо приёмника (поймано 15.09.2026).
 - Локальный просмотр в Claude Code: `.claude/launch.json` (профиль `qazaq-trainer` → `python3 serve.py`, порт 8765).
 - Локализация интерфейса: `src/i18n.js` — `T('русский текст')` возвращает казахский перевод из словаря `KZ.i18n.kk`
   (ключ = русская строка), `LK(obj,'field')` берёт `field_kk` из данных (exams.js: `label_kk`, `name_kk`, `units_kk`,

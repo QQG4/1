@@ -6,7 +6,10 @@
    Деплой: см. README.md рядом. */
 
 const ALLOWED = [                      // откуда принимаем события (CORS + защита от чужих сайтов)
-  'https://qqg4.github.io',
+  'https://qazaqtrainer.com',         // основной домен
+  'https://www.qazaqtrainer.com',
+  'https://qazaq-trainer.k-k-g-inter.workers.dev',  // площадка Cloudflare, пока домен не привязан
+  'https://qqg4.github.io',           // старый адрес, пока живы ссылки на него
 ];
 const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers'];
 const MAX_BODY = 32 * 1024;

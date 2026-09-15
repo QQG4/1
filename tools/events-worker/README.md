@@ -13,7 +13,10 @@
     npx wrangler login
     npx wrangler d1 create qazaq-trainer-stats      # выведет database_id — вписать в wrangler.toml
     npx wrangler d1 execute qazaq-trainer-stats --remote --file=schema.sql
-    npx wrangler deploy                              # выведет адрес вида https://qazaq-trainer-stats.<аккаунт>.workers.dev
+    npx wrangler deploy --config wrangler.toml       # выведет https://qazaq-trainer-stats.<аккаунт>.workers.dev
+
+**Флаг `--config wrangler.toml` обязателен**: без него wrangler поднимается вверх по дереву, находит `wrangler.jsonc`
+в корне проекта (конфиг публичного сайта) и деплоит не тот воркер, ничего об этом не сказав.
 
 Адрес воркера вписать в `src/data/site.js` → `eventsUrl`, затем `python3 build.py` и запушить `docs/`.
 Пока `eventsUrl` пуст, приложение ничего не отправляет.

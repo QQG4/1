@@ -1,0 +1,12 @@
+{
+  // Лаборатория на своём поддомене. Деплой: python3 build.py && npx wrangler deploy -c tools/lab-deploy/wrangler.jsonc
+  // Содержимое берётся из lab-site/ — папки, которой нет в публичном репозитории.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "qazaq-trainer-lab-site",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-15",
+  // run_worker_first обязателен: без него Cloudflare отдаёт статику МИМО скрипта, и проверка пароля не выполняется
+  // (поймано 15.09.2026 — лаборатория открывалась без пароля)
+  "assets": { "directory": "../../lab-site", "binding": "ASSETS", "run_worker_first": true },
+  "routes": [{ "pattern": "lab.qazaqtrainer.com", "custom_domain": true }]
+}

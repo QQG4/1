@@ -9,7 +9,13 @@
   - `docs/index.html` + `docs/audio/*.mp3` — **публичный сайт** (GitHub Pages публикует папку `docs/` ветки main):
     только бесплатные мок-тесты, без курса и без платного материала. Старый адрес `<siteUrl>demo/` оставлен как редирект на главную.
   - `lab-site/index.html` — **лаборатория**: тесты + курс + `src/data/paid/*.js`, `noindex`, свой ключ прогресса
-    `kz-trainer:lab:v1`. Это рабочая копия приватного репозитория (Cloudflare Pages + Access), в публичный git не входит.
+    `kz-trainer:lab:v1`. В публичный git не входит. Живёт на `https://lab.qazaqtrainer.com` (воркер
+    `qazaq-trainer-lab-site`, конфиг и скрипт — `tools/lab-deploy/`, деплой
+    `npx wrangler deploy -c tools/lab-deploy/wrangler.jsonc`). Вход: логин и пароль в секретах воркера
+    `LAB_USER`/`LAB_PASS` (`npx wrangler secret put ...`), в коде их нет; без секретов воркер не пускает никого.
+    **`run_worker_first: true` в конфиге обязателен** — без него Cloudflare отдаёт статику мимо скрипта и пароль
+    не спрашивается вовсе (поймано 15.09.2026: лаборатория открывалась всем). Сверху планируется Cloudflare Access
+    по списку почт — он срабатывает до воркера, пароль остаётся вторым рубежом.
   - `dist/index.html` (всё одним файлом, открывать локально) и `dist/artifact.html` (Artifact той же ссылкой; аудио data-URI,
     потому что внешние файлы в артефакте запрещены). `dist/` не в git.
 - Режим сборки виден приложению как `KZ.site.build` = `site` | `lab` | `inline`.

@@ -7,9 +7,9 @@
 Персональных данных не собираем: `sid` — случайный идентификатор вкладки, живёт до её закрытия; IP не пишем,
 из геоданных только страна, которую Cloudflare отдаёт сам.
 
-## Развёртывание (нужен Node на машине; на этой его нет — ставится с nodejs.org)
+## Развёртывание (нужен Node — на машине стоит, v26.8.2 на 15.09.2026)
 
-    cd tools/events-worker
+    cd "/Users/kkg/Desktop/Additional projects/kazresmi test programm/qazaq-trainer/tools/events-worker"
     npx wrangler login
     npx wrangler d1 create qazaq-trainer-stats      # выведет database_id — вписать в wrangler.toml
     npx wrangler d1 execute qazaq-trainer-stats --remote --file=schema.sql

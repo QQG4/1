@@ -512,7 +512,25 @@
   }
 
   /* --- вопросы с выбором (общие для listening / lexis / reading) --- */
-  function renderQuestions(sec, answers, locked, startNum) {
+  /* Жалоба на вопрос: показывается в разборе, отправляется тем же маяком, что и статистика.
+     Ни почты, ни модерации — в базе сразу видно, на какие вопросы жалуются и на что именно. */
+  var REASONS = [
+    { id: 'key', label: 'Неверный правильный ответ' },
+    { id: 'ambiguous', label: 'Подходят два варианта' },
+    { id: 'typo', label: 'Опечатка в тексте' },
+    { id: 'unclear', label: 'Непонятно, что спрашивают' },
+    { id: 'other', label: 'Другое' }
+  ];
+  function reportBox(ctx, q, chosen) {
+    if (!ctx || !(KZ.site && KZ.site.eventsUrl)) return '';   // приёмник не настроен — кнопку не показываем
+    return '<div class="report" data-test="' + esc(ctx.test) + '" data-section="' + esc(ctx.section) + '" data-qid="' + esc(q.id) + '"' +
+      ' data-a="' + (chosen == null ? -1 : (q._perm ? q._perm[chosen] : chosen)) + '" data-ok="' + (chosen === q.answer ? 1 : 0) + '">' +
+      '<button class="btn ghost small" data-act="report-open">' + T('Сообщить об ошибке') + '</button>' +
+      '<span class="rep-why" hidden><span class="small muted">' + T('Что не так?') + '</span> ' +
+      REASONS.map(function (r) { return '<button class="cb" data-act="report-send" data-why="' + r.id + '">' + T(r.label) + '</button>'; }).join(' ') +
+      '</span></div>';
+  }
+  function renderQuestions(sec, answers, locked, startNum, ctx) {
     return sec.questions.map(function (q, i) {
       var num = startNum ? startNum : i + 1;
       var opts = q.kind === 'tf' ? ['Дұрыс', 'Бұрыс'] : q.options;
@@ -526,7 +544,7 @@
         html += '<li><label class="' + cls + '"><input type="radio" name="' + q.id + '" value="' + j + '"' + (j === chosen ? ' checked' : '') + (locked ? ' disabled' : '') + '><span class="k">' + letter(j) + '</span><span>' + esc(o) + '</span></label></li>';
       });
       html += '</ul>';
-      if (locked) html += '<div class="explain' + (chosen === q.answer ? '' : ' bad') + '"><b>' + letter(q.answer) + '.</b> ' + esc(LK(q, 'explain')) + '</div>';
+      if (locked) html += '<div class="explain' + (chosen === q.answer ? '' : ' bad') + '"><b>' + letter(q.answer) + '.</b> ' + esc(LK(q, 'explain')) + '</div>' + reportBox(ctx, q, chosen);
       return html + '</div>';
     }).join('');
   }
@@ -991,7 +1009,7 @@
       head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + (pct >= 80 ? T('Уверенно.') : pct >= 50 ? T('Есть пробелы — смотрите разбор.') : T('Слабо — раздел стоит пройти заново после разбора.')) + '</b><div class="m">' + T('Время:') + ' ' + mmss(saved.secondsUsed || 0) + ' ' + T('из') + ' ' + sec.minutes + ':00 · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
       body = (sec.script ? '<div class="block"><span class="setlabel">' + T('Скрипт') + '</span><h3>' + esc(sec.script.title) + '</h3>' + (KZ.audio && KZ.audio[t.id] ? '<audio controls preload="none" src="' + KZ.audio[t.id].src + '" style="width:100%;margin-bottom:10px"></audio>' : '') + '<div class="script" lang="kk">' + esc(sec.script.text) + '</div></div>' : '') +
         (sec.passage ? '<div class="block"><div class="passage-title">Мәтін · ' + esc(sec.passage.title) + '</div><div class="passage">' + sec.passage.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div></div>' : '') +
-        '<div class="block"><span class="setlabel">' + T('Разбор') + '</span>' + renderQuestions(sec, saved.answers || {}, true) + '</div>';
+        '<div class="block"><span class="setlabel">' + T('Разбор') + '</span>' + renderQuestions(sec, saved.answers || {}, true, null, { test: t.id, section: sec.type }) + '</div>';
     } else if (sec.tasks) {
       var pct2 = Math.round(100 * saved.score / saved.total);
       head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Самооценка по официальным критериям') + (pct2 >= 80 ? ' — ' + T('уровень C1.') : pct2 >= 60 ? ' — ' + T('уровень B2.') : pct2 >= 50 ? ' — ' + T('уровень B1.') : pct2 >= 40 ? ' — ' + T('уровень A2.') : pct2 >= 30 ? ' — ' + T('уровень A1.') : ' — ' + T('ниже порога A1.')) + '</b><div class="m">' + T('Пороги блока: A1 от 30 %, A2 от 40 %, B1 от 50 %, B2 от 60 %, C1 от 80 %') + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
@@ -1048,6 +1066,14 @@
     var t = run && findTest(run.testId), sec = null;
     if (t) t.sections.forEach(function (s) { if (s.type === run.type) sec = s; });
 
+    if (act === 'report-open') { var box = b.closest('.report'); if (box) { b.hidden = true; var w = box.querySelector('.rep-why'); if (w) w.hidden = false; } return; }
+    if (act === 'report-send') {
+      var box2 = b.closest('.report'); if (!box2) return;
+      sendEvent('report', { test: box2.getAttribute('data-test'), section: box2.getAttribute('data-section'), qid: box2.getAttribute('data-qid'),
+        why: b.getAttribute('data-why'), a: +box2.getAttribute('data-a'), ok: +box2.getAttribute('data-ok') });
+      box2.innerHTML = '<span class="small good-text" role="status">' + T('Спасибо — отметили, проверим этот вопрос.') + '</span>';
+      return;
+    }
     if (act === 'go') { e.preventDefault(); location.hash = b.getAttribute('data-href'); return; }
     if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); track('lang', { to: KZ.lang }); saveUi(); route(); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }

@@ -4,6 +4,10 @@
 какой процент набрали — и, главное, **какой вариант ответа выбирают на каждом вопросе**. Последнее нужно, чтобы
 перекалибровать дистракторы B2–C2 по реальным данным, а не на глаз (см. сводку QA от 13–14.09.2026).
 
+Там же собираются жалобы на вопросы: под разбором каждого вопроса есть кнопка «Сообщить об ошибке» с пятью причинами
+(`key` — неверный ключ, `ambiguous` — подходят два варианта, `typo` — опечатка, `unclear` — непонятна формулировка, `other`).
+Причина ложится в колонку `note`, id вопроса — в `qid`.
+
 Персональных данных не собираем: `sid` — случайный идентификатор вкладки, живёт до её закрытия; IP не пишем,
 из геоданных только страна, которую Cloudflare отдаёт сам.
 
@@ -37,6 +41,10 @@
     # вопросы, где ошибается меньше 10 % — слишком лёгкие; где больше 80 % — либо сложные, либо сломанные
     npx wrangler d1 execute qazaq-trainer-stats --remote --command \
       "SELECT test, section, qid, COUNT(*) n, ROUND(100.0*SUM(ok)/COUNT(*)) pct_ok FROM answers GROUP BY test, section, qid HAVING n >= 20 ORDER BY pct_ok"
+
+    # на что жалуются люди (кнопка «сообщить об ошибке» под разбором)
+    npx wrangler d1 execute qazaq-trainer-stats --remote --command \
+      "SELECT test, section, qid, note, COUNT(*) n FROM events WHERE name='report' GROUP BY test, section, qid, note ORDER BY n DESC"
 
     # мёртвые дистракторы: варианты, которые не выбрал никто
     npx wrangler d1 execute qazaq-trainer-stats --remote --command \

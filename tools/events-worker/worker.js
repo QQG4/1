@@ -11,7 +11,7 @@ const ALLOWED = [                      // откуда принимаем соб
   'https://qazaq-trainer.k-k-g-inter.workers.dev',  // площадка Cloudflare, пока домен не привязан
   'https://qqg4.github.io',           // старый адрес, пока живы ссылки на него
 ];
-const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers'];
+const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report'];
 const MAX_BODY = 32 * 1024;
 
 function cors(origin) {
@@ -46,12 +46,13 @@ export default {
     const stmts = [];
 
     stmts.push(env.DB.prepare(
-      `INSERT INTO events (day, ts, sid, name, lang, exam, level, test, section, pct, seconds, practice, timed_out, path, country)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      `INSERT INTO events (day, ts, sid, name, lang, exam, level, test, section, pct, seconds, practice, timed_out, path, country, qid, note)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     ).bind(
       day, int(d.ts) || Date.now(), str(d.sid, 32), str(d.e, 24), str(d.lang, 4),
       str(p.exam, 16), str(p.level, 4), str(p.test, 40), str(p.section, 16),
-      int(p.pct), int(p.seconds), p.practice ? 1 : 0, p.timedOut ? 1 : 0, str(p.path, 120), country
+      int(p.pct), int(p.seconds), p.practice ? 1 : 0, p.timedOut ? 1 : 0, str(p.path, 120), country,
+      str(p.qid, 24), str(p.why, 24)      // жалоба на вопрос: какой вопрос и что именно не так
     ));
 
     if (d.e === 'answers' && Array.isArray(p.q)) {

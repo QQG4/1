@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS events (
   name TEXT NOT NULL,          -- pageview | section-start | section-done | test-done | audio-play | lang | setting | answers
   lang TEXT, exam TEXT, level TEXT, test TEXT, section TEXT,
   pct INTEGER, seconds INTEGER, practice INTEGER, timed_out INTEGER,
-  path TEXT, country TEXT
+  path TEXT, country TEXT,
+  qid TEXT, note TEXT            -- жалоба на вопрос: id вопроса и причина (key | ambiguous | typo | unclear | other)
 );
 CREATE INDEX IF NOT EXISTS events_day ON events (day, name);
 CREATE INDEX IF NOT EXISTS events_test ON events (test, section);

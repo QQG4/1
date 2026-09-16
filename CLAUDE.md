@@ -153,6 +153,16 @@
   снижается пропорционально объёму (`critCaps`/`capNote`, кнопки выше предела неактивны). Чек-лист QRT на пустой текст — 0.
 - Страница теста: под разделом «N заданий · M баллов» нашего мок-теста и строкой «на экзамене: …» официальный объём (`stageTasks`).
   Таймеры ҚАЗТЕСТ — в темпе экзамена: аудирование 5 мин на текст, чтение ceil(заданий × 1,25) мин.
+- Страница «Какие данные мы собираем» — `src/privacy/index.html` → `docs/privacy/` (RU/KK, язык из `kz-trainer:lang`); ссылка
+  `privacyLink()` в подвале и в форме обратной связи. **Текст обязан совпадать с кодом**: новые события в `sendEvent`/`track`,
+  поля в worker.js, срок хранения (cron в tools/events-worker, 365 дней) → поправить страницу и дату.
+- Шрифты сайта и лаборатории — свои (`src/fonts/`, скачаны из Google Fonts, OFL): build.py заменяет `@import` Google на
+  `fonts/fonts.css` в режимах site/lab; автономный dist по-прежнему грузит Google Fonts. Сторонних запросов на сайте нет,
+  кроме приёмника статистики. С localhost события не отправляются.
+- Статистика: `lab.qazaqtrainer.com/stats/` (`src/stats/index.html`, build.py вставляет файлы тестов для текстов вопросов) ←
+  `/api/stats` в `tools/lab-deploy/worker.js` (D1 подключена к воркеру лаборатории). Тексты посетителей — только через textContent.
+  Локальная проверка: `wrangler d1 export --remote` → `d1 execute --local`, затем конфигурация `lab-dev` (wrangler dev с временным паролем).
+- `lab-site/.assetsignore` (пишет build.py) исключает `.git` — до 16.09.2026 wrangler выкладывал папку .git приватного репозитория.
 - Сайт: `docs/404.html` (not_found_handling "404-page" в wrangler.jsonc), `docs/_headers` (HSTS, nosniff, SAMEORIGIN, микрофон
   только self, кэш аудио 7 дней) — оба пишет build.py.
 

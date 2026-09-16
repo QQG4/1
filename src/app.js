@@ -18,7 +18,7 @@
      Два приёмника, оба необязательные: KZ.site.eventsUrl (свой endpoint — POST JSON, шлём sendBeacon,
      чтобы уход со страницы не терял событие) и счётчик из analyticsSnippet (GoatCounter / Umami / Plausible —
      что подключено, то и используется). Не настроено ничего → все вызовы молча ничего не делают. */
-  var TRACK_ON = !!(KZ.site && KZ.site.build === 'site');
+  var TRACK_ON = !!(KZ.site && KZ.site.build === 'site') && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);   // локальный просмотр docs/ цифры не пачкает
   var SID = (function () {
     if (!TRACK_ON) return '';
     try {
@@ -357,6 +357,10 @@
   /* Обратная связь: кнопка в углу на каждой странице. Свободный текст — на случай, когда дело не в конкретном
      вопросе: съехала вёрстка, не играет аудио, опечатка в диалоге, предложение. Вместе с текстом уходит адрес
      страницы и строка браузера — без них «у меня не открывается» невозможно разобрать. */
+  // ссылка на страницу «Какие данные мы собираем» (docs/privacy/) — только там, где сайт опубликован; в автономном dist её нет
+  function privacyLink() {
+    return KZ.site && KZ.site.siteUrl && KZ.site.build !== 'inline' ? ' <a href="' + esc(KZ.site.siteUrl) + 'privacy/" target="_blank" rel="noopener">' + T('Какие данные мы собираем') + '</a>' : '';
+  }
   var fbCtx = null;   // если форму открыли из жалобы на вопрос — сюда кладётся его контекст
   function feedbackWidget() {
     if (!(KZ.site && KZ.site.eventsUrl)) return '';
@@ -369,7 +373,7 @@
         '<textarea id="fb-text" rows="4" placeholder="' + T('Что не так или что улучшить? Чем конкретнее, тем быстрее починим.') + '"></textarea>' +
         '<div class="actions"><button class="btn small" data-act="fb-send">' + T('Отправить') + '</button>' +
         '<span class="hint" id="fb-msg" role="status"></span></div>' +
-        '<p class="small muted">' + T('Отправляется текст, адрес страницы и название браузера. Имени и почты не спрашиваем — ответить не сможем, но прочитаем всё.') + '</p>' +
+        '<p class="small muted">' + T('Отправляется текст, адрес страницы и название браузера. Имени и почты не спрашиваем — ответить не сможем, но прочитаем всё.') + privacyLink() + '</p>' +
       '</div></div>';
   }
   function topbar(items, right) {
@@ -409,7 +413,7 @@
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
       '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
       '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-level">' + lv + '</div><div class="rung-name">' + esc(LK(L, 'name')) + '</div><div class="rung-units">' + esc(LK(L, 'units')) + '</div><div class="rung-focus">' + esc(LK(L, 'focus')) + '</div></div>'; }).join('') + '</div></section>' +
-      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.supportEmail ? ' · ' + T('Почта:') + ' <a href="mailto:' + esc(KZ.site.supportEmail) + '">' + esc(KZ.site.supportEmail) + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных — ответы нужны, чтобы находить неудачные вопросы и чинить их.') + '</p>' : '') + '</footer>';
+      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.supportEmail ? ' · ' + T('Почта:') + ' <a href="mailto:' + esc(KZ.site.supportEmail) + '">' + esc(KZ.site.supportEmail) + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных — ответы нужны, чтобы находить неудачные вопросы и чинить их.') + privacyLink() + '</p>' : '') + '</footer>';
   }
   function courseCards() {
     if (!KZ.courses) return '';

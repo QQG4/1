@@ -68,4 +68,13 @@ export default {
     catch (e) { return new Response('db error', { status: 500, headers: cors(origin) }); }
     return new Response(null, { status: 204, headers: cors(origin) });
   },
+
+  // Срок хранения — 12 месяцев (обещан на странице /privacy/). Раз в сутки по расписанию из wrangler.toml
+  // удаляются события и ответы старше года, включая тексты обратной связи и анкеты экспертов.
+  async scheduled(event, env) {
+    await env.DB.batch([
+      env.DB.prepare(`DELETE FROM events WHERE day < date('now', '-365 day')`),
+      env.DB.prepare(`DELETE FROM answers WHERE day < date('now', '-365 day')`),
+    ]);
+  },
 };

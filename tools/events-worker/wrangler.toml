@@ -6,3 +6,7 @@ compatibility_date = "2026-09-15"
 binding = "DB"
 database_name = "qazaq-trainer-stats"
 database_id = "2be00da9-a124-48d7-8929-dc43f17ba07c"
+
+# удаление записей старше 12 месяцев (worker.js → scheduled), каждый день в 03:17 UTC
+[triggers]
+crons = ["17 3 * * *"]

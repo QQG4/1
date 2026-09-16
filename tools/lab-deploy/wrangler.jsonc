@@ -8,5 +8,7 @@
   // run_worker_first обязателен: без него Cloudflare отдаёт статику МИМО скрипта, и проверка пароля не выполняется
   // (поймано 15.09.2026 — лаборатория открывалась без пароля)
   "assets": { "directory": "../../lab-site", "binding": "ASSETS", "run_worker_first": true },
-  "routes": [{ "pattern": "lab.qazaqtrainer.com", "custom_domain": true }]
+  "routes": [{ "pattern": "lab.qazaqtrainer.com", "custom_domain": true }],
+  // база статистики публичного сайта — только для чтения на странице /stats/ (запросы в worker.js → stats)
+  "d1_databases": [{ "binding": "DB", "database_name": "qazaq-trainer-stats", "database_id": "2be00da9-a124-48d7-8929-dc43f17ba07c" }]
 }

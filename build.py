@@ -16,6 +16,14 @@ root = pathlib.Path(__file__).parent
 src = root / 'src'
 tpl = (src / 'index.html').read_text(encoding='utf-8')
 css = (src / 'styles.css').read_text(encoding='utf-8')
+def local_fonts(text, href='fonts/fonts.css'):
+    # Google Fonts видит IP каждого посетителя; на сайте шрифты лежат у нас (16.09.2026, см. страницу privacy/)
+    import re as _re
+    out = _re.sub(r"@import url\('https://fonts\.googleapis\.com/[^']*'\);\n?", '', text)
+    return "@import url('" + href + "');\n" + out
+def put_fonts(dest):
+    dest.mkdir(parents=True, exist_ok=True)
+    for f in (src / 'fonts').iterdir(): shutil.copyfile(f, dest / f.name)
 
 def read(p): return pathlib.Path(p).read_text(encoding='utf-8')
 data = [read(src / 'data' / 'exams.js'), read(src / 'data' / 'site.js')]
@@ -52,7 +60,8 @@ def body(mode):
     # публичный сайт — только тесты; лаборатория и локальная сборка — плюс курс и платный материал
     extra = [] if mode == 'site' else course_data + (paid_data if mode == 'lab' else [])
     flag = ["KZ.site.build = '" + mode + "';"]
-    return tpl.replace('/*STYLES*/', css).replace('/*DATA*/', '\n'.join(data + flag + extra + [audio_js(mode)])).replace('/*APP*/', app)
+    # сайт и лаборатория берут шрифты со своего сервера (src/fonts → fonts/), автономный dist — по-прежнему с Google Fonts
+    return tpl.replace('/*STYLES*/', local_fonts(css) if mode in ('site', 'lab') else css).replace('/*DATA*/', '\n'.join(data + flag + extra + [audio_js(mode)])).replace('/*APP*/', app)
 SITE_NAME = 'Qazaq Trainer'
 TITLES = {
     'site': 'Qazaq Trainer — мок-тесты ҚАЗТЕСТ и QazResmiTest',
@@ -105,12 +114,16 @@ def put_audio(dest):
         mp3 = root / 'audio' / (tid + '.mp3')
         if mp3.exists(): shutil.copyfile(mp3, dest / (tid + '.mp3'))
 
+def _re_fonts(html):
+    import re as _re
+    return _re.sub(r'<link rel="stylesheet" href="https://fonts\.googleapis\.com/[^"]*">', '<link rel="stylesheet" href="/fonts/fonts.css">', html)
+
 # ---- публичный сайт ----
 docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
 (docs / 'review').mkdir(exist_ok=True)
-(docs / 'review' / 'index.html').write_text(read(src / 'review' / 'index.html').replace('__EVENTS_URL__', site_cfg.get('events', '')).replace('__SUPPORT_EMAIL__', site_cfg.get('email', '')), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
+(docs / 'review' / 'index.html').write_text(_re_fonts(read(src / 'review' / 'index.html')).replace('__EVENTS_URL__', site_cfg.get('events', '')).replace('__SUPPORT_EMAIL__', site_cfg.get('email', '')), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
 _base = (site_cfg.get('url') or '').strip()
 if _base and not _base.endswith('/'): _base += '/'
 # 404, заголовки безопасности и список файлов, которые не выкладываются на Cloudflare (16.09.2026).
@@ -134,7 +147,9 @@ if _base and not _base.endswith('/'): _base += '/'
     '  X-Frame-Options: SAMEORIGIN\n'
     '  Permissions-Policy: camera=(), geolocation=(), microphone=(self)\n'
     '/audio/*\n'
-    '  Cache-Control: public, max-age=604800\n', encoding='utf-8')
+    '  Cache-Control: public, max-age=604800\n'
+    '/fonts/*\n'
+    '  Cache-Control: public, max-age=31536000, immutable\n', encoding='utf-8')
 # служебные файлы GitHub Pages (CNAME, .nojekyll) и сам _headers/.assetsignore на Cloudflare наружу не отдаются
 (docs / '.assetsignore').write_text('CNAME\n.nojekyll\n.assetsignore\n', encoding='utf-8')
 # бывшее демо для клиентов: публичный сайт теперь сам показывает только мок-тесты, поэтому старые ссылки уводим на главную
@@ -153,17 +168,30 @@ if _base:
     (docs / 'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /demo/\nSitemap: ' + _base + 'sitemap.xml\n', encoding='utf-8')
     import datetime
     _d = datetime.date.today().isoformat()
-    _urls = ''.join('<url><loc>%s</loc><lastmod>%s</lastmod></url>' % (_base + u, _d) for u in ('', 'review/'))
+    _urls = ''.join('<url><loc>%s</loc><lastmod>%s</lastmod></url>' % (_base + u, _d) for u in ('', 'privacy/', 'review/'))
     (docs / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + _urls + '</urlset>\n', encoding='utf-8')
 put_audio(docs / 'audio')
+put_fonts(docs / 'fonts')
+# страница «Какие данные мы собираем» (RU/KK); ссылка — в подвале приложения и в форме обратной связи
+(docs / 'privacy').mkdir(exist_ok=True)
+shutil.copyfile(src / 'privacy' / 'index.html', docs / 'privacy' / 'index.html')
 
 # ---- лаборатория (рабочая копия приватного репозитория) ----
 lab = root / 'lab-site'; lab.mkdir(exist_ok=True)
 (lab / 'index.html').write_text(full('lab'), encoding='utf-8')
 (lab / 'robots.txt').write_text('User-agent: *\nDisallow: /\n', encoding='utf-8')
+# lab-site — рабочая копия приватного репозитория: без этого файла wrangler выкладывает на Cloudflare и папку .git (найдено 16.09.2026)
+(lab / '.assetsignore').write_text('.git\n.gitignore\n.assetsignore\n', encoding='utf-8')
 for ico in ('favicon.svg', 'apple-touch-icon.png'):
     if (docs / ico).exists(): shutil.copyfile(docs / ico, lab / ico)
 put_audio(lab / 'audio')
+put_fonts(lab / 'fonts')
+# статистика сайта: страница читает /api/stats (tools/lab-deploy/worker.js); вопросы и варианты — из файлов тестов,
+# вставленных как есть (каждый файл — KZ.tests.push({...}))
+_tests_js = '\n'.join(read(f) for f in sorted(glob.glob(str(src / 'data' / 'tests' / '*.js'))))
+assert '</script' not in _tests_js.lower(), 'в данных тестов есть </script> — страница статистики сломается'
+(lab / 'stats').mkdir(exist_ok=True)
+(lab / 'stats' / 'index.html').write_text(read(src / 'stats' / 'index.html').replace('/*TESTS*/', _tests_js), encoding='utf-8')
 
 kb = lambda p: p.stat().st_size // 1024
 print('built: docs/index.html (%d KB, сайт — только мок-тесты), lab-site/index.html (%d KB, лаборатория: +курс%s), dist/index.html (%d KB), dist/artifact.html'

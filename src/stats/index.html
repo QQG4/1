@@ -1,0 +1,245 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Статистика · Qazaq Trainer</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Статистика публичного сайта. Живёт только в лаборатории (lab.qazaqtrainer.com/stats/), данные — /api/stats того же воркера.
+   Все тексты из базы (жалобы, обратная связь, анкеты) написаны посетителями: выводятся только через textContent. */
+:root{
+  --bg:#f6f3ec; --surface:#fffdf9; --ink:#1e2a30; --muted:#5f6d74; --line:#ddd6c8; --line-strong:#c9bfa9;
+  --accent:#2f6f7e; --accent-soft:#e3eef0; --good:#2f7d4f; --good-soft:#e4f1e8; --warn:#8a5f00; --warn-soft:#f6ecd2; --bad:#b23a3a; --bad-soft:#f5e0e0;
+  --sans:"Source Sans 3","Helvetica Neue",Arial,system-ui,sans-serif; --mono:"JetBrains Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#151a1d; --surface:#1d2428; --ink:#e8e4da; --muted:#9aa5aa; --line:#2f3a40; --line-strong:#465358; --accent:#7fbccb; --accent-soft:#1f3239; --good:#7cc99a; --good-soft:#1c3126; --warn:#e0b45a; --warn-soft:#3a2f14; --bad:#e58a8a; --bad-soft:#3d2022; } }
+:root[data-theme="dark"]{ --bg:#151a1d; --surface:#1d2428; --ink:#e8e4da; --muted:#9aa5aa; --line:#2f3a40; --line-strong:#465358; --accent:#7fbccb; --accent-soft:#1f3239; --good:#7cc99a; --good-soft:#1c3126; --warn:#e0b45a; --warn-soft:#3a2f14; --bad:#e58a8a; --bad-soft:#3d2022; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45}
+main{max-width:1100px;margin:0 auto;padding:28px 16px 80px}
+h1{font-size:28px;margin:0 0 4px}
+h2{font-size:19px;margin:34px 0 6px}
+.sub,.muted{color:var(--muted)}
+.sub{margin:0 0 12px;max-width:75ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 6px}
+.bar button,.bar select{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+.bar button.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card b{display:block;font-size:26px;font-family:var(--mono);font-weight:600}
+.card span{color:var(--muted);font-size:13px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;white-space:nowrap}
+td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:999px;margin:0 4px 3px 0;white-space:nowrap}
+.tag.bad{background:var(--bad-soft);color:var(--bad)} .tag.warn{background:var(--warn-soft);color:var(--warn)} .tag.good{background:var(--good-soft);color:var(--good)} .tag.info{background:var(--accent-soft);color:var(--accent)}
+.opt{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:center;font-size:13.5px;margin:2px 0}
+.opt .meter{display:inline-block;width:70px;vertical-align:middle;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.opt .meter i{display:block;height:100%;background:var(--muted)}
+.opt.key{font-weight:600} .opt.key .meter i{background:var(--good)}
+.opt.top .meter i{background:var(--bad)}
+.q{font-size:14px;margin-bottom:4px}
+.chart{width:100%;height:150px;display:block}
+.chart text{font-size:10px;fill:var(--muted);font-family:var(--mono)}
+.msg{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0}
+.msg .meta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:4px;overflow-wrap:anywhere}
+.msg p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;background:var(--bg);padding:10px;border-radius:8px;max-height:480px;overflow:auto}
+.err{background:var(--bad-soft);border:1px solid var(--bad);border-radius:10px;padding:12px 14px;margin-top:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.two{grid-template-columns:1fr} h1{font-size:23px}}
+</style></head>
+<body><main>
+<h1>Статистика сайта</h1>
+<p class="sub">qazaqtrainer.com: посещения, прохождение разделов, ответы по каждому вопросу и сообщения посетителей. «Посетитель» здесь — одна вкладка браузера:
+человек, открывший сайт в двух вкладках или на следующий день, считается дважды. Записи старше 12 месяцев удаляются автоматически.</p>
+<div class="bar" id="period" role="group" aria-label="Период">
+  <button data-d="1">Сегодня</button><button data-d="7">7 дней</button><button data-d="30" class="on">30 дней</button><button data-d="90">90 дней</button><button data-d="3650">Всё время</button>
+  <span class="muted" id="gen"></span>
+</div>
+<div id="out"><p class="muted">Загружаю…</p></div>
+</main>
+<script>
+var KZ = { tests: [] };
+</script>
+<script>
+/*TESTS*/
+</script>
+<script>
+(function () {
+  var TESTS = {};
+  KZ.tests.forEach(function (t) {
+    var secs = {};
+    (t.sections || []).forEach(function (s) {
+      if (!s.questions) return;
+      var qs = {}; s.questions.forEach(function (q, i) { qs[q.id] = { i: i, text: q.text || '', options: q.options || (q.kind === 'tf' ? ['Дұрыс', 'Бұрыс'] : []), answer: q.answer }; });
+      secs[s.type] = qs;
+    });
+    TESTS[t.id] = { title: t.level + ' · ' + (t.exam === 'kaztest' ? 'ҚАЗТЕСТ' : 'QRT') + ' · ' + (t.title || t.id), secs: secs };
+  });
+  var SECTION = { listening: 'Аудирование', reading: 'Чтение', lexis: 'Лексика', writing: 'Письмо', speaking: 'Говорение' };
+  var WHY = { key: 'неверный ключ', ambiguous: 'подходят два варианта', typo: 'опечатка', unclear: 'непонятна формулировка', other: 'другое' };
+  var out = document.getElementById('out');
+
+  function el(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) { if (k === 'text') e.textContent = attrs[k]; else if (k === 'cls') e.className = attrs[k]; else e.setAttribute(k, attrs[k]); });
+    (kids || []).forEach(function (c) { if (c != null) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  var pct = function (a, b) { return b ? Math.round(100 * a / b) + ' %' : '—'; };
+  var mmss = function (s) { return s == null ? '—' : Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0'); };
+  var testName = function (id) { return TESTS[id] ? TESTS[id].title : id; };
+  function table(head, rows, numeric) {
+    return el('div', { cls: 'tablewrap' }, [el('table', null, [
+      el('thead', null, [el('tr', null, head.map(function (h) { return el('th', { text: h }); }))]),
+      el('tbody', null, rows.map(function (r) { return el('tr', null, r.map(function (c, i) { var td = el('td', numeric && numeric.indexOf(i) >= 0 ? { cls: 'n' } : null); if (c instanceof Node) td.appendChild(c); else td.textContent = c == null ? '—' : c; return td; })); }))
+    ])]);
+  }
+
+  function chart(daily, days) {
+    var map = {}; daily.forEach(function (r) { map[r.day] = r; });
+    var n = Math.min(days, 90), list = [];
+    for (var i = n - 1; i >= 0; i--) { var d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10); list.push({ day: d, v: map[d] ? map[d].visitors : 0, s: map[d] ? map[d].starters : 0 }); }
+    if (days > 90 && daily.length) list = daily.map(function (r) { return { day: r.day, v: r.visitors, s: r.starters }; });
+    var W = 1000, H = 150, max = Math.max(1, Math.max.apply(null, list.map(function (x) { return x.v; })));
+    var bw = W / Math.max(list.length, 1), ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('class', 'chart'); svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Посетители и начавшие раздел по дням');
+    list.forEach(function (x, i) {
+      [[x.v, 'var(--line-strong)'], [x.s, 'var(--accent)']].forEach(function (p) {
+        var h = (H - 20) * p[0] / max, r = document.createElementNS(ns, 'rect');
+        r.setAttribute('x', i * bw + bw * 0.12); r.setAttribute('width', bw * 0.76); r.setAttribute('y', H - 16 - h); r.setAttribute('height', h); r.setAttribute('fill', p[1]);
+        var t = document.createElementNS(ns, 'title'); t.textContent = x.day + ': посетителей ' + x.v + ', начали раздел ' + x.s; r.appendChild(t); svg.appendChild(r);
+      });
+    });
+    [list[0], list[list.length - 1]].forEach(function (x, k) {
+      if (!x) return; var t = document.createElementNS(ns, 'text'); t.setAttribute('x', k ? W - 2 : 2); t.setAttribute('y', H - 3); t.setAttribute('text-anchor', k ? 'end' : 'start'); t.textContent = x.day; svg.appendChild(t);
+    });
+    var t2 = document.createElementNS(ns, 'text'); t2.setAttribute('x', 2); t2.setAttribute('y', 10); t2.textContent = 'макс. ' + max; svg.appendChild(t2);
+    return el('div', { cls: 'card' }, [svg, el('span', { text: 'серые — посетители, цветные — начали хотя бы один раздел' })]);
+  }
+
+  function questions(data) {
+    var reportsBy = {}; data.reports.forEach(function (r) { var k = r.test + '|' + r.section + '|' + r.qid; (reportsBy[k] = reportsBy[k] || []).push(r); });
+    var qs = {};
+    data.questions.forEach(function (r) {
+      var k = r.test + '|' + r.section + '|' + r.qid;
+      var q = qs[k] = qs[k] || { test: r.test, section: r.section, qid: r.qid, n: 0, ok: 0, dist: {} };
+      q.n += r.n; q.ok += r.ok; q.dist[r.chosen] = (q.dist[r.chosen] || 0) + r.n;
+    });
+    Object.keys(reportsBy).forEach(function (k) { if (!qs[k]) { var p = k.split('|'); qs[k] = { test: p[0], section: p[1], qid: p[2], n: 0, ok: 0, dist: {} }; } });
+    var list = Object.keys(qs).map(function (k) {
+      var q = qs[k], meta = TESTS[q.test] && TESTS[q.test].secs[q.section] && TESTS[q.test].secs[q.section][q.qid];
+      q.meta = meta; q.reports = reportsBy[k] || []; q.flags = []; q.score = 0;
+      var share = q.n ? q.ok / q.n : null;
+      if (q.reports.length) { q.flags.push(['bad', 'жалоб: ' + q.reports.length]); q.score += 100 * q.reports.length; }
+      if (meta && q.n >= 5) {
+        var keyN = q.dist[meta.answer] || 0, top = null;
+        Object.keys(q.dist).forEach(function (c) { if (+c >= 0 && +c !== meta.answer && q.dist[c] > keyN && (top == null || q.dist[c] > q.dist[top])) top = c; });
+        if (top != null) { q.flags.push(['bad', 'неверный вариант выбирают чаще верного']); q.score += 50; q.top = +top; }
+        if (share < 0.3) { q.flags.push(['warn', 'трудный: верно ' + Math.round(share * 100) + ' %']); q.score += 20; }
+        if (share >= 0.95 && q.n >= 10) { q.flags.push(['info', 'слишком лёгкий']); q.score += 5; }
+      } else if (q.n < 5) q.flags.push(['info', 'мало ответов']);
+      if (!meta) q.flags.push(['warn', 'вопроса нет в текущих данных']);
+      return q;
+    });
+    list.sort(function (a, b) { return b.score - a.score || b.n - a.n; });
+    return list;
+  }
+
+  function render(data) {
+    out.textContent = '';
+    document.getElementById('gen').textContent = 'с ' + data.since + ' · обновлено ' + new Date(data.generated).toLocaleString('ru-RU');
+    var f = data.funnel || {};
+    out.appendChild(el('div', { cls: 'cards' }, [
+      ['visitors', 'посетителей'], ['starters', 'начали раздел'], ['finishers', 'завершили раздел'], ['whole_test', 'прошли тест целиком'], ['sections_done', 'разделов завершено']
+    ].map(function (c) { return el('div', { cls: 'card' }, [el('b', { text: String(f[c[0]] || 0) }), el('span', { text: c[1] })]); }).concat([
+      el('div', { cls: 'card' }, [el('b', { text: pct(f.starters || 0, f.visitors || 0) }), el('span', { text: 'из посетителей начали раздел' })]),
+      el('div', { cls: 'card' }, [el('b', { text: pct(f.finishers || 0, f.starters || 0) }), el('span', { text: 'из начавших довели до конца' })])
+    ])));
+
+    out.appendChild(el('h2', { text: 'По дням' }));
+    out.appendChild(chart(data.daily, data.days));
+
+    out.appendChild(el('div', { cls: 'two' }, [
+      el('div', null, [el('h2', { text: 'Страны' }), table(['Страна', 'Посетителей'], data.countries.map(function (r) { return [r.country, r.n]; }), [1])]),
+      el('div', null, [el('h2', { text: 'Язык интерфейса при входе' }), table(['Язык', 'Посетителей'], data.langs.map(function (r) { return [r.lang === 'kk' ? 'казахский' : r.lang === 'ru' ? 'русский' : r.lang, r.n]; }), [1]),
+        el('h2', { text: 'Аудио' }), table(['Тест', 'Запусков', 'Человек'], data.audio.map(function (r) { return [testName(r.test), r.plays, r.people]; }), [1, 2])])
+    ]));
+
+    out.appendChild(el('h2', { text: 'Разделы тестов' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Средний результат и время — по завершённым разделам. «По таймеру» — время вышло раньше, чем ответы зафиксировали; «тренировка» — режим без остановки по времени.' }));
+    out.appendChild(data.tests.length ? table(['Тест', 'Раздел', 'Начали', 'Завершили', 'Доля', 'Средний %', 'Время', 'По таймеру', 'Тренировка'],
+      data.tests.map(function (r) { return [testName(r.test), SECTION[r.section] || r.section, r.starts, r.done, pct(r.done, r.starts), r.avg_pct == null ? '—' : r.avg_pct + ' %', mmss(r.avg_seconds), r.timed_out, r.practice]; }), [2, 3, 4, 5, 6, 7, 8])
+      : el('p', { cls: 'muted', text: 'За период разделы никто не начинал.' }));
+
+    var qlist = questions(data);
+    out.appendChild(el('h2', { text: 'Вопросы' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Сверху — вопросы, которые стоит проверить: с жалобами, где неверный вариант выбирают чаще верного, и слишком трудные. Флаги ставятся от 5 ответов. Зелёная полоса — верный вариант, красная — самый популярный неверный.' }));
+    var sel = el('select', { 'aria-label': 'Тест' }, [el('option', { value: '', text: 'Все тесты' })].concat(Object.keys(TESTS).sort().map(function (id) { return el('option', { value: id, text: testName(id) }); })));
+    var onlyFlag = el('input', { type: 'checkbox', id: 'onlyflag', checked: 'checked' });
+    var qbox = el('div');
+    out.appendChild(el('div', { cls: 'bar' }, [sel, el('label', null, [onlyFlag, ' только требующие внимания'])]));
+    out.appendChild(qbox);
+    function drawQ() {
+      qbox.textContent = '';
+      var rows = qlist.filter(function (q) { return (!sel.value || q.test === sel.value) && (!onlyFlag.checked || q.score > 0); });
+      if (!rows.length) { qbox.appendChild(el('p', { cls: 'muted', text: qlist.length ? 'Нет вопросов по этому фильтру.' : 'Ответов за период нет.' })); return; }
+      qbox.appendChild(table(['Вопрос', 'Ответов', 'Верно', 'Выбор вариантов'], rows.slice(0, 200).map(function (q) {
+        var head = el('div', null, [
+          el('div', { cls: 'muted', text: testName(q.test) + ' · ' + (SECTION[q.section] || q.section) + ' · ' + q.qid }),
+          el('div', { cls: 'q', text: q.meta ? q.meta.text : '' }),
+          el('div', null, q.flags.map(function (fl) { return el('span', { cls: 'tag ' + fl[0], text: fl[1] }); })),
+          q.reports.length ? el('div', { cls: 'muted', text: 'Жалобы: ' + q.reports.map(function (r) { return (WHY[r.note] || r.note || '?') + ' (' + r.day + ')'; }).join('; ') }) : null
+        ]);
+        var dist = el('div');
+        if (q.meta) {
+          q.meta.options.forEach(function (o, i) {
+            var c = q.dist[i] || 0;
+            dist.appendChild(el('div', { cls: 'opt' + (i === q.meta.answer ? ' key' : '') + (i === q.top ? ' top' : '') }, [
+              el('span', { text: String.fromCharCode(65 + i) + '. ' + o }),
+              el('span', null, [el('span', { cls: 'meter' }, [el('i', { style: 'width:' + (q.n ? 100 * c / q.n : 0) + '%' })]), el('span', { cls: 'muted', text: ' ' + c })])
+            ]));
+          });
+          if (q.dist[-1]) dist.appendChild(el('div', { cls: 'muted', text: 'без ответа: ' + q.dist[-1] }));
+        }
+        return [head, q.n, q.n ? pct(q.ok, q.n) : '—', dist];
+      }), [1, 2]));
+      if (rows.length > 200) qbox.appendChild(el('p', { cls: 'muted', text: 'Показаны первые 200 из ' + rows.length + '.' }));
+    }
+    sel.addEventListener('change', drawQ); onlyFlag.addEventListener('change', drawQ); drawQ();
+
+    out.appendChild(el('h2', { text: 'Обратная связь (' + data.feedback.length + ')' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Кнопка «Сообщить об ошибке» внизу каждой страницы и «Другое» у вопроса. Тексты написаны посетителями.' }));
+    if (!data.feedback.length) out.appendChild(el('p', { cls: 'muted', text: 'Сообщений за период нет.' }));
+    data.feedback.forEach(function (m) {
+      out.appendChild(el('div', { cls: 'msg' }, [
+        el('div', { cls: 'meta', text: m.day + ' · #/' + (m.path || '') + (m.qid ? ' · вопрос ' + testName(m.test) + ' ' + (m.section || '') + ' ' + m.qid : '') }),
+        el('p', { text: m.text || '' }),
+        m.ua ? el('div', { cls: 'meta', text: m.ua }) : null
+      ]));
+    });
+
+    out.appendChild(el('h2', { text: 'Анкеты экспертов (' + data.reviews.length + ')' }));
+    if (!data.reviews.length) out.appendChild(el('p', { cls: 'muted', text: 'Анкет за период нет.' }));
+    data.reviews.forEach(function (r) {
+      out.appendChild(el('details', { cls: 'msg' }, [el('summary', { text: r.day + ' · ' + (r.expert || 'без имени') }), el('pre', { text: r.text || '' })]));
+    });
+  }
+
+  var current = 30;
+  function load(days) {
+    current = days;
+    [].forEach.call(document.querySelectorAll('#period button'), function (b) { b.classList.toggle('on', +b.getAttribute('data-d') === days); });
+    fetch(location.origin + '/api/stats?days=' + days,   // origin без логина:пароля — адрес вида user:pass@host fetch не принимает
+      { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) { if (d.error) throw new Error(d.error); if (days === current) render(d); })
+      .catch(function (e) { out.textContent = ''; out.appendChild(el('div', { cls: 'err', text: 'Не удалось загрузить статистику: ' + e.message })); });
+  }
+  document.getElementById('period').addEventListener('click', function (e) { var b = e.target.closest('button[data-d]'); if (b) load(+b.getAttribute('data-d')); });
+  load(30);
+})();
+</script>
+</body></html>

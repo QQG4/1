@@ -44,7 +44,7 @@ def audio_js(mode):
 site_cfg = {}
 import re
 _site = read(src / 'data' / 'site.js')
-for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('events', 'eventsUrl')):
+for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('events', 'eventsUrl'), ('email', 'supportEmail')):
     m = re.search(field + r":\s*'([^']*)'", _site); site_cfg[key] = m.group(1) if m else ''
 
 app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
@@ -110,7 +110,7 @@ docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
 (docs / 'review').mkdir(exist_ok=True)
-(docs / 'review' / 'index.html').write_text(read(src / 'review' / 'index.html').replace('__EVENTS_URL__', site_cfg.get('events', '')), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
+(docs / 'review' / 'index.html').write_text(read(src / 'review' / 'index.html').replace('__EVENTS_URL__', site_cfg.get('events', '')).replace('__SUPPORT_EMAIL__', site_cfg.get('email', '')), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
 _base = (site_cfg.get('url') or '').strip()
 if _base and not _base.endswith('/'): _base += '/'
 # 404, заголовки безопасности и список файлов, которые не выкладываются на Cloudflare (16.09.2026).
@@ -122,7 +122,8 @@ if _base and not _base.endswith('/'): _base += '/'
     '<style>body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#faf8f3;color:#1e2a30;display:grid;place-items:center;min-height:100vh;padding:0 16px}'
     'main{max-width:420px}a{color:#0e6e86}@media (prefers-color-scheme:dark){body{background:#10171b;color:#e9e4d8}a{color:#6fc3d4}}</style></head>'
     '<body><main><p style="font-size:.8rem;letter-spacing:.08em;opacity:.7">404</p><h1>Страница не найдена</h1>'
-    '<p>Такого адреса на сайте нет. / Мұндай мекенжай сайтта жоқ.</p><p><a href="/">На главную · Басты бетке</a></p></main></body></html>\n', encoding='utf-8')
+    '<p>Такого адреса на сайте нет. / Мұндай мекенжай сайтта жоқ.</p><p><a href="/">На главную · Басты бетке</a></p>'
+    + (f'<p style="font-size:.9rem;opacity:.8">{site_cfg["email"]}</p>' if site_cfg.get('email') else '') + '</main></body></html>\n', encoding='utf-8')
 # _headers читает Cloudflare (статика на Workers); GitHub Pages его игнорирует. CSP не ставим: весь код и стили
 # встроены в страницу, и политика с 'unsafe-inline' почти ничего не даёт, а сломать может многое.
 (docs / '_headers').write_text(

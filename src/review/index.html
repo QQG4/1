@@ -233,7 +233,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within,
   // --- отправка: в приёмник статистики сайта (Cloudflare Worker), где ответ хранится целиком.
   // Раньше здесь был mailto на личный адрес — он был виден на публичной странице, а письмо «готовилось»
   // без гарантии, что почтовая программа вообще откроется. Адрес приёмника подставляет build.py.
-  var EVENTS_URL = '__EVENTS_URL__';
+  var EVENTS_URL = '__EVENTS_URL__', SUPPORT_EMAIL = '__SUPPORT_EMAIL__';
   $('send').addEventListener('click', function () {
     var v = collect(); var err = $('err'); err.style.display = 'none'; $('done').style.display = 'none';
     if (!v.expert) { err.textContent = 'Укажите имя: без него мы не сможем вернуться к вам с уточнениями.'; err.style.display = 'block'; $('name').focus(); return; }
@@ -243,7 +243,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within,
     var btn = $('send'); btn.disabled = true; btn.textContent = 'Отправляем…';
     var fail = function () {
       btn.disabled = false; btn.textContent = 'Отправить';
-      err.textContent = 'Не удалось отправить. Текст ответа — в поле ниже: скопируйте его и перешлите команде любым удобным способом.';
+      err.textContent = 'Не удалось отправить. Текст ответа — в поле ниже: скопируйте его и перешлите ' + (SUPPORT_EMAIL.indexOf('@') > 0 ? 'на ' + SUPPORT_EMAIL : 'команде любым удобным способом') + '.';
       err.style.display = 'block'; box.select();
     };
     if (!EVENTS_URL || EVENTS_URL.indexOf('http') !== 0) { fail(); return; }

@@ -44,7 +44,7 @@ def audio_js(mode):
 site_cfg = {}
 import re
 _site = read(src / 'data' / 'site.js')
-for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl')):
+for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('events', 'eventsUrl')):
     m = re.search(field + r":\s*'([^']*)'", _site); site_cfg[key] = m.group(1) if m else ''
 
 app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
@@ -110,9 +110,32 @@ docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
 (docs / 'review').mkdir(exist_ok=True)
-shutil.copyfile(src / 'review' / 'index.html', docs / 'review' / 'index.html')  # анкета эксперта — отдельная статическая страница <siteUrl>review/
+(docs / 'review' / 'index.html').write_text(read(src / 'review' / 'index.html').replace('__EVENTS_URL__', site_cfg.get('events', '')), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
 _base = (site_cfg.get('url') or '').strip()
 if _base and not _base.endswith('/'): _base += '/'
+# 404, заголовки безопасности и список файлов, которые не выкладываются на Cloudflare (16.09.2026).
+# Приложение маршрутизирует через #хэш, поэтому любой путь вида /что-угодно — действительно несуществующая страница:
+# раньше Cloudflare отдавал на него главную с кодом 200, и мусорные адреса могли попасть в поиск.
+(docs / '404.html').write_text(
+    '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    '<meta name="robots" content="noindex"><title>Страница не найдена · Qazaq Trainer</title><link rel="icon" href="/favicon.svg" type="image/svg+xml">'
+    '<style>body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#faf8f3;color:#1e2a30;display:grid;place-items:center;min-height:100vh;padding:0 16px}'
+    'main{max-width:420px}a{color:#0e6e86}@media (prefers-color-scheme:dark){body{background:#10171b;color:#e9e4d8}a{color:#6fc3d4}}</style></head>'
+    '<body><main><p style="font-size:.8rem;letter-spacing:.08em;opacity:.7">404</p><h1>Страница не найдена</h1>'
+    '<p>Такого адреса на сайте нет. / Мұндай мекенжай сайтта жоқ.</p><p><a href="/">На главную · Басты бетке</a></p></main></body></html>\n', encoding='utf-8')
+# _headers читает Cloudflare (статика на Workers); GitHub Pages его игнорирует. CSP не ставим: весь код и стили
+# встроены в страницу, и политика с 'unsafe-inline' почти ничего не даёт, а сломать может многое.
+(docs / '_headers').write_text(
+    '/*\n'
+    '  Strict-Transport-Security: max-age=31536000\n'
+    '  X-Content-Type-Options: nosniff\n'
+    '  Referrer-Policy: strict-origin-when-cross-origin\n'
+    '  X-Frame-Options: SAMEORIGIN\n'
+    '  Permissions-Policy: camera=(), geolocation=(), microphone=(self)\n'
+    '/audio/*\n'
+    '  Cache-Control: public, max-age=604800\n', encoding='utf-8')
+# служебные файлы GitHub Pages (CNAME, .nojekyll) и сам _headers/.assetsignore на Cloudflare наружу не отдаются
+(docs / '.assetsignore').write_text('CNAME\n.nojekyll\n.assetsignore\n', encoding='utf-8')
 # бывшее демо для клиентов: публичный сайт теперь сам показывает только мок-тесты, поэтому старые ссылки уводим на главную
 (docs / 'demo').mkdir(exist_ok=True)
 (docs / 'demo' / 'index.html').write_text(

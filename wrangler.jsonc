@@ -8,7 +8,7 @@
   "observability": { "enabled": true },
   "assets": {
     "directory": "docs",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "404-page"   // маршруты приложения живут в #хэше, путь /что-угодно — настоящая 404
   },
   // свой домен: DNS-записи Cloudflare создаёт сам при деплое, сертификат выпускает тоже сам
   "routes": [

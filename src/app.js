@@ -179,11 +179,11 @@
   }
   function verdictCard(t) {
     var v = verdict(t); if (!v) return '';
-    var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok; }).map(function (r) { return r.name; }).join(', ');
+    var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok && !r.self; }).map(function (r) { return r.name; }).join(', ');
     var head = v.pass ? T('Ваш уровень по чтению и аудированию:') + ' ' + t.level : v.all ? t.level + ' ' + T('— баллов не хватило в разделах:') + ' ' + failed + '.' : T('Пройдите разделы с автоматической проверкой, чтобы увидеть результат по уровню.');
     var selfNote = v.rows.some(function (r) { return r.self; }) ? '<p class="small muted">' + T('Письмо и говорение вы оцениваете сами, поэтому в вывод об уровне они не входят.') + '</p>' : '';
     return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Результат') + ' · ' + t.level + '</b><p><b>' + head + '</b></p>' + selfNote + '<ul>' +
-      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' % ' + (r.ok ? '✓' : '✗')) + (r.self ? ' <span class="muted">· ' + T('самооценка, в вывод не входит') + '</span>' : '') + (r.practice ? ' <span class="muted">· ' + T('тренировка без таймера — для подтверждения пройдите как на экзамене') + '</span>' : '') + '</li>'; }).join('') +
+      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' %' + (r.self ? '' : ' ' + (r.ok ? '✓' : '✗'))) + (r.self ? ' <span class="muted">· ' + T('самооценка, в вывод не входит') + '</span>' : '') + (r.practice ? ' <span class="muted">· ' + T('тренировка без таймера — для подтверждения пройдите как на экзамене') + '</span>' : '') + '</li>'; }).join('') +
       '</ul></div>';
   }
   function testStatus(test) {
@@ -453,6 +453,16 @@
   }
 
   /* ---------------- views: test ---------------- */
+  /* Объём раздела на странице теста: у разделов с вопросами показываем, сколько их в этом моке, а официальный объём
+     экзамена — справкой. Раньше показывался только официальный («20 заданий · 20 баллов»), и мок из 5 вопросов
+     выглядел недогрузившимся. */
+  function stageTasks(s, es) {
+    var official = LK(es, 'tasks') || '';
+    if (!s.questions) return esc(official);
+    var n = s.questions.length;
+    var mine = n + ' ' + T('заданий') + (s.pointsPerTask ? ' · ' + n * s.pointsPerTask + ' ' + T('баллов') : '');
+    return esc(mine) + (official && official.indexOf(String(n) + ' ') !== 0 ? '<br><span class="muted">' + T('на экзамене:') + ' ' + esc(official) + '</span>' : '');
+  }
   function viewTest(t) {
     var ex = KZ.exams[t.exam];
     var st = testStatus(t);
@@ -461,7 +471,7 @@
       var r = sectionResult(t.id, s);
       var meta = es.num || ('0' + (i + 1));
       return '<a class="stage" href="#/test/' + t.id + '/' + s.type + '"><div class="stage-num">' + meta + '</div><div><p class="stage-name">' + esc((KZ.lang === 'kk' && es.kk) || es.title || LK(KZ.sectionTypes[s.type], 'label')) + '</p><p class="stage-desc">' + esc(LK(s, 'intro')).slice(0, 140) + '…</p></div>' +
-        '<div class="stage-meta"><div class="stage-time">' + s.minutes + ' ' + T('мин') + '</div><div class="stage-tasks">' + esc(LK(es, 'tasks') || '') + '</div>' +
+        '<div class="stage-meta"><div class="stage-time">' + s.minutes + ' ' + T('мин') + '</div><div class="stage-tasks">' + stageTasks(s, es) + '</div>' +
         (r ? '<div class="stage-score ' + r.cls + '">' + esc(r.label) + '</div>' : '<div class="stage-score muted">' + T('не пройден') + '</div>') + '</div></a>';
     }).join('');
     var total = t.sections.reduce(function (a, s) { return a + (s.minutes || 0); }, 0);
@@ -715,7 +725,7 @@
       return timerBar(sec) + body;
     }
     body = '<div class="block"><span class="setlabel">' + T('Ваш текст') + '</span><p class="small muted">' + esc(prompt.text) + '</p><div class="essay-view">' + esc(run.text) + '</div><div class="wc">' + wordCount(run.text) + ' ' + T('слов') + ' · ' + mmss(run.secondsUsed || 0) + '</div></div>' +
-      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
+      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span>' + (wordCount(run.text) === 0 ? '<p class="small cap-note">' + T('Текст пустой — чек-лист не засчитывается, результат будет 0.') + '</p>' : '') + '<ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
       '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button>') + '</div></div>';
     run.afterRender = null;
     return body;
@@ -786,11 +796,30 @@
   function taskTabs(sec, idx) {
     return '<div class="tasktabs">' + sec.tasks.map(function (x, i) { return '<span class="ttab' + (i === idx ? ' now' : i < idx ? ' past' : '') + '">' + (i + 1) + '. ' + esc(x.title.split(' · ')[1] || x.title) + '</span>'; }).join('') + '</div>';
   }
-  function critScorer(taskId, criteria, values) {
+  /* Лимиты самооценки письма по объёму текста. Пустой текст не оценивается; при недоборе слов максимум по критерию
+     «Сөздік қорды пайдалануы» ограничивается пропорционально — именно там официальный дескриптор требует объём
+     («50 сөзден артық», «шамамен 250 сөз»). Без этого эссе из одного слова можно было оценить на 50/50. */
+  function critCaps(task, text) {
+    var w = wordCount(text);
+    return task.criteria.map(function (c) {
+      if (w === 0) return 0;
+      if (task.minWords && w < task.minWords && /сөздік қор/i.test(c.name)) return Math.round(c.max * w / task.minWords);
+      return c.max;
+    });
+  }
+  function capNote(task, text) {
+    var w = wordCount(text);
+    if (w === 0) return '<p class="small cap-note">' + T('Текст пустой — оценивать нечего, все критерии — 0.') + '</p>';
+    if (task.minWords && w < task.minWords) return '<p class="small cap-note">' + T('В тексте') + ' ' + w + ' ' + T('слов при ориентире') + ' ' + task.minWords + ': ' + T('по критерию «Сөздік қорды пайдалануы» максимум снижен пропорционально объёму.') + '</p>';
+    return '';
+  }
+  function critScorer(taskId, criteria, values, caps) {
     var max = 0, sum = 0;
     var rows = criteria.map(function (c, i) {
+      var cap = caps ? caps[i] : c.max;
+      if (values[i] != null && values[i] > cap) values[i] = cap;
       max += c.max; if (values[i] != null) sum += values[i];
-      var btns = ''; for (var v = 0; v <= c.max; v++) btns += '<button type="button" class="cb' + (values[i] === v ? ' on' : '') + '" data-act="crit" data-task="' + taskId + '" data-i="' + i + '" data-v="' + v + '">' + v + '</button>';
+      var btns = ''; for (var v = 0; v <= c.max; v++) btns += '<button type="button" class="cb' + (values[i] === v ? ' on' : '') + '" data-act="crit" data-task="' + taskId + '" data-i="' + i + '" data-v="' + v + '"' + (v > cap ? ' disabled aria-disabled="true"' : '') + '>' + v + '</button>';
       return '<div class="crit-row"><div class="crit-name"><b>' + esc(c.name) + '</b><span>' + esc(LK(c, 'top')) + '</span></div><div class="crit-btns">' + btns + '</div></div>';
     }).join('');
     return '<div class="crit"><div class="crit-head">' + T('Самооценка по официальным критериям') + ' <span class="muted">' + T('(верхний дескриптор = максимум)') + '</span></div>' + rows + '<div class="crit-sum">' + T('Итого за задание:') + ' <b>' + sum + '</b> / ' + max + '</div></div>';
@@ -884,7 +913,7 @@
       return timerBar(sec, '<span class="tclock" id="tclock"></span>') + body;
     }
     body = sec.tasks.map(function (task) {
-      return '<div class="block"><span class="setlabel">' + esc(task.title) + ' · ' + task.points + ' ' + T('баллов') + '</span><p class="small muted">' + esc(task.prompt) + '</p><div class="essay-view">' + esc(run.texts[task.id] || '') + '</div><div class="wc">' + wordCount(run.texts[task.id]) + ' ' + T('слов') + ' · ' + mmss(run.taskSec[task.id] || 0) + '</div>' + critScorer(task.id, task.criteria, run.crit[task.id] || []) + '</div>';
+      return '<div class="block"><span class="setlabel">' + esc(task.title) + ' · ' + task.points + ' ' + T('баллов') + '</span><p class="small muted">' + esc(task.prompt) + '</p><div class="essay-view">' + esc(run.texts[task.id] || '') + '</div><div class="wc">' + wordCount(run.texts[task.id]) + ' ' + T('слов') + ' · ' + mmss(run.taskSec[task.id] || 0) + '</div>' + capNote(task, run.texts[task.id]) + critScorer(task.id, task.criteria, run.crit[task.id] = run.crit[task.id] || [], critCaps(task, run.texts[task.id])) + '</div>';
     }).join('') + '<div class="actions"><button class="btn" data-act="save-tasks">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-tasks">' + T('Вернуться к тексту') + '</button>') + '</div>';
     run.afterRender = null;
     return body;
@@ -1149,7 +1178,7 @@
     else if (act === 'pick-prompt') { var r = document.querySelector('input[name="prompt"]:checked'); if (!r) { document.getElementById('submit-msg').textContent = T('Выберите тему.'); return; } run.promptId = r.value; run.sub = 'write'; setSection(t.id, 'writing', { status: 'draft', promptId: run.promptId, text: '' }); route(); }
     else if (act === 'finish-writing') { clearTimeout(draftTO); run.secondsUsed = Math.round(elapsed()); setSection(t.id, 'writing', { status: 'draft', promptId: run.promptId, text: run.text, secondsUsed: run.secondsUsed }); stopTimer(); run.sub = 'check'; route(); }
     else if (act === 'back-writing') { run.sub = 'write'; run.resume = true; route(); }
-    else if (act === 'save-writing') { clearTimeout(draftTO); var n = run.checks.filter(Boolean).length; setSection(t.id, 'writing', { status: 'done', promptId: run.promptId, text: run.text, checks: run.checks, score: n, total: sec.checklist.length, secondsUsed: run.secondsUsed || 0, finishedAt: Date.now(), practice: !!ui.practice }); run.phase = 'review'; route(); }
+    else if (act === 'save-writing') { clearTimeout(draftTO); var n = wordCount(run.text) === 0 ? 0 : run.checks.filter(Boolean).length; setSection(t.id, 'writing', { status: 'done', promptId: run.promptId, text: run.text, checks: run.checks, score: n, total: sec.checklist.length, secondsUsed: run.secondsUsed || 0, finishedAt: Date.now(), practice: !!ui.practice }); run.phase = 'review'; route(); }
     else if (act === 'next-task') {
       var cur = sec.tasks[run.taskIdx]; run.taskSec[cur.id] = Math.round(taskElapsed()); run.taskStart = null; clearTimeout(draftTO);
       if (run.taskIdx < sec.tasks.length - 1) { run.taskIdx++; setSection(t.id, 'writing', { status: 'draft', texts: run.texts, taskIdx: run.taskIdx, taskSec: run.taskSec, secondsUsed: Math.round(elapsed()) }); }
@@ -1157,7 +1186,7 @@
       route();
     }
     else if (act === 'back-tasks') { run.sub = 'write'; run.taskIdx = 0; run.taskStart = null; route(); }
-    else if (act === 'crit') { var tid = b.getAttribute('data-task'); run.crit[tid] = run.crit[tid] || []; run.crit[tid][+b.getAttribute('data-i')] = +b.getAttribute('data-v'); route(); }
+    else if (act === 'crit') { if (b.disabled) return; var tid = b.getAttribute('data-task'); run.crit[tid] = run.crit[tid] || []; run.crit[tid][+b.getAttribute('data-i')] = +b.getAttribute('data-v'); route(); }
     else if (act === 'save-tasks') { clearTimeout(draftTO); setSection(t.id, 'writing', { status: 'done', kind: 'points', texts: run.texts, crit: run.crit, taskSec: run.taskSec, score: critSum(run.crit), total: tasksTotal(sec), secondsUsed: run.secondsUsed || 0, finishedAt: Date.now(), practice: !!ui.practice }); run.phase = 'review'; route(); }
     else if (act === 'prep-done') { run.answerStart = elapsed(); run.sub = 'answer'; route(); }
     else if (act === 'task-start') { startTaskTimer(b.getAttribute('data-task'), +b.getAttribute('data-min')); }

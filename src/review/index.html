@@ -122,11 +122,11 @@ input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within,
 
   <section>
     <div class="actions">
-      <button class="btn" type="button" id="send">Отправить письмом</button>
+      <button class="btn" type="button" id="send">Отправить</button>
       <button class="btn ghost" type="button" id="copy">Скопировать текстом</button>
       <span class="hint" id="draft">Черновик сохраняется в этом браузере автоматически.</span>
     </div>
-    <div class="done" id="done" role="status"><b>Письмо подготовлено.</b> Если почтовая программа не открылась, скопируйте текст ниже и отправьте на <a href="mailto:k.k.g.inter@gmail.com">k.k.g.inter@gmail.com</a> или в мессенджер.</div>
+    <div class="done" id="done" role="status"><b>Отправлено. Спасибо!</b> Ответ сохранён у команды; копия текста — ниже, на всякий случай.</div>
     <div class="err" id="err" role="alert"></div>
     <textarea class="copybox" id="copybox" readonly></textarea>
   </section>
@@ -230,17 +230,27 @@ input:focus,textarea:focus,select:focus,button:focus-visible,.chip:focus-within,
     try { navigator.clipboard.writeText(box.value); $('draft').textContent = 'Скопировано. Отправьте текст команде любым удобным способом.'; } catch (e) {}
   });
 
-  // --- отправка: письмо на адрес команды (сервера у сайта нет)
-  var TO = 'k.k.g.inter@gmail.com';
+  // --- отправка: в приёмник статистики сайта (Cloudflare Worker), где ответ хранится целиком.
+  // Раньше здесь был mailto на личный адрес — он был виден на публичной странице, а письмо «готовилось»
+  // без гарантии, что почтовая программа вообще откроется. Адрес приёмника подставляет build.py.
+  var EVENTS_URL = '__EVENTS_URL__';
   $('send').addEventListener('click', function () {
-    var v = collect(); var err = $('err'); err.style.display = 'none';
+    var v = collect(); var err = $('err'); err.style.display = 'none'; $('done').style.display = 'none';
     if (!v.expert) { err.textContent = 'Укажите имя: без него мы не сможем вернуться к вам с уточнениями.'; err.style.display = 'block'; $('name').focus(); return; }
     var answered = ITEMS.filter(function (it) { return v.items[it.k].rate; }).length;
     if (answered < 5) { err.textContent = 'Отмечено пунктов: ' + answered + ' из 10. Оцените хотя бы половину — иначе по ответам трудно судить.'; err.style.display = 'block'; return; }
     var text = asText(v); var box = $('copybox'); box.value = text; box.style.display = 'block';
-    try { navigator.clipboard.writeText(text); } catch (e) {}
-    $('done').style.display = 'block';
-    location.href = 'mailto:' + TO + '?subject=' + encodeURIComponent('Сараптама Qazaq Trainer — ' + v.expert) + '&body=' + encodeURIComponent(text.slice(0, 1800) + (text.length > 1800 ? '\n\n[текст обрезан — полная версия скопирована в буфер обмена, вставьте её сюда]' : ''));
+    var btn = $('send'); btn.disabled = true; btn.textContent = 'Отправляем…';
+    var fail = function () {
+      btn.disabled = false; btn.textContent = 'Отправить';
+      err.textContent = 'Не удалось отправить. Текст ответа — в поле ниже: скопируйте его и перешлите команде любым удобным способом.';
+      err.style.display = 'block'; box.select();
+    };
+    if (!EVENTS_URL || EVENTS_URL.indexOf('http') !== 0) { fail(); return; }
+    fetch(EVENTS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify({ e: 'expert_review', ts: Date.now(), lang: 'ru', p: { expert: v.expert, text: text } }) })
+      .then(function (r) { if (!r.ok) throw 0; btn.textContent = 'Отправлено'; $('done').style.display = 'block'; try { localStorage.removeItem('qt-expert-draft'); } catch (e) {} })
+      .catch(fail);
   });
 })();
 </script>

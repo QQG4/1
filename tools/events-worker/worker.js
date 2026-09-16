@@ -11,8 +11,8 @@ const ALLOWED = [                      // откуда принимаем соб
   'https://qazaq-trainer.k-k-g-inter.workers.dev',  // площадка Cloudflare, пока домен не привязан
   'https://qqg4.github.io',           // старый адрес, пока живы ссылки на него
 ];
-const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback'];
-const MAX_BODY = 32 * 1024;
+const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review'];
+const MAX_BODY = 64 * 1024;   // анкета эксперта бывает длинной
 
 function cors(origin) {
   const ok = ALLOWED.indexOf(origin) >= 0;
@@ -52,8 +52,8 @@ export default {
       day, int(d.ts) || Date.now(), str(d.sid, 32), str(d.e, 24), str(d.lang, 4),
       str(p.exam, 16), str(p.level, 4), str(p.test, 40), str(p.section, 16),
       int(p.pct), int(p.seconds), p.practice ? 1 : 0, p.timedOut ? 1 : 0, str(p.path, 120), country,
-      str(p.qid, 24), str(p.why, 24),     // жалоба на вопрос: какой вопрос и что именно не так
-      str(p.text, 1000), str(p.ua, 200)   // свободное сообщение и браузер (нужен для «у меня не открывается»)
+      str(p.qid, 24), str(d.e === 'expert_review' ? p.expert : p.why, 100),   // жалоба: вопрос и причина; анкета: имя эксперта
+      str(p.text, d.e === 'expert_review' ? 20000 : 1000), str(p.ua, 200)   // свободное сообщение и браузер; анкета эксперта — целиком
     ));
 
     if (d.e === 'answers' && Array.isArray(p.q)) {

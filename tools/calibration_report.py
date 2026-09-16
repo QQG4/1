@@ -34,6 +34,7 @@ def report(paths):
     for f in paths:
         tid, lvl, corpus, qs, tf = parse(f)
         if not qs: continue
+        corpus_l = corpus.lower()
         def giveaway(o, a):
             L = sorted((len(x) for i, x in enumerate(o) if i != a), reverse=True)
             return len(o[a]) > L[0] * 1.1
@@ -48,8 +49,8 @@ def report(paths):
             for j, x in enumerate(o):
                 if j == a or qid[0] in 'xg': continue   # лексика-грамматика вне этой метрики
                 dtot += 1
-                w = [t for t in re.findall(r'\w+', x) if len(t) > 5]
-                if w and any(t in corpus for t in w): din += 1
+                w = [t.lower() for t in re.findall(r'\w+', x) if len(t) > 5]   # без учёта регистра: «Жалғызбасты» в варианте = «жалғызбасты» в тексте
+                if w and any(t in corpus_l for t in w): din += 1
             if giveaway(o, a): worst.append(qid)
         rows.append((tid, lvl, len(qs), 100 * longest // len(qs), 100 * short // len(qs), 100 * din // max(dtot, 1),
                      (100 * sum(tf) // len(tf)) if tf else None, len(tf), worst))

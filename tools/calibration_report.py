@@ -11,6 +11,8 @@
   «дистрактор есть в тексте» — норма от 45 %; если дистракторов в тексте нет, лишние варианты отсеиваются на глаз.
   Считается только по аудированию и чтению: у лексико-грамматических заданий (id x*, g*) дистрактор — это слово
   или форма, которой в тексте и не должно быть, мерить их этим правилом бессмысленно;
+  «ключ заметно короче» — обратная подсказка: если при правке везде укорачивать ключ, «выбирай самый короткий»
+  работает так же, как раньше «самый длинный»; норма до 35 %;
   «tf: доля Бұрыс» — норма 40–60 %; перекос делает угадывание выгодным.
 """
 import re, glob, sys, os
@@ -36,6 +38,10 @@ def report(paths):
             L = sorted((len(x) for i, x in enumerate(o) if i != a), reverse=True)
             return len(o[a]) > L[0] * 1.1
         longest = sum(1 for _, o, a in qs if giveaway(o, a))
+        def shortest(o, a):
+            L = sorted(len(x) for i, x in enumerate(o) if i != a)
+            return len(o[a]) * 1.1 < L[0]
+        short = sum(1 for _, o, a in qs if shortest(o, a))
         din = dtot = 0
         worst = []
         for qid, o, a in qs:
@@ -45,12 +51,12 @@ def report(paths):
                 w = [t for t in re.findall(r'\w+', x) if len(t) > 5]
                 if w and any(t in corpus for t in w): din += 1
             if giveaway(o, a): worst.append(qid)
-        rows.append((tid, lvl, len(qs), 100 * longest // len(qs), 100 * din // max(dtot, 1),
+        rows.append((tid, lvl, len(qs), 100 * longest // len(qs), 100 * short // len(qs), 100 * din // max(dtot, 1),
                      (100 * sum(tf) // len(tf)) if tf else None, len(tf), worst))
-    print(f"{'тест':<16}{'ур':<4}{'вопр':>5}{'ключ длиннее':>14}{'дистр. в тексте':>17}{'tf Бұрыс':>10}")
-    for tid, lvl, n, lg, di, tfp, tfn, worst in rows:
+    print(f"{'тест':<16}{'ур':<4}{'вопр':>5}{'ключ длиннее':>14}{'короче':>9}{'дистр. в тексте':>17}{'tf Бұрыс':>10}")
+    for tid, lvl, n, lg, sh, di, tfp, tfn, worst in rows:
         flag = lambda ok: '' if ok else '  ←'
-        print(f"{tid:<16}{lvl:<4}{n:>5}{str(lg)+' %':>14}{flag(lg<=30)}{str(di)+' %':>17}{flag(di>=45)}"
+        print(f"{tid:<16}{lvl:<4}{n:>5}{str(lg)+' %':>14}{flag(lg<=30)}{str(sh)+' %':>9}{flag(sh<=35)}{str(di)+' %':>17}{flag(di>=45)}"
               + (f"{str(tfp)+' %':>10}{flag(40<=tfp<=60)}" if tfp is not None else f"{'—':>10}"))
         if worst: print(f"{'':<20}заметно длиннее остальных: {', '.join(worst)}")
 

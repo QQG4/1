@@ -2,7 +2,10 @@
 """Вставляет казахские переводы вводных, пояснений, подсказок, критериев и чек-листов в src/data/tests/*.js.
 Источник переводов — tools/tests_kk/*.json (ключ = русская строка как в файле теста). Идемпотентен: старые *_kk убираются и ставятся заново.
 Поля: intro, explain, hint, top, targetNote, checkNote, label, title, note (только подписи к картинке) (комплекты «Комплект N — …») → <поле>_kk; checklist → checklist_kk.
-Запуск: python3 tools/apply_tests_kk.py [--report]"""
+Запуск: python3 tools/apply_tests_kk.py [--report]
+  --report — только отчёт о непереведённом, файлы НЕ меняются (до 16.09.2026 режим отчёта тоже перезаписывал тесты
+  и стирал переводы, вписанные прямо в файл, — так были потеряны казахские пояснения к откалиброванным тестам).
+Существующий перевод *_kk, которого нет в словаре, сохраняется: словарь заменяет или добавляет, но не удаляет."""
 import re, json, glob, sys, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 D = ROOT / 'tools' / 'tests_kk'
@@ -34,29 +37,30 @@ def set_title(ru):
     return maps['title'].get(ru)
 for f in sorted(glob.glob(str(ROOT / 'src/data/tests/*.js'))):
     s = open(f, encoding='utf-8').read(); orig = s
-    # снять старые вставки
-    s = re.sub(r", (?:%s)_kk: '(?:[^'\\]|\\.)*'" % '|'.join(SCALAR), '', s)
-    s = re.sub(r",\s*checklist_kk: \[[^\]]*\]", '', s)
     def rep(m):
-        key, raw = m.group(1), m.group(2); ru = unesc(raw)
+        key, raw, existing = m.group(1), m.group(2), m.group(3); ru = unesc(raw)
         kk = set_title(ru) if key == 'title' else maps[key].get(ru)
         if kk is None:
+            if existing: return m.group(0)                      # перевод вписан в файл, в словаре его нет — не трогаем
             if needs(ru) and not (key == 'title' and not ru.startswith('Комплект')) and not (key == 'note' and not re.match(r'В реальном тесте|На [ABC][12]', ru)): missing.setdefault(key, set()).add(ru)  # note раздела в интерфейс не выводится
             return m.group(0)
-        return m.group(0) + f", {key}_kk: '{esc(kk)}'"
-    s = re.sub(r"\b(%s): '((?:[^'\\]|\\.)*)'" % '|'.join(SCALAR), rep, s)
+        return f"{key}: '{raw}', {key}_kk: '{esc(kk)}'"
+    s = re.sub(r"\b(%s): '((?:[^'\\]|\\.)*)'(, (?:%s)_kk: '(?:[^'\\]|\\.)*')?" % ('|'.join(SCALAR), '|'.join(SCALAR)), rep, s)
     def repl(m):
         items = re.findall(r"'((?:[^'\\]|\\.)*)'", m.group(1))
+        old = [unesc(x) for x in re.findall(r"'((?:[^'\\]|\\.)*)'", m.group(2) or '')]
+        if len(old) != len(items): old = []
         out = []
-        for it in items:
+        for i, it in enumerate(items):
             ru = unesc(it); kk = CHECK.get(ru)
+            if kk is None and old and old[i] != ru: kk = old[i]     # перевод вписан в файл, в словаре его нет — сохраняем
             if kk is None:
                 if needs(ru): missing.setdefault('checklist', set()).add(ru)
                 kk = ru
             out.append("'" + esc(kk) + "'")
-        return m.group(0) + ', checklist_kk: [' + ', '.join(out) + ']'
-    s = re.sub(r"checklist: \[((?:\s*'(?:[^'\\]|\\.)*',?\s*)+)\]", repl, s)
-    if s != orig: open(f, 'w', encoding='utf-8').write(s)
+        return 'checklist: [' + m.group(1) + '], checklist_kk: [' + ', '.join(out) + ']'
+    s = re.sub(r"checklist: \[([^\]]*)\](?:,\s*checklist_kk: \[([^\]]*)\])?", repl, s)
+    if s != orig and '--report' not in sys.argv: open(f, 'w', encoding='utf-8').write(s)
     print(f.split('/')[-1], 'kk fields:', len(re.findall(r'_kk: ', s)), file=sys.stderr)
 if missing:
     print('НЕТ ПЕРЕВОДА:', {k: len(v) for k, v in missing.items()}, file=sys.stderr)

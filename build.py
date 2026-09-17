@@ -55,13 +55,204 @@ _site = read(src / 'data' / 'site.js')
 for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('events', 'eventsUrl'), ('email', 'supportEmail')):
     m = re.search(field + r":\s*'([^']*)'", _site); site_cfg[key] = m.group(1) if m else ''
 
+# ---- метаданные для посадочных страниц под поиск ----
+# Данные экзаменов лежат в .js для браузера, поэтому их выгружает node (tools/dump_meta.js) в tools/pages-meta.json.
+# Кэш коммитится: если node на машине нет, сборка берёт прошлый файл, а если нет и его — просто пропускает страницы.
+import subprocess
+META_CACHE = root / 'tools' / 'pages-meta.json'
+def load_meta():
+    try:
+        out = subprocess.run(['node', str(root / 'tools' / 'dump_meta.js')], capture_output=True, text=True, timeout=60)
+        if out.returncode == 0 and out.stdout.strip():
+            META_CACHE.write_text(out.stdout, encoding='utf-8')
+            return json.loads(out.stdout)
+        print('!! dump_meta.js не отработал:', (out.stderr or '').strip()[:200])
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        print('!! node недоступен (%s) — беру tools/pages-meta.json' % type(e).__name__)
+    if META_CACHE.exists(): return json.loads(META_CACHE.read_text(encoding='utf-8'))
+    print('!! посадочные страницы пропущены: нет ни node, ни tools/pages-meta.json')
+    return None
+META = load_meta()
+
+# ---- генератор посадочных страниц под поиск ----
+# Приложение маршрутизирует через #хэш: всё после решётки на сервер не уходит и в индекс не попадает,
+# поэтому у сайта был ровно один адрес для поисковика. Эти страницы статические, по одной на пару
+# «экзамен × уровень» и на каждый язык (/ru/<экзамен>/<уровень>/ и /kk/...), с собственным заголовком,
+# описанием, структурой блоков и списком вариантов. Кнопка ведёт внутрь приложения по прямой ссылке #/test/<id>.
+# Тексты берутся только из данных: русские поля и поля *_kk. Ничего не переводим на ходу — если казахского
+# поля нет, строка просто не выводится.
+import html as _html
+LANDING_LANGS = ('ru', 'kk')
+L10N = {
+    'ru': {'lang': 'ru', 'kicker_more': 'Другие уровни', 'what': 'Что проверяется на уровне', 'structure': 'Структура теста',
+           'variants': 'Варианты мок-теста', 'sec': 'Раздел', 'tasks': 'Заданий', 'min': 'Минут', 'total': 'Всего на тест',
+           'cta': 'Начать мок-тест', 'free': 'Бесплатно, без регистрации, результат сразу после проверки.',
+           'home': 'Все экзамены и уровни', 'mins': 'мин',
+           'note': 'Формат заданий — рабочая реконструкция по опубликованной структуре теста, а не копия реального интерфейса. '
+                   'Письмо и говорение здесь оцениваются самопроверкой по критериям.',
+           'vocab': 'Объём лексики', 'exam_page': 'Пробный тест'},
+    'kk': {'lang': 'kk', 'kicker_more': 'Басқа деңгейлер', 'what': 'Бұл деңгейде не тексеріледі', 'structure': 'Тест құрылымы',
+           'variants': 'Сынақ тест нұсқалары', 'sec': 'Бөлім', 'tasks': 'Тапсырма', 'min': 'Минут', 'total': 'Тестке барлығы',
+           'cta': 'Сынақ тестті бастау', 'free': 'Тегін, тіркелусіз, нәтиже тексеруден кейін бірден.',
+           'home': 'Барлық емтихан мен деңгей', 'mins': 'мин',
+           'note': 'Тапсырмалардың пішімі — тестің жарияланған құрылымы бойынша жасалған жұмыс реконструкциясы, нақты '
+                   'интерфейстің көшірмесі емес. Жазылым мен айтылым мұнда критерийлер бойынша өзін-өзі тексерумен бағаланады.',
+           'vocab': 'Лексика көлемі', 'exam_page': 'Сынақ тест'},
+}
+def _lk(o, field, lang):
+    """Поле на нужном языке: для kk берём field_kk, и только если оно есть."""
+    return (o.get(field + '_kk') if lang == 'kk' else o.get(field)) or ''
+def _plural_ru(n, one, few, many):
+    d, h = n % 10, n % 100
+    return f'{n} ' + (one if d == 1 and h != 11 else few if 2 <= d <= 4 and not 12 <= h <= 14 else many)
+def landing_pairs():
+    """Пары «экзамен × уровень», для которых есть хотя бы один готовый мок-тест."""
+    if not META: return []
+    out = []
+    for eid, ex in META['exams'].items():
+        for lv in ex.get('examLevels', []):
+            tests = [x for x in META['tests'] if x['exam'] == eid and x['level'] == lv]
+            if tests: out.append((eid, ex, lv, sorted(tests, key=lambda x: x['id'])))
+    return out
+def landing_url(lang, eid, lv): return f'{lang}/{eid}/{lv.lower()}/'
+
+LANDING_CSS = (
+    ':root{color-scheme:light dark;--bg:#faf8f3;--fg:#1e2a30;--mut:#5d6b73;--acc:#0e6e86;--line:#e3ded2;--card:#fff}'
+    '@media (prefers-color-scheme:dark){:root{--bg:#10171b;--fg:#e9e4d8;--mut:#9fb0b8;--acc:#6fc3d4;--line:#24333a;--card:#16212612}}'
+    '*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);'
+    'font:17px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif}'
+    'main{max-width:46rem;margin:0 auto;padding:2.5rem 1rem 4rem}'
+    'a{color:var(--acc)}h1{font-size:clamp(1.6rem,4.5vw,2.3rem);line-height:1.2;margin:.2em 0 .4em}'
+    'h2{font-size:1.15rem;margin:2.2em 0 .6em;padding-top:1.2em;border-top:1px solid var(--line)}'
+    '.kicker{font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);margin:0}'
+    '.lead{font-size:1.06rem;color:var(--mut)}'
+    '.cta{display:inline-block;background:var(--acc);color:var(--bg);text-decoration:none;font-weight:600;'
+    'padding:.7em 1.4em;border-radius:.5rem;margin:.4em 0}'
+    'table{border-collapse:collapse;width:100%;font-size:.95rem}'
+    'th,td{text-align:left;padding:.5em .6em;border-bottom:1px solid var(--line);vertical-align:top}'
+    'th{font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);font-weight:600}'
+    'ol{padding-left:1.2em}li{margin:.5em 0}'
+    '.note{font-size:.88rem;color:var(--mut);border-left:2px solid var(--line);padding-left:.9em;margin-top:2.5em}'
+    '.more{font-size:.95rem}.more a{display:inline-block;margin:.15em .7em .15em 0}'
+    'footer{margin-top:2.5em;padding-top:1.2em;border-top:1px solid var(--line);font-size:.85rem;color:var(--mut)}'
+    '.tbl-wrap{overflow-x:auto}'
+)
+
+def landing_page(lang, eid, ex, lv, tests, base):
+    e = _html.escape
+    T = L10N[lang]
+    lvl = META['levels'].get(lv, {})
+    ex_name = ex.get('name', eid)
+    lvl_name = _lk(lvl, 'name', lang)
+    n = len(tests)
+    if lang == 'ru':
+        title = f'Пробный {ex_name} {lv} онлайн — {_plural_ru(n, "вариант", "варианта", "вариантов")} бесплатно'
+        h1 = f'Пробный {ex_name} {lv} онлайн'
+        vheading = f'{_plural_ru(n, "вариант", "варианта", "вариантов")} мок-теста'
+    else:
+        title = f'{ex_name} {lv} сынақ тесті онлайн — {n} нұсқа тегін'
+        h1 = f'{ex_name} {lv} сынақ тесті онлайн'
+        vheading = f'{n} нұсқа'
+    desc = ' '.join(x for x in (_lk(ex, 'tagline', lang), _lk(lvl, 'focus', lang)) if x)
+    desc = (desc[:275].rsplit(' ', 1)[0] + '…') if len(desc) > 280 else desc
+    url = base + landing_url(lang, eid, lv)
+
+    h = ['<!doctype html><html lang="' + T['lang'] + '"><head><meta charset="utf-8">',
+         '<meta name="viewport" content="width=device-width,initial-scale=1">',
+         '<title>' + e(title) + '</title>',
+         '<meta name="description" content="' + e(desc) + '">',
+         '<meta name="theme-color" content="#0e6e86">',
+         '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">']
+    if base:
+        h.append('<link rel="canonical" href="' + e(url) + '">')
+        for lg in LANDING_LANGS:
+            h.append('<link rel="alternate" hreflang="' + lg + '" href="' + e(base + landing_url(lg, eid, lv)) + '">')
+        h.append('<link rel="alternate" hreflang="x-default" href="' + e(base + landing_url('ru', eid, lv)) + '">')
+        h += ['<meta property="og:type" content="article">',
+              '<meta property="og:site_name" content="' + SITE_NAME + '">',
+              '<meta property="og:locale" content="' + ('ru_RU' if lang == 'ru' else 'kk_KZ') + '">',
+              '<meta property="og:title" content="' + e(title) + '">',
+              '<meta property="og:description" content="' + e(desc) + '">',
+              '<meta property="og:url" content="' + e(url) + '">',
+              '<meta property="og:image" content="' + e(base + 'og.png') + '">',
+              '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">',
+              '<meta name="twitter:card" content="summary_large_image">']
+    h.append('<style>' + LANDING_CSS + '</style></head><body><main>')
+
+    start = '/#/test/' + tests[0]['id']
+    h.append('<p class="kicker">' + e(ex.get('kicker') or ex_name) + ' · ' + e(lv) + '</p>')
+    h.append('<h1>' + e(h1) + '</h1>')
+    if _lk(ex, 'tagline', lang): h.append('<p class="lead">' + e(_lk(ex, 'tagline', lang)) + '</p>')
+    h.append('<p><a class="cta" href="' + start + '">' + e(T['cta']) + '</a></p>')
+    h.append('<p class="lead">' + e(T['free']) + '</p>')
+
+    h.append('<h2>' + e(T['what']) + ' ' + e(lv) + '</h2>')
+    bits = []
+    if lvl_name: bits.append('<b>' + e(lvl_name) + '.</b>')
+    if _lk(lvl, 'units', lang): bits.append(e(T['vocab']) + ': ' + e(_lk(lvl, 'units', lang)) + '.')
+    if bits: h.append('<p>' + ' '.join(bits) + '</p>')
+    if _lk(lvl, 'focus', lang): h.append('<p>' + e(_lk(lvl, 'focus', lang)) + '</p>')
+
+    secs = ex.get('sections') or []
+    if secs:
+        h.append('<h2>' + e(T['structure']) + '</h2><div class="tbl-wrap"><table><thead><tr>'
+                 '<th>' + e(T['sec']) + '</th><th>' + e(T['tasks']) + '</th><th>' + e(T['min']) + '</th></tr></thead><tbody>')
+        for s in secs:
+            nm = (s.get('kk') if lang == 'kk' else s.get('title')) or s.get('title', '')
+            d = _lk(s, 'desc', lang)
+            h.append('<tr><td><b>' + e(nm) + '</b>' + ('<br><span style="color:var(--mut)">' + e(d) + '</span>' if d else '') +
+                     '</td><td>' + e(_lk(s, 'tasks', lang)) + '</td><td>' + e(str(s.get('minutes', ''))) + '</td></tr>')
+        h.append('</tbody></table></div>')
+        if ex.get('totalMinutes'):
+            h.append('<p class="lead">' + e(T['total']) + ': ' + e(str(ex['totalMinutes'])) + ' ' + e(T['mins']) + '.</p>')
+
+    h.append('<h2>' + e(vheading) + '</h2><ol>')
+    for x in tests:
+        nm = _lk(x, 'title', lang) or x['id']
+        sm = _lk(x, 'summary', lang)
+        h.append('<li><a href="/#/test/' + e(x['id']) + '">' + e(nm) + '</a>' + (' — ' + e(sm) if sm else '') + '</li>')
+    h.append('</ol>')
+
+    others = [(o_eid, o_ex, o_lv) for (o_eid, o_ex, o_lv, _t) in landing_pairs() if not (o_eid == eid and o_lv == lv)]
+    if others:
+        h.append('<h2>' + e(T['kicker_more']) + '</h2><p class="more">')
+        for o_eid, o_ex, o_lv in others:
+            h.append('<a href="/' + landing_url(lang, o_eid, o_lv) + '">' + e(o_ex.get('name', o_eid)) + ' ' + e(o_lv) + '</a>')
+        h.append('</p>')
+
+    h.append('<p class="note">' + e(T['note']) + '</p>')
+    h.append('<footer><p><a href="/">' + e(T['home']) + '</a>' +
+             (' · <a href="/privacy/">privacy</a>' if True else '') +
+             (' · ' + e(site_cfg['email']) if site_cfg.get('email') else '') + '</p></footer>')
+    h.append('</main></body></html>\n')
+    return ''.join(h)
+
+def seo_nav():
+    """Ссылки на посадочные страницы в самом низу главной: без них страницы были бы сиротами для поисковика."""
+    pairs = landing_pairs()
+    if not pairs: return ''
+    out = ['<nav class="seo-nav" aria-label="Страницы по экзаменам и уровням">'
+           '<style>.seo-nav{max-width:46rem;margin:0 auto;padding:1.5rem 1rem 3rem;font-size:.85rem;opacity:.75}'
+           '.seo-nav b{display:block;font-weight:600;margin-bottom:.5em}'
+           '.seo-nav a{display:inline-block;margin:.15em .8em .15em 0}</style>'
+           '<b>Пробные тесты по экзаменам и уровням · Емтихан мен деңгей бойынша сынақ тестер</b>']
+    for eid, ex, lv, _t in pairs:
+        out.append('<a href="/' + landing_url('ru', eid, lv) + '">' + _html.escape(ex.get('name', eid)) + ' ' + lv + '</a>')
+    out.append('<a href="/kk/' + pairs[0][0] + '/' + pairs[0][2].lower() + '/" hreflang="kk">Қазақша</a>')
+    out.append('</nav>')
+    return ''.join(out)
+
+
 app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
 def body(mode):
     # публичный сайт — только тесты; лаборатория и локальная сборка — плюс курс и платный материал
     extra = [] if mode == 'site' else course_data + (paid_data if mode == 'lab' else [])
     flag = ["KZ.site.build = '" + mode + "';"]
     # сайт и лаборатория берут шрифты со своего сервера (src/fonts → fonts/), автономный dist — по-прежнему с Google Fonts
-    return tpl.replace('/*STYLES*/', local_fonts(css) if mode in ('site', 'lab') else css).replace('/*DATA*/', '\n'.join(data + flag + extra + [audio_js(mode)])).replace('/*APP*/', app)
+    return (tpl.replace('/*STYLES*/', local_fonts(css) if mode in ('site', 'lab') else css)
+               .replace('/*DATA*/', '\n'.join(data + flag + extra + [audio_js(mode)]))
+               .replace('/*APP*/', app)
+               .replace('/*SEONAV*/', seo_nav() if mode == 'site' else ''))
 SITE_NAME = 'Qazaq Trainer'
 TITLES = {
     'site': 'Qazaq Trainer — мок-тесты ҚАЗТЕСТ и QazResmiTest',
@@ -168,11 +359,21 @@ if _host and not _host.endswith('github.io'):
     (docs / 'CNAME').write_text(_host + '\n', encoding='utf-8')
 elif (docs / 'CNAME').exists():
     (docs / 'CNAME').unlink()
+# посадочные страницы: по одной на «экзамен × уровень × язык» (см. генератор выше)
+landing_written = []
+for _eid, _ex, _lv, _tests in landing_pairs():
+    for _lang in LANDING_LANGS:
+        _u = landing_url(_lang, _eid, _lv)
+        _dir = docs / _u.rstrip('/')
+        _dir.mkdir(parents=True, exist_ok=True)
+        (_dir / 'index.html').write_text(landing_page(_lang, _eid, _ex, _lv, _tests, _base), encoding='utf-8')
+        landing_written.append(_u)
+
 if _base:
     (docs / 'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /demo/\nSitemap: ' + _base + 'sitemap.xml\n', encoding='utf-8')
     import datetime
     _d = datetime.date.today().isoformat()
-    _urls = ''.join('<url><loc>%s</loc><lastmod>%s</lastmod></url>' % (_base + u, _d) for u in ('', 'privacy/', 'review/'))
+    _urls = ''.join('<url><loc>%s</loc><lastmod>%s</lastmod></url>' % (_base + u, _d) for u in ['', 'privacy/', 'review/'] + landing_written)
     (docs / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + _urls + '</urlset>\n', encoding='utf-8')
 put_audio(docs / 'audio')
 put_fonts(docs / 'fonts')

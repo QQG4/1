@@ -50,14 +50,44 @@
   var lastPage = null;
   function trackPage(path) {
     if (!TRACK_ON || path === lastPage) return;
+    var first = lastPage === null;
     lastPage = path;
-    sendEvent('pageview', { path: path });
+    sendEvent('pageview', first ? landing(path) : { path: path });
     try {
       if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: '/' + path });
       else if (window.plausible) window.plausible('pageview', { u: location.origin + location.pathname + '#/' + path });
     } catch (e) {}   // Umami считает переходы по history сам
   }
+  /* Откуда пришли — только при первом просмотре во вкладке: домен сайта-источника (без адреса страницы)
+     и utm-метки из ссылки (?utm_source=telegram&utm_campaign=…). Нужны, чтобы понять, какой канал продвижения работает. */
+  function landing(path) {
+    var p = { path: path }, ref = '';
+    try { ref = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
+    if (ref && ref !== location.hostname) p.ref = ref.replace(/^www\./, '').slice(0, 80);
+    try {
+      var sp = new URLSearchParams(location.search), utm = ['utm_source', 'utm_medium', 'utm_campaign'].map(function (k) { return (sp.get(k) || '').slice(0, 40); });
+      if (utm[0] || utm[1] || utm[2]) p.utm = utm.join('/');
+    } catch (e) {}
+    return p;
+  }
   KZ.track = track;
+
+  /* Ошибки JavaScript у посетителей: текст ошибки, файл и строка, страница и браузер. Не больше пяти разных за вкладку,
+     повторы не шлём. Так поломки видны в статистике раньше, чем о них напишут. */
+  var errSeen = {}, errCount = 0;
+  function reportError(msg, where) {
+    msg = String(msg || '');
+    if (!TRACK_ON || !msg || msg === 'Script error.' || errCount >= 5 || errSeen[msg]) return;
+    errSeen[msg] = 1; errCount++;
+    sendEvent('js-error', { text: msg.slice(0, 300) + (where ? ' @ ' + where : ''), path: location.hash.replace(/^#\/?/, '').slice(0, 120), ua: navigator.userAgent.slice(0, 200) });
+  }
+  window.addEventListener('error', function (e) { if (e && e.message) reportError(e.message, (e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e && e.reason; reportError('Promise: ' + (r && r.message ? r.message : r), ''); });
+  /* Клик по напоминаниям считаем отдельным событием: иначе непонятно, работает ли призыв вообще. */
+  document.addEventListener('click', function (ev) {
+    var a = ev.target && ev.target.closest && ev.target.closest('a[data-remind]');
+    if (a) track('remind', { where: a.getAttribute('data-remind') });
+  });
 
   /* ---------------- store ---------------- */
   var STORE_KEY = (KZ.site && KZ.site.build === 'lab') ? 'kz-trainer:lab:v1' : 'kz-trainer:v1'; // лаборатория хранит прогресс отдельно от сайта
@@ -428,11 +458,11 @@
       '<h1>' + T('Подготовка к государственным экзаменам по казахскому языку') + '</h1>' +
       '<p class="lede">' + T('Два экзамена, уровни от A1 до C2, по несколько вариантов мок-теста на каждый уровень. Результаты по разделам сохраняются в этом браузере; для переноса на другое устройство есть экспорт.') + '</p>' +
       courseCards() +
-      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Несколько вариантов мок-теста на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
+      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Варианты мок-теста на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
       '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
       '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-head"><span class="rung-level">' + lv + '</span><span><span class="rung-name">' + esc(LK(L, 'name')) + '</span><span class="rung-units">' + esc(LK(L, 'units')) + '</span></span></div><p class="rung-focus">' + esc(LK(L, 'focus')) + '</p></div>'; }).join('') + '</div></section>' +
-      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.supportEmail ? ' · ' + T('Почта:') + ' <a href="mailto:' + esc(KZ.site.supportEmail) + '">' + esc(KZ.site.supportEmail) + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных — ответы нужны, чтобы находить неудачные вопросы и чинить их.') + privacyLink() + '</p>' : '') + '</footer>';
+      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + remindCta('footer') + (KZ.site && KZ.site.supportEmail ? ' · ' + T('Почта:') + ' <a href="mailto:' + esc(KZ.site.supportEmail) + '">' + esc(KZ.site.supportEmail) + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + '<p class="small muted">' + T('Qazaq Trainer — независимый тренажёр. Он не связан с Национальным центром тестирования и организаторами ҚАЗТЕСТ и QazResmiTest; названия экзаменов указаны только для того, чтобы описать, к чему готовят задания.') + '</p>' + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных — ответы нужны, чтобы находить неудачные вопросы и чинить их.') + privacyLink() + '</p>' : '') + '</footer>';
   }
   function courseCards() {
     if (!KZ.courses) return '';
@@ -1127,7 +1157,18 @@
     var next = nextSection(t, sec.type);
     run.afterRender = null;
     return head + body + '<div class="actions">' + (next ? '<a class="btn" href="#/test/' + t.id + '/' + next.type + '">' + T('Следующий раздел:') + ' ' + esc(LK(KZ.sectionTypes[next.type], 'label')) + '</a>' : '<a class="btn" href="#/test/' + t.id + '">' + T('К итогам теста') + '</a>') +
-      '<button class="btn ghost" data-act="retry">' + T('Пройти заново') + '</button>' + feedbackLink(t, sec, saved) + '</div>';
+      '<button class="btn ghost" data-act="retry">' + T('Пройти заново') + '</button>' + feedbackLink(t, sec, saved) + '</div>' + remindCta('after');
+  }
+  /* Канал напоминаний (KZ.site.telegramChannel): даты регистрации на тестирование и окно апелляции в 2 рабочих дня.
+     Показывается в подвале ссылкой и блоком после пройденного раздела — в момент, когда человек думает о реальном экзамене.
+     Пустая настройка выключает и то, и другое. */
+  function remindCta(where) {
+    if (!KZ.site || !KZ.site.telegramChannel) return '';
+    var url = 'https://t.me/' + esc(KZ.site.telegramChannel);
+    if (where === 'footer') return " · <a href='" + url + "' target='_blank' rel='noopener' data-remind='footer'>" + T('Напоминания в Telegram') + '</a>';
+    return '<div class="notice"><b class="t">' + T('Не пропустите регистрацию') + '</b><p>' +
+      T('Сессии тестирования идут по графику, а на апелляцию после результата есть всего 2 рабочих дня. Напомним заранее, без писем и без регистрации.') +
+      "</p><p><a class='btn' href='" + url + "' target='_blank' rel='noopener' data-remind='after'>" + T('Подписаться на напоминания') + '</a></p></div>';
   }
   function feedbackLink(t, sec, saved) {
     if (!KZ.site || !KZ.site.feedbackTelegram) return '';

@@ -6,6 +6,8 @@ KZ.site = {
   // приёмник событий (Cloudflare Worker, tools/events-worker): «начал раздел», «завершил раздел», разбор по вопросам;
   // пусто → не отправляется ничего. При смене адреса сайта добавить новый домен в ALLOWED в worker.js и задеплоить заново.
   eventsUrl: 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev',
+  telegramChannel: '',           // канал напоминаний о датах регистрации и об окне апелляции (2 рабочих дня):
+                                 // 'qazaqtrainer' → блок после раздела и ссылка в подвале. Пусто — блок не показывается
   supportEmail: 'support@qazaqtrainer.com',   // Cloudflare Email Routing → пересылка на Gmail владельца (16.09.2026); показывается в подвале, на 404 и в анкете эксперта
   siteUrl: 'https://qazaqtrainer.com/'   // адрес опубликованного сайта (canonical, og:image, ссылка «открыть отдельной вкладкой»)
 };

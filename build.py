@@ -122,8 +122,12 @@ def _re_fonts(html):
 docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
+def _tests_count_ru():
+    """«27 мок-тестов» для анкеты эксперта: число файлов в src/data/tests, чтобы подпись не устаревала при добавлении вариантов."""
+    n = len(glob.glob(str(src / 'data' / 'tests' / '*.js'))); d, h = n % 10, n % 100
+    return f"{n} " + ('мок-тест' if d == 1 and h != 11 else 'мок-теста' if 2 <= d <= 4 and not 12 <= h <= 14 else 'мок-тестов')
 (docs / 'review').mkdir(exist_ok=True)
-(docs / 'review' / 'index.html').write_text(_re_fonts(read(src / 'review' / 'index.html')).replace('__EVENTS_URL__', site_cfg.get('events', '')).replace('__SUPPORT_EMAIL__', site_cfg.get('email', '')), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
+(docs / 'review' / 'index.html').write_text(_re_fonts(read(src / 'review' / 'index.html')).replace('__EVENTS_URL__', site_cfg.get('events', '')).replace('__SUPPORT_EMAIL__', site_cfg.get('email', '')).replace('__TESTS_COUNT__', _tests_count_ru()), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
 _base = (site_cfg.get('url') or '').strip()
 if _base and not _base.endswith('/'): _base += '/'
 # 404, заголовки безопасности и список файлов, которые не выкладываются на Cloudflare (16.09.2026).

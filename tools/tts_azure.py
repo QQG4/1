@@ -4,6 +4,7 @@
 Выход: audio/<testId>.mp3 и audio/manifest.json; KZ.audio собирает build.py (файлы для сайта, data-URI для артефакта).
 Запуск из папки qazaq-trainer: python3 tools/tts_azure.py [testId ...]
 """
+import http.client, time
 import os, re, sys, json, base64, pathlib, urllib.request, html
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -14,7 +15,13 @@ OPTS = {a.split('=')[0][2:]: a.split('=', 1)[1] for a in sys.argv[1:] if a.start
 A, D = 'kk-KZ-AigulNeural', 'kk-KZ-DauletNeural'
 FIRST = {'qrt-a1-01': D, 'qrt-a2-01': A, 'qrt-b1-01': A, 'qrt-b2-01': D, 'qrt-c1-01': D, 'qrt-c2-01': D, 'kaztest-a1-01': A, 'kaztest-a2-01': D, 'kaztest-b1-01': D, 'kaztest-b2-01': D, 'kaztest-c1-01': A,
          'qrt-a1-02': A, 'qrt-a2-02': D, 'qrt-b1-02': A, 'qrt-b2-02': D, 'qrt-c1-02': A, 'qrt-c2-02': D,
-         'kaztest-a1-02': A, 'kaztest-a2-02': D, 'kaztest-b1-02': A, 'kaztest-b2-02': D, 'kaztest-c1-02': A}
+         'kaztest-a1-02': A, 'kaztest-a2-02': D, 'kaztest-b1-02': A, 'kaztest-b2-02': D, 'kaztest-c1-02': A,
+         'kaztest-a1-03': D, 'kaztest-a1-04': A, 'kaztest-a1-05': D, 'qrt-a1-03': D, 'qrt-a1-04': A, 'qrt-a1-05': D,
+         'kaztest-a2-03': A, 'kaztest-a2-04': D, 'kaztest-a2-05': A, 'qrt-a2-03': A, 'qrt-a2-04': D, 'qrt-a2-05': A,
+         'kaztest-b1-03': D, 'kaztest-b1-04': A, 'kaztest-b1-05': D, 'qrt-b1-03': D, 'qrt-b1-04': A, 'qrt-b1-05': D,
+         'kaztest-b2-03': A, 'kaztest-b2-04': D, 'kaztest-b2-05': A, 'qrt-b2-03': A, 'qrt-b2-04': D, 'qrt-b2-05': A,
+         'kaztest-c1-03': D, 'kaztest-c1-04': A, 'kaztest-c1-05': D, 'qrt-c1-03': D, 'qrt-c1-04': A, 'qrt-c1-05': D,
+         'qrt-c2-03': A, 'qrt-c2-04': D, 'qrt-c2-05': A}
 # Темп 0 % для всех уровней и паузы 350 мс между репликами: выбрано пользователем по прослушиванию 06.09.2026
 # (замедление −10 % делало Aigul «тормозящей»). Замедление можно вернуть флагом --rate=-10%.
 # Настройки по прослушиванию пользователя 06.09.2026: тире и многоточия — как в тексте (голос сам ставит интонационную паузу),
@@ -79,8 +86,14 @@ def ssml_for(t):
 def synth(ssml):
     req = urllib.request.Request(f'https://{REGION}.tts.speech.microsoft.com/cognitiveservices/v1', data=ssml.encode('utf-8'), method='POST',
         headers={'Ocp-Apim-Subscription-Key': KEY, 'Content-Type': 'application/ssml+xml', 'X-Microsoft-OutputFormat': FMT, 'User-Agent': 'qazaq-trainer'})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return r.read()
+    for attempt in range(4):   # Azure иногда обрывает ответ (IncompleteRead) — повторяем с паузой (17.09.2026)
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return r.read()
+        except (http.client.IncompleteRead, ConnectionError, TimeoutError) as e:
+            if attempt == 3: raise
+            print(f'  обрыв ответа Azure ({type(e).__name__}), повтор через {5 * (attempt + 1)} с', file=sys.stderr)
+            time.sleep(5 * (attempt + 1))
 
 want = set(a for a in sys.argv[1:] if not a.startswith('--'))
 tests = [t for t in load_tests() if not want or t['id'] in want]

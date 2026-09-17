@@ -62,8 +62,19 @@
   /* ---------------- store ---------------- */
   var STORE_KEY = (KZ.site && KZ.site.build === 'lab') ? 'kz-trainer:lab:v1' : 'kz-trainer:v1'; // лаборатория хранит прогресс отдельно от сайта
   function loadState() {
-    try { var s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.tests) return s; } catch (e) {}
-    return { version: 1, tests: {} };
+    try { var s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.tests) { if (!Array.isArray(s.history)) s.history = seedHistory(s); return s; } } catch (e) {}
+    return { version: 1, tests: {}, history: [] };
+  }
+  /* История попыток для графика «Мой прогресс»: {t: testId, s: раздел, sc, tot, at, pr: тренировка}.
+     До 17.09.2026 хранилась только последняя попытка раздела — старый прогресс превращается в историю из неё. */
+  var HIST_MAX = 2000;
+  function seedHistory(st) {
+    var h = [];
+    Object.keys(st.tests || {}).forEach(function (id) {
+      var secs = (st.tests[id] && st.tests[id].sections) || {};
+      Object.keys(secs).forEach(function (ty) { var r = secs[ty]; if (r && r.status === 'done' && +r.total > 0) h.push({ t: id, s: ty, sc: +r.score || 0, tot: +r.total, at: +r.finishedAt || +st.tests[id].updatedAt || 0, pr: !!r.practice }); });
+    });
+    return h.sort(function (a, b) { return a.at - b.at; });
   }
   function saveState() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
   var state = loadState();
@@ -86,6 +97,8 @@
       out.tests[id] = o;
     });
     if (s.course && typeof s.course === 'object' && !Array.isArray(s.course)) out.course = s.course;
+    out.history = Array.isArray(s.history) ? s.history.filter(function (x) { return x && findTest(x.t) && KZ.sectionTypes[x.s] && +x.tot > 0; })
+      .map(function (x) { return { t: String(x.t), s: String(x.s), sc: +x.sc || 0, tot: +x.tot, at: +x.at || 0, pr: !!x.pr }; }).slice(-HIST_MAX) : seedHistory(out);
     return out;
   }
 
@@ -95,9 +108,15 @@
     var t = tp(testId);
     t.sections[type] = Object.assign({}, t.sections[type] || {}, data);
     t.updatedAt = Date.now();
+    var r = t.sections[type];
+    if (data && data.status === 'done' && +r.total > 0) {   // каждая завершённая попытка — в историю (перезапись раздела её не стирает)
+      if (!Array.isArray(state.history)) state.history = [];
+      state.history.push({ t: testId, s: type, sc: +r.score || 0, tot: +r.total, at: +r.finishedAt || t.updatedAt, pr: !!r.practice });
+      if (state.history.length > HIST_MAX) state.history.splice(0, state.history.length - HIST_MAX);
+    }
     saveState();
     if (data && data.status === 'done') {   // завершение любого раздела — единая точка учёта
-      var r = t.sections[type], tt = findTest(testId);
+      var tt = findTest(testId);
       track('section-done', {
         test: testId, exam: tt && tt.exam, level: tt && tt.level, section: type,
         pct: r.total ? Math.round(100 * r.score / r.total) : null,
@@ -319,6 +338,7 @@
     for (var ei = 0; ei < extRoutes.length && extHtml == null; ei++) extHtml = extRoutes[ei](p);
     if (extHtml != null) { run = null; html = extHtml; }
     else if (p[0] === 'sources') html = viewSources();
+    else if (p[0] === 'progress' && !p[1]) html = viewProgress();
     else if (p[0] === 'exam' && KZ.exams[p[1]]) html = viewExam(KZ.exams[p[1]]);
     else if (p[0] === 'test' && findTest(p[1]) && !p[2]) html = viewTest(findTest(p[1]));
     else if (p[0] === 'test' && findTest(p[1]) && p[2]) html = viewSection(findTest(p[1]), p[2]);
@@ -393,7 +413,7 @@
         var chips = tests.length > 1 ? '<span class="variants">' + tests.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (i + 1) + '</span>'; }).join('') + '</span>' : '';
         return '<a class="level-row' + (t && t.status === 'draft' ? ' draft' : '') + '" href="' + href + '">' +
           '<span class="lvl">' + lv + '</span>' +
-          '<span><div class="nm">' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + T('варианта') + '</span>' : '') + '</div><div class="dsc">' + esc(t ? LK(t, 'summary') : '') + '</div></span>' +
+          '<span><div class="nm">' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + plural(tests.length, T('вариант'), T('варианта'), T('вариантов')) + '</span>' : '') + '</div><div class="dsc">' + esc(t ? LK(t, 'summary') : '') + '</div></span>' +
           '<span class="st">' + chips + '<span class="badge ' + st.cls + '">' + st.label + '</span></span></a>';
       }).join('');
       return '<div class="exam-card-wrap"><a class="exam-card" href="#/exam/' + eid + '">' +
@@ -403,16 +423,15 @@
         '<div class="levels" style="margin-top:10px">' + rows + '</div></div>';
     }).join('');
 
-    return topbar([{ label: T('Хаб') }], '<button class="btn ghost small" data-act="io">' + T('Прогресс: экспорт / импорт') + '</button>') +
+    return topbar([{ label: T('Хаб') }], '<a class="btn ghost small" href="#/progress">' + T('Мой прогресс') + '</a>') +
       '<div class="kicker">' + T('Qazaq trainer · тренажёр') + '</div>' +
       '<h1>' + T('Подготовка к государственным экзаменам по казахскому языку') + '</h1>' +
       '<p class="lede">' + T('Два экзамена, уровни от A1 до C2, по несколько вариантов мок-теста на каждый уровень. Результаты по разделам сохраняются в этом браузере; для переноса на другое устройство есть экспорт.') + '</p>' +
-      '<div id="io-panel" hidden>' + ioPanel() + '</div>' +
       courseCards() +
-      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('По два варианта мок-теста на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
+      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Несколько вариантов мок-теста на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
       '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
-      '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-level">' + lv + '</div><div class="rung-name">' + esc(LK(L, 'name')) + '</div><div class="rung-units">' + esc(LK(L, 'units')) + '</div><div class="rung-focus">' + esc(LK(L, 'focus')) + '</div></div>'; }).join('') + '</div></section>' +
+      '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-head"><span class="rung-level">' + lv + '</span><span><span class="rung-name">' + esc(LK(L, 'name')) + '</span><span class="rung-units">' + esc(LK(L, 'units')) + '</span></span></div><p class="rung-focus">' + esc(LK(L, 'focus')) + '</p></div>'; }).join('') + '</div></section>' +
       '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + (KZ.site && KZ.site.supportEmail ? ' · ' + T('Почта:') + ' <a href="mailto:' + esc(KZ.site.supportEmail) + '">' + esc(KZ.site.supportEmail) + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных — ответы нужны, чтобы находить неудачные вопросы и чинить их.') + privacyLink() + '</p>' : '') + '</footer>';
   }
   function courseCards() {
@@ -871,7 +890,31 @@
       '<circle cx="400" cy="172" r="15" fill="#f1c9a5"/><path d="M386 170 Q400 150 414 170 Z" fill="#6b3f2a"/><rect x="382" y="188" width="36" height="46" rx="8" fill="#7b5aa6"/><rect x="380" y="232" width="40" height="24" rx="3" fill="#333"/><rect x="382" y="234" width="36" height="16" fill="#9fc4de"/>' +
       '<circle cx="500" cy="180" r="15" fill="#f1c9a5"/><path d="M485 178 Q500 158 515 178 Z" fill="#1f1f1f"/><rect x="482" y="196" width="36" height="46" rx="8" fill="#3f8f5a"/><rect x="462" y="236" width="40" height="24" rx="3" fill="#333"/><rect x="464" y="238" width="36" height="16" fill="#9fc4de"/>' +
       '<circle cx="190" cy="215" r="15" fill="#f1c9a5"/><path d="M175 213 Q190 193 205 213 Z" fill="#3b2a1a"/><rect x="172" y="231" width="36" height="56" rx="8" fill="#c8453a"/><rect x="176" y="286" width="12" height="40" fill="#2a2a2a"/><rect x="192" y="286" width="12" height="40" fill="#2a2a2a"/><line x1="205" y1="240" x2="245" y2="200" stroke="#f1c9a5" stroke-width="7" stroke-linecap="round"/><line x1="245" y1="200" x2="256" y2="160" stroke="#555" stroke-width="3" stroke-linecap="round"/>' +
-      '<rect x="0" y="300" width="640" height="40" fill="#d7d2c8"/>'
+      '<rect x="0" y="300" width="640" height="40" fill="#d7d2c8"/>',
+    dastarkhan: '<rect width="640" height="340" fill="#efe4d2"/><rect y="238" width="640" height="102" fill="#c9a57a"/><rect y="238" width="640" height="6" fill="#b08a5e"/>' +
+      '<rect x="56" y="34" width="200" height="140" rx="4" fill="#b8453a"/><rect x="68" y="46" width="176" height="116" fill="none" stroke="#e8c46a" stroke-width="5"/><path d="M156 62 L196 104 L156 146 L116 104Z" fill="#e8c46a"/><path d="M156 82 L176 104 L156 126 L136 104Z" fill="#7a2a24"/><path d="M92 70 l12 12 -12 12 -12 -12Z M220 70 l12 12 -12 12 -12 -12Z M92 114 l12 12 -12 12 -12 -12Z M220 114 l12 12 -12 12 -12 -12Z" fill="#f2d98f"/>' +
+      '<rect x="440" y="36" width="160" height="132" fill="#cfe3ee" stroke="#8b5a2b" stroke-width="6"/><line x1="520" y1="36" x2="520" y2="168" stroke="#8b5a2b" stroke-width="5"/><line x1="440" y1="102" x2="600" y2="102" stroke="#8b5a2b" stroke-width="5"/><circle cx="572" cy="66" r="14" fill="#f2d47a"/>' +
+      '<path d="M146 176 Q142 124 170 124 Q198 124 194 176Z" fill="#f4f4f4"/><circle cx="170" cy="152" r="13" fill="#f1c9a5"/><rect x="146" y="170" width="48" height="70" rx="10" fill="#7b5aa6"/>' +
+      '<circle cx="270" cy="166" r="12" fill="#f1c9a5"/><path d="M258 163 Q270 148 282 163 Z" fill="#3b2a1a"/><rect x="254" y="180" width="32" height="56" rx="8" fill="#d94f3d"/>' +
+      '<path d="M358 176 Q354 124 380 124 Q406 124 402 176Z" fill="#3b2a1a"/><circle cx="380" cy="150" r="13" fill="#f1c9a5"/><rect x="356" y="168" width="48" height="70" rx="10" fill="#3b7dd8"/><ellipse cx="404" cy="196" rx="10" ry="6" fill="#ffffff" stroke="#2b6cb0" stroke-width="2"/>' +
+      '<circle cx="480" cy="146" r="17" fill="#f1c9a5"/><path d="M462 144 Q480 122 498 144 Z" fill="#1f1f1f"/><rect x="454" y="165" width="52" height="74" rx="10" fill="#3f8f5a"/>' +
+      '<ellipse cx="320" cy="262" rx="200" ry="40" fill="#8b5a2b"/><ellipse cx="320" cy="254" rx="200" ry="40" fill="#f6efe0"/><ellipse cx="320" cy="254" rx="186" ry="33" fill="none" stroke="#c8453a" stroke-width="3" stroke-dasharray="10 6"/>' +
+      '<ellipse cx="320" cy="244" rx="26" ry="20" fill="#2f6fb5"/><rect x="310" y="218" width="20" height="8" rx="3" fill="#2f6fb5"/><circle cx="320" cy="215" r="4" fill="#2f6fb5"/><path d="M344 240 q18 -4 20 -16" stroke="#2f6fb5" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M296 236 q-14 2 -12 14" stroke="#2f6fb5" stroke-width="5" fill="none"/><path d="M306 246 q14 8 28 0" stroke="#ffffff" stroke-width="3" fill="none"/>' +
+      '<ellipse cx="220" cy="262" rx="34" ry="12" fill="#e9dcc2" stroke="#b08a5e" stroke-width="2"/><circle cx="208" cy="258" r="7" fill="#d9a441"/><circle cx="222" cy="262" r="7" fill="#c98f2e"/><circle cx="234" cy="257" r="7" fill="#d9a441"/><circle cx="216" cy="250" r="7" fill="#e3b457"/>' +
+      '<ellipse cx="420" cy="262" rx="12" ry="7" fill="#ffffff" stroke="#2b6cb0" stroke-width="2"/><ellipse cx="460" cy="250" rx="12" ry="7" fill="#ffffff" stroke="#2b6cb0" stroke-width="2"/><ellipse cx="170" cy="244" rx="12" ry="7" fill="#ffffff" stroke="#2b6cb0" stroke-width="2"/><ellipse cx="270" cy="276" rx="12" ry="7" fill="#ffffff" stroke="#2b6cb0" stroke-width="2"/>' +
+      '<ellipse cx="380" cy="282" rx="26" ry="9" fill="#e9dcc2" stroke="#b08a5e" stroke-width="2"/><circle cx="370" cy="279" r="6" fill="#d94f3d"/><circle cx="386" cy="281" r="6" fill="#6aa84f"/><circle cx="378" cy="273" r="6" fill="#f0a22c"/>' +
+      '<ellipse cx="566" cy="306" rx="34" ry="14" fill="#8a8a8a"/><circle cx="598" cy="296" r="13" fill="#8a8a8a"/><path d="M590 286 l3 -10 6 8Z M604 286 l3 -10 4 10Z" fill="#8a8a8a"/><circle cx="602" cy="295" r="1.8" fill="#222"/><path d="M534 306 q-22 4 -18 -14" stroke="#8a8a8a" stroke-width="6" fill="none" stroke-linecap="round"/>',
+    busstop: '<rect width="640" height="340" fill="#dbe6ee"/><rect x="0" y="60" width="110" height="170" fill="#b9c4cf"/><rect x="120" y="30" width="130" height="200" fill="#a7b4c0"/><rect x="470" y="50" width="170" height="180" fill="#b9c4cf"/>' +
+      '<path d="M14 80 h20 v22 h-20Z M50 80 h20 v22 h-20Z M14 120 h20 v22 h-20Z M50 120 h20 v22 h-20Z M140 50 h22 v24 h-22Z M180 50 h22 v24 h-22Z M140 94 h22 v24 h-22Z M180 94 h22 v24 h-22Z M140 138 h22 v24 h-22Z M180 138 h22 v24 h-22Z M490 70 h24 v24 h-24Z M530 70 h24 v24 h-24Z M570 70 h24 v24 h-24Z M490 114 h24 v24 h-24Z M530 114 h24 v24 h-24Z M570 114 h24 v24 h-24Z" fill="#f2d98f"/>' +
+      '<path d="M0 64 h110 v-6 h-110Z M120 34 h130 v-6 h-130Z M470 54 h170 v-6 h-170Z" fill="#ffffff"/>' +
+      '<rect y="226" width="640" height="114" fill="#8d97a0"/><rect y="226" width="640" height="10" fill="#f4f7fa"/><rect y="290" width="640" height="50" fill="#eef3f7"/><path d="M40 262 h60 M160 262 h60 M280 262 h60 M400 262 h60 M520 262 h60" stroke="#f4f7fa" stroke-width="4"/>' +
+      '<rect x="20" y="172" width="230" height="84" rx="14" fill="#e8b233"/><rect x="20" y="236" width="230" height="10" fill="#c98f1f"/><rect x="36" y="184" width="40" height="34" rx="4" fill="#cfe3ee"/><rect x="84" y="184" width="40" height="34" rx="4" fill="#cfe3ee"/><rect x="132" y="184" width="40" height="34" rx="4" fill="#cfe3ee"/><rect x="180" y="184" width="40" height="34" rx="4" fill="#cfe3ee"/><rect x="226" y="184" width="18" height="50" rx="3" fill="#cfe3ee"/><rect x="100" y="162" width="70" height="14" rx="3" fill="#333"/><circle cx="64" cy="258" r="16" fill="#333"/><circle cx="64" cy="258" r="6" fill="#999"/><circle cx="206" cy="258" r="16" fill="#333"/><circle cx="206" cy="258" r="6" fill="#999"/><circle cx="246" cy="224" r="5" fill="#fff6c8"/>' +
+      '<rect x="320" y="150" width="6" height="140" fill="#5a6570"/><rect x="460" y="150" width="6" height="140" fill="#5a6570"/><rect x="310" y="140" width="166" height="14" rx="3" fill="#3f6f8f"/><rect x="330" y="160" width="126" height="90" fill="#cfe3ee" opacity="0.55"/><rect x="316" y="136" width="154" height="6" rx="3" fill="#ffffff"/><rect x="336" y="258" width="112" height="8" rx="2" fill="#6b4a2b"/><rect x="342" y="266" width="6" height="22" fill="#4a3a2a"/><rect x="436" y="266" width="6" height="22" fill="#4a3a2a"/>' +
+      '<rect x="500" y="130" width="5" height="160" fill="#5a6570"/><rect x="488" y="112" width="30" height="30" rx="15" fill="#2f7a5a"/><rect x="495" y="120" width="16" height="11" rx="2" fill="#ffffff"/><circle cx="498" cy="133" r="2" fill="#ffffff"/><circle cx="508" cy="133" r="2" fill="#ffffff"/>' +
+      '<circle cx="372" cy="208" r="13" fill="#f1c9a5"/><path d="M358 206 Q372 184 386 206Z" fill="#c8453a"/><rect x="356" y="222" width="32" height="50" rx="8" fill="#7b5aa6"/><rect x="358" y="270" width="12" height="20" fill="#333"/><rect x="374" y="270" width="12" height="20" fill="#333"/><rect x="388" y="238" width="20" height="24" rx="3" fill="#8b5a2b"/>' +
+      '<circle cx="428" cy="204" r="13" fill="#f1c9a5"/><rect x="414" y="186" width="28" height="12" rx="4" fill="#333"/><rect x="412" y="218" width="32" height="56" rx="8" fill="#2b4f8f"/><rect x="412" y="226" width="32" height="6" fill="#d94f3d"/><rect x="414" y="272" width="12" height="18" fill="#333"/><rect x="430" y="272" width="12" height="18" fill="#333"/>' +
+      '<circle cx="560" cy="232" r="10" fill="#f1c9a5"/><path d="M549 230 Q560 214 571 230Z" fill="#3f8f5a"/><rect x="548" y="242" width="24" height="32" rx="6" fill="#3f8f5a"/><rect x="550" y="272" width="9" height="16" fill="#333"/><rect x="561" y="272" width="9" height="16" fill="#333"/><rect x="578" y="286" width="44" height="6" rx="3" fill="#c8453a"/><path d="M572 256 L584 284" stroke="#6b4a2b" stroke-width="3"/>' +
+      '<g fill="#ffffff"><circle cx="40" cy="30" r="3"/><circle cx="90" cy="20" r="2.5"/><circle cx="280" cy="40" r="3"/><circle cx="330" cy="90" r="2.5"/><circle cx="400" cy="30" r="3"/><circle cx="440" cy="100" r="2.5"/><circle cx="600" cy="30" r="3"/><circle cx="270" cy="120" r="2.5"/><circle cx="560" cy="170" r="3"/><circle cx="300" cy="190" r="2.5"/><circle cx="620" cy="200" r="2.5"/><circle cx="200" cy="20" r="2.5"/></g>'
   };
   function pictureSvg(pic) {
     var scene = SCENES[pic.scene] || SCENES.park;
@@ -1091,6 +1134,154 @@
     var ctx = (t ? t.id : '') + (sec ? '/' + sec.type : '') + (saved && saved.total ? ' ' + saved.score + '/' + saved.total : '');
     return '<a class="btn ghost" target="_blank" rel="noopener" href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" data-ctx="' + esc(ctx) + '">' + T('Написать в Telegram') + '</a><span class="hint">' + T('Отзыв о тесте') + ': ' + esc(ctx) + '</span>';
   }
+  /* ---------------- views: мой прогресс ---------------- */
+  var progLv = null;   // фильтр графика: 'all' или 'exam:level'; null — пара последней попытки
+  var AUTO_TYPES = ['listening', 'reading', 'lexis'];   // порядок = цвет и форма маркера на графике; цвет закреплён за разделом, не за рангом
+  var SEC_ORDER = ['listening', 'lexis', 'reading', 'writing', 'speaking'];
+  function secShort(ty) { return ty === 'lexis' ? T('Лексика') : LK(KZ.sectionTypes[ty], 'label'); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function dm(ts) { var d = new Date(ts); return pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1); }
+  function hPct(x) { return Math.round(100 * x.sc / x.tot); }
+  function testName(t) { return KZ.exams[t.exam].short + ' ' + t.level + ' · ' + LK(t, 'title'); }
+  function pgMark(ty, x, y, hollow) {
+    var k = AUTO_TYPES.indexOf(ty), c = 'mk s' + (k + 1) + (hollow ? ' hollow' : '');
+    if (k === 0) return '<circle class="' + c + '" cx="' + x + '" cy="' + y + '" r="4.5"/>';
+    if (k === 1) return '<rect class="' + c + '" x="' + (x - 4.5) + '" y="' + (y - 4.5) + '" width="9" height="9" rx="1.5"/>';
+    return '<path class="' + c + '" d="M' + x + ' ' + (y - 6) + 'L' + (x + 6) + ' ' + y + 'L' + x + ' ' + (y + 6) + 'L' + (x - 6) + ' ' + y + 'Z"/>';
+  }
+  /* линейный график: по оси X — попытки по порядку (подписи — даты), по Y — процент; линия на раздел */
+  function progressChart(pts) {
+    if (!pts.length) return '<p class="muted small">' + T('График появится, когда вы пройдёте аудирование, чтение или лексику.') + '</p>';
+    var W = Math.round(Math.max(280, Math.min(750, (window.innerWidth || 800) - 80))), narrow = W < 520;
+    var H = narrow ? 220 : 260, L = 42, R = narrow ? 14 : 110, TOP = 14, B = 30, pw = W - L - R, ph = H - TOP - B, n = pts.length;
+    function X(i) { return Math.round(10 * (L + (n === 1 ? pw / 2 : i * pw / (n - 1)))) / 10; }
+    function Y(p) { return Math.round(10 * (TOP + (1 - p / 100) * ph)) / 10; }
+    var g = '';
+    [0, 25, 50, 75, 100].forEach(function (v) { g += '<line class="' + (v ? 'grid' : 'base') + '" x1="' + L + '" x2="' + (L + pw) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="ax" x="' + (L - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '%</text>'; });
+    var maxT = narrow ? 3 : 6, step = Math.max(1, Math.ceil((n - 1) / (maxT - 1))), ticks = [], lastLbl = null;
+    for (var i = 0; i < n; i += step) ticks.push(i);
+    if (n > 1 && ticks[ticks.length - 1] !== n - 1) { if (n - 1 - ticks[ticks.length - 1] < step / 2) ticks.pop(); ticks.push(n - 1); }
+    ticks.forEach(function (i) {
+      var lbl = dm(pts[i].at); if (lbl === lastLbl) return; lastLbl = lbl;
+      var anchor = n > 1 && i === 0 ? 'start' : n > 1 && i === n - 1 ? 'end' : 'middle';
+      g += '<text class="ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="' + anchor + '">' + lbl + '</text>';
+    });
+    var lines = '', marks = '', hits = '', ends = [];
+    AUTO_TYPES.forEach(function (ty, k) {
+      var idx = []; pts.forEach(function (x, i) { if (x.s === ty) idx.push(i); });
+      if (!idx.length) return;
+      if (idx.length > 1) lines += '<path class="ln s' + (k + 1) + '" d="' + idx.map(function (i, j) { return (j ? 'L' : 'M') + X(i) + ' ' + Y(hPct(pts[i])); }).join('') + '"/>';
+      var last = idx[idx.length - 1]; ends.push({ ty: ty, y: Y(hPct(pts[last])) });
+    });
+    pts.forEach(function (x, i) {
+      var t = findTest(x.t), p = hPct(x), d = new Date(x.at);
+      marks += pgMark(x.s, X(i), Y(p), x.pr);
+      var tip = '<b>' + esc(secShort(x.s)) + ': ' + p + ' %</b> <span class="muted">(' + x.sc + '/' + x.tot + ')</span><br>' + esc(testName(t)) + '<br><span class="muted">' + dm(x.at) + '.' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + (x.pr ? ' · ' + T('тренировка') : '') + '</span>';
+      hits += '<circle class="pg-hit" cx="' + X(i) + '" cy="' + Y(p) + '" r="12" data-tip="' + esc(tip) + '"/>';
+    });
+    var labels = '';
+    if (!narrow) {   // подписи линий справа, раздвинутые, чтобы не наезжали друг на друга
+      ends.sort(function (a, b) { return a.y - b.y; });
+      ends.forEach(function (e, j) { e.ly = Math.max(e.y, TOP + 4, j ? ends[j - 1].ly + 16 : 0); });
+      for (var j = ends.length - 1; j >= 0; j--) ends[j].ly = Math.min(ends[j].ly, j < ends.length - 1 ? ends[j + 1].ly - 16 : TOP + ph);
+      ends.forEach(function (e) { labels += '<text class="dl-lbl" x="' + (L + pw + 12) + '" y="' + (e.ly + 4) + '">' + esc(secShort(e.ty)) + '</text>'; });
+    }
+    return '<div class="chart"><svg data-w="' + W + '" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + T('График результатов по попыткам; те же данные — в таблице ниже.') + '">' + g +
+      '<line class="xh" x1="0" x2="0" y1="' + TOP + '" y2="' + (TOP + ph) + '" visibility="hidden"/>' + lines + marks + labels + '<g class="hits">' + hits + '</g></svg><div class="pg-tip" hidden></div></div>';
+  }
+  function pgTip(chart, hit) {
+    var tip = chart.querySelector('.pg-tip'), svg = chart.querySelector('svg'), xh = svg.querySelector('.xh');
+    if (!hit) { tip.hidden = true; xh.setAttribute('visibility', 'hidden'); return; }
+    var k = svg.getBoundingClientRect().width / +svg.getAttribute('data-w'), sr = svg.getBoundingClientRect(), br = chart.getBoundingClientRect();
+    var cx = +hit.getAttribute('cx'), cy = +hit.getAttribute('cy'), px = sr.left - br.left + cx * k, py = sr.top - br.top + cy * k;
+    xh.setAttribute('x1', cx); xh.setAttribute('x2', cx); xh.setAttribute('visibility', 'visible');
+    tip.innerHTML = hit.getAttribute('data-tip'); tip.hidden = false;
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    tip.style.left = Math.max(4, Math.min(px - tw / 2, chart.clientWidth - tw - 4)) + 'px';
+    tip.style.top = (py - th - 14 >= 0 ? py - th - 14 : py + 16) + 'px';
+  }
+  /* наведение: ближайшая по X попытка — перекрестие и подсказка; на телефоне то же по касанию */
+  function pgNearest(e) {
+    var chart = e.target.closest && e.target.closest('.chart'); if (!chart) return;
+    var svg = chart.querySelector('svg'), sr = svg.getBoundingClientRect(), k = sr.width / +svg.getAttribute('data-w');
+    var x = (e.clientX - sr.left) / k, best = null, bd = 1e9;
+    Array.prototype.forEach.call(svg.querySelectorAll('.pg-hit'), function (h) { var d = Math.abs(+h.getAttribute('cx') - x); if (d < bd) { bd = d; best = h; } });
+    pgTip(chart, best);
+  }
+  document.addEventListener('mousemove', pgNearest);
+  document.addEventListener('click', pgNearest);
+  document.addEventListener('mouseout', function (e) { var chart = e.target.closest && e.target.closest('.chart'); if (chart && !(e.relatedTarget && chart.contains(e.relatedTarget))) pgTip(chart, null); });
+  var pgResizeTO = null;
+  window.addEventListener('resize', function () { if (!/^#\/progress/.test(location.hash)) return; clearTimeout(pgResizeTO); pgResizeTO = setTimeout(route, 200); });
+
+  function viewProgress() {
+    var hist = Array.isArray(state.history) ? state.history : [];
+    var tests = KZ.tests.filter(function (t) { var st = state.tests[t.id]; return st && st.sections && Object.keys(st.sections).length; })
+      .sort(function (a, b) { return (KZ.examOrder.indexOf(a.exam) - KZ.examOrder.indexOf(b.exam)) || (KZ.levelOrder.indexOf(a.level) - KZ.levelOrder.indexOf(b.level)) || (a.id < b.id ? -1 : 1); });
+    var doneN = 0, autoSum = 0, autoN = 0, best = null;
+    tests.forEach(function (t) {
+      t.sections.forEach(function (s) { var r = sp(t.id, s.type); if (r && r.status === 'done') { doneN++; if (AUTO_TYPES.indexOf(s.type) >= 0 && r.total) { autoSum += 100 * r.score / r.total; autoN++; } } });
+      var v = verdict(t); if (v && v.pass && (!best || KZ.levelOrder.indexOf(t.level) > KZ.levelOrder.indexOf(best.level))) best = t;
+    });
+    function tile(big, small) { return '<div class="tile"><div class="tile-big">' + big + '</div><div class="tile-lbl">' + small + '</div></div>'; }
+    var head = topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Мой прогресс') }]) +
+      '<div class="kicker">' + T('Прогресс') + '</div><h1>' + T('Мой прогресс') + '</h1>' +
+      '<p class="lede">' + T('Результаты хранятся только в этом браузере. Каждая завершённая попытка попадает в историю, поэтому рост виден, даже если раздел пройден заново.') + '</p>';
+    var io = '<section><details class="io-details"><summary>' + T('Перенести прогресс на другое устройство') + '</summary>' + ioPanel() + '</details></section>';
+    if (!tests.length && !hist.length) return head + '<div class="notice info"><b class="t">' + T('Пока пусто') + '</b><p>' + T('Пройдите любой раздел мок-теста — здесь появятся таблица результатов и график.') + ' <a href="#/">' + T('На хаб') + '</a></p></div>' + io;
+
+    var tiles = '<div class="tiles">' +
+      tile(tests.length, plural(tests.length, T('тест начат'), T('теста начато'), T('тестов начато'))) +
+      tile(doneN, plural(doneN, T('раздел пройден'), T('раздела пройдено'), T('разделов пройдено'))) +
+      tile(autoN ? Math.round(autoSum / autoN) + ' %' : '—', T('средний результат: аудирование, чтение, лексика')) +
+      tile(best ? '✓ ' + best.level : '—', best ? T('подтверждённый уровень') + ' · ' + esc(KZ.exams[best.exam].short) : T('уровень пока не подтверждён')) + '</div>';
+
+    var autoHist = hist.filter(function (x) { return AUTO_TYPES.indexOf(x.s) >= 0 && findTest(x.t); });
+    // линия внутри одной пары «экзамен + уровень»: смешивать QRT A1 и ҚАЗТЕСТ B2 на одной линии бессмысленно
+    function grp(x) { var t = findTest(x.t); return t.exam + ':' + t.level; }
+    var groups = [];
+    KZ.examOrder.forEach(function (eid) { KZ.levelOrder.forEach(function (lv) { var g = eid + ':' + lv; if (autoHist.some(function (x) { return grp(x) === g; })) groups.push(g); }); });
+    var latest = autoHist.reduce(function (m, x) { return !m || x.at > m.at ? x : m; }, null);
+    if (progLv !== 'all' && groups.indexOf(progLv) < 0) progLv = latest ? grp(latest) : 'all';
+    if (groups.length < 2) progLv = 'all';
+    var pts = autoHist.filter(function (x) { return progLv === 'all' || grp(x) === progLv; }).slice().sort(function (a, b) { return a.at - b.at; });
+    var chips = groups.length > 1 ? '<div class="seg pg-filter" role="group" aria-label="' + T('Уровень') + '">' + groups.concat(['all']).map(function (v) { var q = v.split(':'); return '<button class="cb' + (progLv === v ? ' on' : '') + '" data-act="pg-lv" data-v="' + v + '" aria-pressed="' + (progLv === v) + '">' + (v === 'all' ? T('все вместе') : esc(KZ.exams[q[0]].short) + ' ' + q[1]) + '</button>'; }).join('') + '</div>' : '';
+    var legend = '<div class="legend">' + AUTO_TYPES.map(function (ty) {
+      var s = pts.filter(function (x) { return x.s === ty; }); if (!s.length) return '';
+      var a = hPct(s[0]), z = hPct(s[s.length - 1]);
+      return '<span class="lg"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">' + pgMark(ty, 7, 7) + '</svg>' + esc(secShort(ty)) + ' <span class="muted">' + (s.length > 1 && progLv !== 'all' ? a + ' → ' + z + ' % · ' + s.length + ' ' + plural(s.length, T('попытка'), T('попытки'), T('попыток')) : progLv === 'all' ? s.length + ' ' + plural(s.length, T('попытка'), T('попытки'), T('попыток')) : z + ' %') + '</span></span>';
+    }).join('') + (pts.some(function (x) { return x.pr; }) ? '<span class="lg muted">' + T('пустой маркер — тренировка') + '</span>' : '') + '</div>';
+    var chart = '<section><h2>' + T('Результаты по попыткам') + '</h2><p class="sub">' + T('Разделы с автоматической проверкой. Письмо и интервью оцениваете вы сами, поэтому они только в таблице.') + '</p>' +
+      '<div class="block pg-chart">' + chips + (pts.length ? legend : '') + progressChart(pts) + '</div></section>';
+
+    var cols = SEC_ORDER.filter(function (ty) { return tests.some(function (t) { return t.sections.some(function (s) { return s.type === ty; }); }); });
+    var rows = tests.map(function (t) {
+      var cells = cols.map(function (ty) {
+        if (!t.sections.some(function (s) { return s.type === ty; })) return '<td class="na" title="' + T('нет в этом экзамене') + '"></td>';
+        var r = sp(t.id, ty);
+        if (!r || !r.status) return '<td class="muted">—</td>';
+        if (r.status !== 'done' || !r.total) return '<td class="muted small">' + (r.status === 'done' ? T('пройден') : T('черновик')) + '</td>';
+        var p = Math.round(100 * r.score / r.total), att = hist.filter(function (x) { return x.t === t.id && x.s === ty; }), dl = '';
+        if (att.length > 1) { var d = hPct(att[att.length - 1]) - hPct(att[att.length - 2]); if (d) dl = ' <span class="delta ' + (d > 0 ? 'up' : 'down') + '" title="' + T('к прошлой попытке') + '">' + (d > 0 ? '↑' : '↓') + Math.abs(d) + '</span>'; }
+        return '<td' + (att.length > 1 ? ' title="' + T('попыток') + ': ' + att.length + '"' : '') + '><b class="pc ' + (p >= 80 ? 'good' : p >= 50 ? 'mid' : 'bad') + '">' + p + ' %</b><span class="sc">' + r.score + '/' + r.total + dl + (r.practice ? ' · ' + T('тренировка') : '') + '</span></td>';
+      }).join('');
+      var st = testStatus(t), upd = state.tests[t.id].updatedAt;
+      return '<tr><td><a href="#/test/' + t.id + '">' + esc(testName(t)) + '</a></td>' + cells + '<td><span class="badge ' + st.cls + '">' + st.label + '</span></td><td class="muted small">' + (upd ? new Date(upd).toLocaleDateString('ru-RU') : '') + '</td></tr>';
+    }).join('');
+    var table = tests.length ? '<section><h2>' + T('Таблица результатов') + '</h2><p class="sub">' + T('Последняя попытка каждого раздела; стрелка — изменение к прошлой попытке.') + '</p>' +
+      '<div class="tablewrap"><table class="prog"><thead><tr><th>' + T('Тест') + '</th>' + cols.map(function (ty) { return '<th>' + esc(secShort(ty)) + (ty === 'writing' || ty === 'speaking' ? '*' : '') + '</th>'; }).join('') + '<th>' + T('Итог') + '</th><th>' + T('Дата') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      (cols.indexOf('writing') >= 0 || cols.indexOf('speaking') >= 0 ? '<p class="small muted">* ' + T('самооценка, в вывод не входит') + '</p>' : '') + '</section>' : '';
+
+    var course = '';
+    if (KZ.courses && KZ.courseProgress && Object.keys(KZ.courses).length) {
+      course = '<section><h2>' + T('Курс') + '</h2><div class="levels">' + Object.keys(KZ.courses).map(function (k) {
+        var c = KZ.courses[k], pr = KZ.courseProgress(c), w = pr.topics ? Math.round(100 * pr.done / pr.topics) : 0;
+        return '<a class="level-row" href="#/course/' + k + '"><span class="lvl">' + k + '</span><span><div class="nm">' + esc(c.title) + '</div><div class="meter" aria-hidden="true"><i style="width:' + w + '%"></i></div></span><span class="st">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + (pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</span></a>';
+      }).join('') + '</div></section>';
+    }
+    return head + tiles + chart + table + course + io;
+  }
+
   function viewSources() {
     var tiers = { 1: T('Ключевые пособия — рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники') };
     var groups = {};
@@ -1153,20 +1344,20 @@
       box2.innerHTML = '<span class="small good-text" role="status">' + T('Спасибо — отметили, проверим этот вопрос.') + '</span>';
       return;
     }
+    if (act === 'pg-lv') { progLv = b.getAttribute('data-v'); route(); return; }
     if (act === 'go') { e.preventDefault(); location.hash = b.getAttribute('data-href'); return; }
     if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); track('lang', { to: KZ.lang }); saveUi(); route(); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
     else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
-    if (act === 'io') { var p = document.getElementById('io-panel'); p.hidden = !p.hidden; }
-    else if (act === 'io-copy') {
+    if (act === 'io-copy') {
       var ta = document.getElementById('io-text'), im = document.getElementById('io-msg');
       function copyFallback() { try { ta.select(); if (document.execCommand('copy')) { im.textContent = T('Скопировано.'); return; } } catch (x) {} im.textContent = T('Не удалось скопировать — выделите текст и скопируйте вручную.'); }
       var pr = null; try { pr = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(ta.value) : null; } catch (x) {}
       if (pr && pr.then) pr.then(function () { im.textContent = T('Скопировано.'); }, copyFallback); else copyFallback();
     }
     else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s || typeof s !== 'object' || typeof s.tests !== 'object' || Array.isArray(s.tests)) throw 0; var nT = Object.keys(s.tests).length, nC = s.course ? Object.keys(s.course).length : 0; if (!confirm(T('Заменить текущий прогресс импортированным?') + ' (' + T('тестов') + ': ' + nT + ', ' + T('курсов') + ': ' + nC + ')')) return; state = cleanState(s); saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
-    else if (act === 'io-reset') { if (confirm(T('Удалить весь сохранённый прогресс?'))) { state = { version: 1, tests: {} }; saveState(); route(); } }
-    else if (act === 'reset-test') { if (confirm(T('Сбросить результаты этого теста?'))) { delete state.tests[b.getAttribute('data-test')]; saveState(); route(); } }
+    else if (act === 'io-reset') { if (confirm(T('Удалить весь сохранённый прогресс?'))) { state = { version: 1, tests: {}, history: [] }; saveState(); route(); } }
+    else if (act === 'reset-test') { if (confirm(T('Сбросить результаты этого теста?'))) { var rid = b.getAttribute('data-test'); delete state.tests[rid]; if (Array.isArray(state.history)) state.history = state.history.filter(function (x) { return x.t !== rid; }); saveState(); route(); } }
     else if (act === 'start') { run.phase = 'run'; track('section-start', { test: t.id, exam: t.exam, level: t.level, section: sec.type, practice: !!ui.practice }); route(); }
     else if (act === 'tts') { playScript(t, sec); }
     else if (act === 'au-play') { track('audio-play', { test: t.id, section: sec.type, n: (run.playsUsed || 0) + 1 }); playAudio(t, sec, b); }

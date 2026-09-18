@@ -168,6 +168,19 @@ var KZ = { tests: [] };
         el('h2', { text: 'Аудио' }), table(['Тест', 'Запусков', 'Человек'], data.audio.map(function (r) { return [testName(r.test), r.plays, r.people]; }), [1, 2])])
     ]));
 
+    out.appendChild(el('h2', { text: 'Откуда приходят' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Считается при первом открытии сайта во вкладке: сайт-источник и метки ссылки. В своих постах и рекламе давайте ссылки с метками, например ?utm_source=telegram&utm_medium=quiz — тогда видно, что сработало. До 18.09.2026 источник не записывался.' }));
+    var src = (data.sources || []).filter(function (r) { return r.ref || r.utm; });
+    out.appendChild(src.length ? table(['Источник', 'utm: source / medium / campaign', 'Посетителей'], src.map(function (r) { return [r.ref || '—', r.utm || '—', r.n]; }), [2])
+      : el('p', { cls: 'muted', text: 'За период переходов с метками и с других сайтов не было.' }));
+
+    var errs = data.errors || [];
+    out.appendChild(el('h2', { text: 'Ошибки на страницах (' + errs.length + ')' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Ошибки JavaScript в браузерах посетителей: до пяти разных за вкладку. Одна и та же ошибка у нескольких человек — почти наверняка поломка на сайте.' }));
+    out.appendChild(errs.length ? table(['Ошибка', 'Раз', 'Человек', 'Последний день', 'Страница · браузер'],
+      errs.map(function (r) { return [r.text, r.n, r.people, r.last_day, '#/' + (r.path || '') + ' · ' + (r.ua || '')]; }), [1, 2])
+      : el('p', { cls: 'muted', text: 'Ошибок за период нет.' }));
+
     out.appendChild(el('h2', { text: 'Разделы тестов' }));
     out.appendChild(el('p', { cls: 'sub', text: 'Средний результат и время — по завершённым разделам. «По таймеру» — время вышло раньше, чем ответы зафиксировали; «тренировка» — режим без остановки по времени.' }));
     out.appendChild(data.tests.length ? table(['Тест', 'Раздел', 'Начали', 'Завершили', 'Доля', 'Средний %', 'Время', 'По таймеру', 'Тренировка'],

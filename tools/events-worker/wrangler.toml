@@ -7,6 +7,13 @@ binding = "DB"
 database_name = "qazaq-trainer-stats"
 database_id = "2be00da9-a124-48d7-8929-dc43f17ba07c"
 
-# удаление записей старше 12 месяцев (worker.js → scheduled), каждый день в 03:17 UTC
+# 03:17 UTC — удаление записей старше 12 месяцев; 04:00 UTC (09:00 по Алматы) — «задание дня» в Telegram
 [triggers]
-crons = ["17 3 * * *"]
+crons = ["17 3 * * *", "0 4 * * *"]
+
+[vars]
+# Канал «задания дня»: '@qazaqtrainer' или id канала. Пусто — воркер в Telegram ничего не публикует.
+TG_CHANNEL = ""
+# Секреты (npx wrangler secret put ... --config wrangler.toml):
+#   TG_BOT_TOKEN  — токен бота от @BotFather
+#   TG_OWNER_CHAT — id личного чата владельца с ботом: туда идут отзывы, жалобы и ошибки сайта

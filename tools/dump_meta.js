@@ -24,6 +24,21 @@ const out = {
   exams: Object.fromEntries(Object.entries(KZ.exams).map(([k, v]) => [k, Object.assign(
     pick(v, ['id', 'name', 'short', 'kicker', 'tagline', 'tagline_kk', 'verified', 'examLevels', 'totalMinutes']),
     { sections: (v.sections || []).map((s) => pick(s, ['type', 'num', 'title', 'kk', 'minutes', 'tasks', 'tasks_kk', 'desc', 'desc_kk'])) })])),
+  // Вопросы для «задания дня» в Telegram: только те, что понятны без текста и аудио —
+  // лексика QRT и лексико-грамматические задания ҚАЗТЕСТ. Ограничения викторины Telegram:
+  // вопрос до 300 знаков, вариант до 100, пояснение до 200.
+  quiz: KZ.tests
+    .filter((t) => t.status !== 'draft')
+    .flatMap((t) => (t.sections || []).flatMap((s) => (s.questions || [])
+      .filter((q) => (s.type === 'lexis' || (s.type === 'reading' && q.tag)) &&
+        Array.isArray(q.options) && q.options.length >= 2 && q.options.length <= 10 &&
+        (q.text || '').length <= 280 && q.options.every((o) => String(o).length <= 100) &&
+        !/мәтін/i.test(q.text || ''))
+      .map((q) => ({
+        exam: t.exam, level: t.level, test: t.id, qid: q.id,
+        text: q.text, options: q.options, answer: q.answer,
+        explain: String(q.explain_kk || q.explain || '').slice(0, 180),
+      })))),
   tests: KZ.tests
     .filter((t) => t.status !== 'draft' && (t.sections || []).length)
     .map((t) => pick(t, ['id', 'exam', 'level', 'title', 'title_kk', 'summary', 'summary_kk'])),

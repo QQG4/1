@@ -26,7 +26,7 @@ async function stats(url, env) {
   const d = Math.max(1, Math.min(3650, parseInt(url.searchParams.get('days'), 10) || 30));
   const since = new Date(Date.now() - (d - 1) * 864e5).toISOString().slice(0, 10);
   const q = (sql) => env.DB.prepare(sql).bind(since);
-  const [daily, funnel, countries, langs, tests, questions, reports, feedback, reviews, audio] = await env.DB.batch([
+  const [daily, funnel, countries, langs, tests, questions, reports, feedback, reviews, audio, sources, errors] = await env.DB.batch([
     q(`SELECT day, COUNT(DISTINCT CASE WHEN name='pageview' THEN sid END) visitors,
               COUNT(DISTINCT CASE WHEN name='section-start' THEN sid END) starters,
               SUM(name='section-done') done
@@ -50,12 +50,16 @@ async function stats(url, env) {
     q(`SELECT day, path, test, section, qid, text, ua FROM events WHERE day >= ? AND name='feedback' ORDER BY ts DESC LIMIT 300`),
     q(`SELECT day, note expert, text FROM events WHERE day >= ? AND name='expert_review' ORDER BY ts DESC LIMIT 100`),
     q(`SELECT test, COUNT(*) plays, COUNT(DISTINCT sid) people FROM events WHERE day >= ? AND name='audio-play' GROUP BY test ORDER BY plays DESC`),
+    q(`SELECT COALESCE(ref, '(прямой заход или закладка)') ref, utm, COUNT(DISTINCT sid) n
+       FROM events WHERE day >= ? AND name='pageview' GROUP BY ref, utm ORDER BY n DESC LIMIT 50`),
+    q(`SELECT text, COUNT(*) n, COUNT(DISTINCT sid) people, MAX(day) last_day, MAX(path) path, MAX(ua) ua
+       FROM events WHERE day >= ? AND name='js-error' GROUP BY text ORDER BY n DESC LIMIT 100`),
   ]);
   const r = (x) => x.results;
   return Response.json({
     days: d, since, generated: new Date().toISOString(),
     daily: r(daily), funnel: r(funnel)[0], countries: r(countries), langs: r(langs), tests: r(tests),
-    questions: r(questions), reports: r(reports), feedback: r(feedback), reviews: r(reviews), audio: r(audio),
+    questions: r(questions), reports: r(reports), feedback: r(feedback), reviews: r(reviews), audio: r(audio), sources: r(sources), errors: r(errors),
   }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
 }
 

@@ -23,7 +23,7 @@ def og():
     for line in sub:
         d.text((80, y), line, font=font('Arial.ttf', 38), fill=MUTED); y += 52
     x = 80
-    for chip in ['22 варианта', 'с озвучкой', 'бесплатно', 'без регистрации']:
+    for chip in ['5 вариантов на уровень', 'с озвучкой', 'бесплатно', 'без регистрации']:
         f = font('Arial Bold.ttf', 24); w = d.textlength(chip, font=f)
         d.rounded_rectangle([x, 500, x + w + 44, 552], 26, fill='#e4f1f2')
         d.text((x + 22, 513), chip, font=f, fill=ACCENT); x += w + 60
@@ -42,5 +42,21 @@ def icons():
     d.text(((180 - (b[2] - b[0])) / 2 - b[0], (180 - (b[3] - b[1])) / 2 - b[1]), 'Q', font=f, fill='#ffffff')
     im.save(docs / 'apple-touch-icon.png', optimize=True)
 
-n = og(); icons()
-print('docs/og.png %d КБ, docs/favicon.svg, docs/apple-touch-icon.png' % (n // 1024))
+def avatar():
+    """Аватар Telegram-канала, 512×512. Telegram обрезает картинку в круг, поэтому всё важное — в центре,
+    в круге диаметром ~430; по краям только фон."""
+    S = 512
+    im = Image.new('RGB', (S, S), ACCENT); d = ImageDraw.Draw(im)
+    d.ellipse([18, 18, S - 18, S - 18], outline='#2b8ba3', width=3)            # тонкий контур внутри круга
+    f = font('Georgia Bold.ttf', 250)
+    b = d.textbbox((0, 0), 'Q', font=f)
+    d.text(((S - (b[2] - b[0])) / 2 - b[0], 118 - b[1]), 'Q', font=f, fill='#ffffff')
+    d.line([(S / 2 - 70, 372), (S / 2 + 70, 372)], fill='#e9c46a', width=6)    # золотая черта, как на сайте
+    f2 = font('Arial Bold.ttf', 40)
+    w = d.textlength('A1–C2', font=f2)
+    d.text(((S - w) / 2, 398), 'A1–C2', font=f2, fill='#d8ecf1')
+    im.save(docs / 'telegram-avatar.png', optimize=True)
+    return (docs / 'telegram-avatar.png').stat().st_size
+
+n = og(); icons(); a = avatar()
+print('docs/og.png %d КБ, docs/favicon.svg, docs/apple-touch-icon.png, docs/telegram-avatar.png %d КБ' % (n // 1024, a // 1024))

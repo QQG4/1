@@ -313,6 +313,11 @@ def _re_fonts(html):
 docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
+# Вопросы для «задания дня» в Telegram: файл читает воркер tools/events-worker (раз в сутки).
+# Ссылку на тест он строит сам из exam/level, поэтому здесь только вопросы.
+if META and META.get('quiz'):
+    (docs / 'quiz.json').write_text(json.dumps(META['quiz'], ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    print('docs/quiz.json: %d вопросов' % len(META['quiz']))
 def _tests_count_ru():
     """«27 мок-тестов» для анкеты эксперта: число файлов в src/data/tests, чтобы подпись не устаревала при добавлении вариантов."""
     n = len(glob.glob(str(src / 'data' / 'tests' / '*.js'))); d, h = n % 10, n % 100

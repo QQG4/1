@@ -13,7 +13,7 @@ crons = ["17 3 * * *", "0 4 * * *"]
 
 [vars]
 # Канал «задания дня»: '@qazaqtrainer' или id канала. Пусто — воркер в Telegram ничего не публикует.
-TG_CHANNEL = ""
+TG_CHANNEL = "@qazaqtrainer"
 # Секреты (npx wrangler secret put ... --config wrangler.toml):
 #   TG_BOT_TOKEN  — токен бота от @BotFather
 #   TG_OWNER_CHAT — id личного чата владельца с ботом: туда идут отзывы, жалобы и ошибки сайта

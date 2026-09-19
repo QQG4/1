@@ -147,14 +147,18 @@ def landing_page(lang, eid, ex, lv, tests, base):
     lvl_name = _lk(lvl, 'name', lang)
     n = len(tests)
     if lang == 'ru':
-        title = f'Пробный {ex_name} {lv} онлайн — {_plural_ru(n, "вариант", "варианта", "вариантов")} бесплатно'
-        h1 = f'Пробный {ex_name} {lv} онлайн'
+        # в заголовок — написание, которым ищут: «казтест» обычной К; официальное ҚАЗТЕСТ остаётся в H1
+        alias = 'Казтест' if eid == 'kaztest' else ex_name
+        title = f'Пробный {alias} {lv} онлайн: подготовка, {_plural_ru(n, "вариант", "варианта", "вариантов")} бесплатно'
+        h1 = f'Пробный {ex_name} {lv} онлайн' + (' (Казтест)' if eid == 'kaztest' else '')
         vheading = f'{_plural_ru(n, "вариант", "варианта", "вариантов")} мок-теста'
     else:
         title = f'{ex_name} {lv} сынақ тесті онлайн — {n} нұсқа тегін'
         h1 = f'{ex_name} {lv} сынақ тесті онлайн'
         vheading = f'{n} нұсқа'
-    desc = ' '.join(x for x in (_lk(ex, 'tagline', lang), _lk(lvl, 'focus', lang)) if x)
+    lead = (f'Подготовка к Казтест (ҚАЗТЕСТ, Kaztest) {lv}.' if eid == 'kaztest' else f'Подготовка к {ex_name} {lv}.') if lang == 'ru' \
+           else f'{ex_name} {lv} емтиханына дайындық.'
+    desc = ' '.join(x for x in (lead, _lk(ex, 'tagline', lang), _lk(lvl, 'focus', lang)) if x)
     desc = (desc[:275].rsplit(' ', 1)[0] + '…') if len(desc) > 280 else desc
     url = base + landing_url(lang, eid, lv)
 
@@ -275,12 +279,13 @@ def body(mode):
                .replace('/*SEONAV*/', seo_nav() if mode == 'site' else ''))
 SITE_NAME = 'Qazaq Trainer'
 TITLES = {
-    'site': 'Qazaq Trainer — мок-тесты ҚАЗТЕСТ и QazResmiTest',
+    # люди ищут «казтест» обычной К, а в тексте было только официальное ҚАЗТЕСТ с Қ: для поиска это разные слова (19.09.2026)
+    'site': 'Казтест и QazResmiTest онлайн — бесплатные пробные тесты A1–C2 | Qazaq Trainer',
     'lab': 'Qazaq Trainer · лаборатория',
     'inline': 'Qazaq Trainer',
 }
 DESCS = {
-    'site': 'Бесплатные мок-тесты ҚАЗТЕСТ и QazResmiTest по уровням A1–C2: аудирование с озвучкой, чтение, письмо и говорение с таймером, как на экзамене. Без регистрации.',
+    'site': 'Подготовка к Казтест (ҚАЗТЕСТ, Kaztest) и QazResmiTest. Бесплатные пробные тесты по уровням A1–C2: аудирование с озвучкой, чтение, письмо и говорение с таймером, как на экзамене. Без регистрации.',
     'lab': 'Внутренняя сборка: мок-тесты, курс по уровням и материал в разработке. Не для публикации.',
     'inline': 'Qazaq Trainer — тренажёр для подготовки к ҚАЗТЕСТ и QazResmiTest: мок-тесты по уровням, курс лексики и грамматики',
 }

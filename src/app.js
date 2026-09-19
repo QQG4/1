@@ -447,8 +447,9 @@
         var chips = tests.length > 1 ? '<span class="variants">' + tests.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (i + 1) + '</span>'; }).join('') + '</span>' : '';
         return '<a class="level-row' + (t && t.status === 'draft' ? ' draft' : '') + '" href="' + href + '">' +
           '<span class="lvl">' + lv + '</span>' +
-          '<span><div class="nm">' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + plural(tests.length, T('вариант'), T('варианта'), T('вариантов')) + '</span>' : '') + '</div><div class="dsc">' + esc(t ? LK(t, 'summary') : '') + '</div></span>' +
-          '<span class="st">' + chips + '<span class="badge ' + st.cls + '">' + st.label + '</span></span></a>';
+          // 19.09.2026: статус — в строке с названием, номера вариантов — столбиком справа, чтобы описанию оставалась ширина
+          '<span><div class="nm hub-nm"><span>' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + plural(tests.length, T('вариант'), T('варианта'), T('вариантов')) + '</span>' : '') + '</span><span class="badge ' + st.cls + '">' + st.label + '</span></div><div class="dsc">' + esc(t ? LK(t, 'summary') : '') + '</div></span>' +
+          '<span class="st hub-st">' + chips + '</span></a>';
       }).join('');
       return '<div class="exam-card-wrap"><a class="exam-card" href="#/exam/' + eid + '">' +
         '<div class="row spread"><span class="badge exam">' + esc(ex.kicker) + '</span>' +

@@ -348,6 +348,9 @@ figure.picture figcaption{font-size:0.7812rem;color:var(--ink-faint);padding:8px
 .vchip{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border-radius:6px;font-family:var(--mono);font-size:0.7188rem;font-weight:600;border:1px solid var(--border);color:var(--ink-muted);background:var(--surface)}
 .vchip:hover,.vchip:focus-visible{border-color:var(--accent);color:var(--accent)}
 .vchip.ok{color:var(--good);border-color:var(--good)}.vchip.warn{color:var(--gold);border-color:var(--gold)}
+.hub-nm{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:2px}
+.hub-st .variants{flex-direction:column;margin:0;gap:4px}
+.hub-st .vchip{min-width:26px;height:24px}
 
 /* жалоба на вопрос в разборе */
 .report{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}

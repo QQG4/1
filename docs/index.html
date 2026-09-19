@@ -610,6 +610,8 @@ KZ.site = {
   eventsUrl: 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev',
   telegramChannel: 'qazaqtrainer',           // канал напоминаний о датах регистрации и об окне апелляции (2 рабочих дня):
                                  // 'qazaqtrainer' → блок после раздела и ссылка в подвале. Пусто — блок не показывается
+  googleVerify: '',              // код из Google Search Console (метод «HTML-тег»: только значение content). Пусто — тега нет
+  yandexVerify: '',              // код из Яндекс.Вебмастера (метод «Метатег»: только значение content)
   supportEmail: 'support@qazaqtrainer.com',   // Cloudflare Email Routing → пересылка на Gmail владельца (16.09.2026); показывается в подвале, на 404 и в анкете эксперта
   siteUrl: 'https://qazaqtrainer.com/'   // адрес опубликованного сайта (canonical, og:image, ссылка «открыть отдельной вкладкой»)
 };
@@ -6906,7 +6908,11 @@ window.KZ = window.KZ || {};
     try { ref = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
     if (ref && ref !== location.hostname) p.ref = ref.replace(/^www\./, '').slice(0, 80);
     try {
-      var sp = new URLSearchParams(location.search), utm = ['utm_source', 'utm_medium', 'utm_campaign'].map(function (k) { return (sp.get(k) || '').slice(0, 40); });
+      var sp = new URLSearchParams(location.search);
+      /* Посадочная страница (/ru/..., /kk/...) сама не приложение: переходя внутрь, она передаёт исходный источник
+         параметром ?ref=, потому что document.referrer здесь уже наш собственный домен. */
+      if (!p.ref && sp.get('ref')) p.ref = sp.get('ref').replace(/^www\./, '').slice(0, 80);
+      var utm = ['utm_source', 'utm_medium', 'utm_campaign'].map(function (k) { return (sp.get(k) || '').slice(0, 40); });
       if (utm[0] || utm[1] || utm[2]) p.utm = utm.join('/');
     } catch (e) {}
     return p;

@@ -8,6 +8,8 @@ KZ.site = {
   eventsUrl: 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev',
   telegramChannel: 'qazaqtrainer',           // канал напоминаний о датах регистрации и об окне апелляции (2 рабочих дня):
                                  // 'qazaqtrainer' → блок после раздела и ссылка в подвале. Пусто — блок не показывается
+  googleVerify: '',              // код из Google Search Console (метод «HTML-тег»: только значение content). Пусто — тега нет
+  yandexVerify: '',              // код из Яндекс.Вебмастера (метод «Метатег»: только значение content)
   supportEmail: 'support@qazaqtrainer.com',   // Cloudflare Email Routing → пересылка на Gmail владельца (16.09.2026); показывается в подвале, на 404 и в анкете эксперта
   siteUrl: 'https://qazaqtrainer.com/'   // адрес опубликованного сайта (canonical, og:image, ссылка «открыть отдельной вкладкой»)
 };

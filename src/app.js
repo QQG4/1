@@ -65,7 +65,11 @@
     try { ref = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
     if (ref && ref !== location.hostname) p.ref = ref.replace(/^www\./, '').slice(0, 80);
     try {
-      var sp = new URLSearchParams(location.search), utm = ['utm_source', 'utm_medium', 'utm_campaign'].map(function (k) { return (sp.get(k) || '').slice(0, 40); });
+      var sp = new URLSearchParams(location.search);
+      /* Посадочная страница (/ru/..., /kk/...) сама не приложение: переходя внутрь, она передаёт исходный источник
+         параметром ?ref=, потому что document.referrer здесь уже наш собственный домен. */
+      if (!p.ref && sp.get('ref')) p.ref = sp.get('ref').replace(/^www\./, '').slice(0, 80);
+      var utm = ['utm_source', 'utm_medium', 'utm_campaign'].map(function (k) { return (sp.get(k) || '').slice(0, 40); });
       if (utm[0] || utm[1] || utm[2]) p.utm = utm.join('/');
     } catch (e) {}
     return p;

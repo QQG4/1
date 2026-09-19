@@ -52,7 +52,8 @@ def audio_js(mode):
 site_cfg = {}
 import re
 _site = read(src / 'data' / 'site.js')
-for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('events', 'eventsUrl'), ('email', 'supportEmail')):
+for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('events', 'eventsUrl'), ('email', 'supportEmail'),
+                   ('gverify', 'googleVerify'), ('yverify', 'yandexVerify')):
     m = re.search(field + r":\s*'([^']*)'", _site); site_cfg[key] = m.group(1) if m else ''
 
 # ---- метаданные для посадочных страниц под поиск ----
@@ -224,8 +225,27 @@ def landing_page(lang, eid, ex, lv, tests, base):
     h.append('<footer><p><a href="/">' + e(T['home']) + '</a>' +
              (' · <a href="/privacy/">privacy</a>' if True else '') +
              (' · ' + e(site_cfg['email']) if site_cfg.get('email') else '') + '</p></footer>')
-    h.append('</main></body></html>\n')
+    h.append('</main>' + landing_script(lang, eid, lv) + '</body></html>\n')
     return ''.join(h)
+
+def landing_script(lang, eid, lv):
+    """Две вещи. (1) Просмотр посадочной страницы уходит в статистику событием pageview с путём lp/<lang>/<exam>/<level>:
+       иначе заходы из поиска не видны вовсе, пока человек не нажмёт кнопку. (2) Ссылки внутрь приложения получают
+       utm-метки и ?ref=<домен источника>: при переходе /ru/... → /#/test/... document.referrer становится нашим
+       собственным доменом, и без этого все заходы из поиска и из Telegram записывались бы как прямые."""
+    ev = site_cfg.get('events') or ''
+    return ('<script>(function(){var sp=new URLSearchParams(location.search),q=new URLSearchParams(),ref="";'
+            'try{ref=document.referrer?new URL(document.referrer).hostname:""}catch(e){}'
+            'if(ref===location.hostname)ref="";'
+            '["utm_source","utm_medium","utm_campaign"].forEach(function(k){if(sp.get(k))q.set(k,sp.get(k).slice(0,40))});'
+            'if(ref)q.set("ref",ref.replace(/^www\\./,"").slice(0,80));'
+            'var qs=q.toString();if(qs)document.querySelectorAll(\'a[href^="/#"]\').forEach(function(a){a.href="/?"+qs+a.getAttribute("href").slice(1)});'
+            + ('var u=' + json.dumps(ev) + ';if(u&&navigator.sendBeacon){var p={path:' + json.dumps('lp/' + lang + '/' + eid + '/' + lv.lower()) + '};'
+               'if(ref)p.ref=ref.replace(/^www\\./,"").slice(0,80);var m=["utm_source","utm_medium","utm_campaign"].map(function(k){return(sp.get(k)||"").slice(0,40)});'
+               'if(m.join(""))p.utm=m.join("/");'
+               'try{navigator.sendBeacon(u,new Blob([JSON.stringify({e:"pageview",sid:Math.random().toString(36).slice(2,12),lang:' + json.dumps(lang) + ',ts:Date.now(),p:p})],{type:"text/plain;charset=UTF-8"}))}catch(e){}}'
+               if ev else '')
+            + '})();</script>')
 
 def seo_nav():
     """Ссылки на посадочные страницы в самом низу главной: без них страницы были бы сиротами для поисковика."""
@@ -279,6 +299,9 @@ def head(mode, extra_head=''):
         h += ('<link rel="icon" href="favicon.svg" type="image/svg+xml">'
               '<link rel="apple-touch-icon" href="apple-touch-icon.png">')
         if mode == 'lab': h += '<meta name="robots" content="noindex,nofollow">'   # лаборатория в поиск не попадает ни при каких условиях
+        if mode == 'site':   # подтверждение прав в Search Console / Вебмастере — только на публичной главной
+            if site_cfg.get('gverify'): h += '<meta name="google-site-verification" content="' + site_cfg['gverify'] + '">'
+            if site_cfg.get('yverify'): h += '<meta name="yandex-verification" content="' + site_cfg['yverify'] + '">'
         if base and mode == 'site':
             h += ('<link rel="canonical" href="' + page + '">'
                   '<meta property="og:type" content="website"><meta property="og:site_name" content="' + SITE_NAME + '">'

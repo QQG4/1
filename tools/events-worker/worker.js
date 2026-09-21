@@ -32,6 +32,7 @@ export default {
     const path = new URL(request.url).pathname;
     if (path === '/tg/webhook') return tgWebhook(request, env, ctx);
     if (path === '/tg/setup') return tgSetup(request, env);
+    if (path === '/agent/report') return agentReport(request, env);
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (request.method !== 'POST') return new Response('POST only', { status: 405, headers: cors(origin) });
@@ -213,6 +214,22 @@ async function tgWebhook(request, env, ctx) {
     await say('Рақмет, хабарламаңызды алдық. / Спасибо, сообщение получили.');
   }
   return new Response('ok');
+}
+
+/* Утренний отчёт дежурного агента (задача Claude на Mac владельца) → личный чат владельца.
+   Токен бота живёт только в Cloudflare, поэтому агент шлёт отчёт сюда: POST с заголовком X-Agent-Key
+   (секрет AGENT_KEY; копия у владельца в ~/.config/qazaq-trainer/telegram.env) и телом — обычным текстом.
+   Длинный отчёт режется на куски по 3900 знаков (лимит сообщения Telegram — 4096). */
+async function agentReport(request, env) {
+  if (request.method !== 'POST' || !env.AGENT_KEY || request.headers.get('X-Agent-Key') !== env.AGENT_KEY) return new Response('forbidden', { status: 403 });
+  if (!env.TG_BOT_TOKEN || !env.TG_OWNER_CHAT) return new Response('telegram not configured', { status: 503 });
+  const text = (await request.text()).slice(0, 20000).trim();
+  if (!text) return new Response('empty', { status: 400 });
+  let ok = true;
+  for (let i = 0; i < text.length; i += 3900) {
+    ok = (await tg(env, 'sendMessage', { chat_id: env.TG_OWNER_CHAT, text: text.slice(i, i + 3900), disable_web_page_preview: true })) && ok;
+  }
+  return new Response(ok ? 'sent' : 'telegram error', { status: ok ? 200 : 502 });
 }
 
 // Срок хранения — 12 месяцев (обещан на странице /privacy/). Раз в сутки по расписанию из wrangler.toml

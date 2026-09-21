@@ -425,12 +425,15 @@ if _base and not _base.endswith('/'): _base += '/'
     + (f'<p style="font-size:.9rem;opacity:.8">{site_cfg["email"]}</p>' if site_cfg.get('email') else '') + '</main></body></html>\n', encoding='utf-8')
 # _headers читает Cloudflare (статика на Workers); GitHub Pages его игнорирует. CSP не ставим: весь код и стили
 # встроены в страницу, и политика с 'unsafe-inline' почти ничего не даёт, а сломать может многое.
+# Исключение — frame-ancestors (с 21.09.2026 вместо X-Frame-Options: SAMEORIGIN): сайт открывается как Mini App бота
+# @qazaqtrainer_bot, а веб-версия Telegram показывает его во фрейме. Разрешены только свой домен и web.telegram.org;
+# в мобильных и настольных приложениях Telegram это обычный встроенный браузер, фрейма там нет.
 (docs / '_headers').write_text(
     '/*\n'
     '  Strict-Transport-Security: max-age=31536000\n'
     '  X-Content-Type-Options: nosniff\n'
     '  Referrer-Policy: strict-origin-when-cross-origin\n'
-    '  X-Frame-Options: SAMEORIGIN\n'
+    "  Content-Security-Policy: frame-ancestors 'self' https://web.telegram.org\n"
     '  Permissions-Policy: camera=(), geolocation=(), microphone=(self)\n'
     '/audio/*\n'
     '  Cache-Control: public, max-age=604800\n'

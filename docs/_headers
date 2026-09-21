@@ -2,7 +2,7 @@
   Strict-Transport-Security: max-age=31536000
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self' https://web.telegram.org
   Permissions-Policy: camera=(), geolocation=(), microphone=(self)
 /audio/*
   Cache-Control: public, max-age=604800

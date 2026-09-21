@@ -210,7 +210,7 @@
   `/api/stats` в `tools/lab-deploy/worker.js` (D1 подключена к воркеру лаборатории). Тексты посетителей — только через textContent.
   Локальная проверка: `wrangler d1 export --remote` → `d1 execute --local`, затем конфигурация `lab-dev` (wrangler dev с временным паролем).
 - `lab-site/.assetsignore` (пишет build.py) исключает `.git` — до 16.09.2026 wrangler выкладывал папку .git приватного репозитория.
-- Сайт: `docs/404.html` (not_found_handling "404-page" в wrangler.jsonc), `docs/_headers` (HSTS, nosniff, SAMEORIGIN, микрофон
+- Сайт: `docs/404.html` (not_found_handling "404-page" в wrangler.jsonc), `docs/_headers` (HSTS, nosniff, `frame-ancestors 'self' https://web.telegram.org` — сайт открывается как Mini App бота через Menu Button, 21.09.2026; микрофон
   только self, кэш аудио 7 дней) — оба пишет build.py.
 
 ## Калибровка заданий (методичка 6.1, все мок-тесты в норме; 55 тестов проверены 17.09.2026)

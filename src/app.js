@@ -91,6 +91,15 @@
   document.addEventListener('click', function (ev) {
     var a = ev.target && ev.target.closest && ev.target.closest('a[data-remind]');
     if (a) track('remind', { where: a.getAttribute('data-remind') });
+    var sh = ev.target && ev.target.closest && ev.target.closest('[data-share]');
+    if (sh) {
+      var how = sh.getAttribute('data-share'), m = /#\/test\/([^/]+)\/([^/?]+)/.exec(location.hash) || [];
+      track('share', { where: how, test: m[1], section: m[2] });
+      if (how === 'native' && navigator.share) {
+        ev.preventDefault();
+        navigator.share({ title: 'Qazaq Trainer', text: sh.getAttribute('data-share-text'), url: sh.getAttribute('data-share-url') }).catch(function () {});
+      }
+    }
   });
 
   /* ---------------- store ---------------- */
@@ -1162,7 +1171,7 @@
     var next = nextSection(t, sec.type);
     run.afterRender = null;
     return head + body + '<div class="actions">' + (next ? '<a class="btn" href="#/test/' + t.id + '/' + next.type + '">' + T('Следующий раздел:') + ' ' + esc(LK(KZ.sectionTypes[next.type], 'label')) + '</a>' : '<a class="btn" href="#/test/' + t.id + '">' + T('К итогам теста') + '</a>') +
-      '<button class="btn ghost" data-act="retry">' + T('Пройти заново') + '</button>' + feedbackLink(t, sec, saved) + '</div>' + remindCta('after');
+      '<button class="btn ghost" data-act="retry">' + T('Пройти заново') + '</button>' + feedbackLink(t, sec, saved) + '</div>' + shareCta(t, sec, saved) + remindCta('after');
   }
   /* Сроки апелляции сверены 18.09.2026: правила системы «ҚАЗТЕСТ» (adilet.zan.kz/kaz/docs/V2400035109) — заявление
      в течение 2 рабочих дней после результата; страница апелляции НЦТ (testcenter.kz) — по тыңдалым/оқылым
@@ -1170,6 +1179,20 @@
      Канал напоминаний (KZ.site.telegramChannel): даты регистрации на тестирование и окно апелляции в 2 рабочих дня.
      Показывается в подвале ссылкой и блоком после пройденного раздела — в момент, когда человек думает о реальном экзамене.
      Пустая настройка выключает и то, и другое. */
+  /* «Поделиться результатом» — после разделов с автоматической проверкой. Ссылка ведёт на посадочную страницу
+     уровня на языке интерфейса с метками utm_source=share, чтобы в статистике было видно такие переходы.
+     Telegram — прямой ссылкой t.me/share; на телефонах, где есть системное меню «Поделиться», — ещё и оно. */
+  function shareCta(t, sec, saved) {
+    if (!sec.questions || !saved || !saved.total || !KZ.site || !KZ.site.siteUrl || KZ.site.build === 'inline') return '';
+    var kk = KZ.lang === 'kk', exam = t.exam === 'kaztest' ? 'ҚАЗТЕСТ' : 'QazResmiTest', label = LK(KZ.sectionTypes[sec.type], 'label');
+    var url = KZ.site.siteUrl + (kk ? 'kk/' : 'ru/') + t.exam + '/' + t.level.toLowerCase() + '/?utm_source=share&utm_medium=';
+    var text = kk
+      ? exam + ' ' + t.level + ' сынақ тесті, Qazaq Trainer: ' + label.toLowerCase() + ' — ' + saved.score + '/' + saved.total + '. Тегін, тіркеусіз:'
+      : 'Пробный ' + exam + ' ' + t.level + ' на Qazaq Trainer: ' + label.toLowerCase() + ' — ' + saved.score + ' из ' + saved.total + '. Бесплатно и без регистрации:';
+    var tg = 'https://t.me/share/url?url=' + encodeURIComponent(url + 'telegram') + '&text=' + encodeURIComponent(text);
+    return '<div class="actions share"><a class="btn ghost" href="' + esc(tg) + '" target="_blank" rel="noopener" data-share="telegram">' + T('Поделиться в Telegram') + '</a>' +
+      (navigator.share ? '<button class="btn ghost" data-share="native" data-share-url="' + esc(url + 'native') + '" data-share-text="' + esc(text) + '">' + T('Поделиться…') + '</button>' : '') + '</div>';
+  }
   function remindCta(where) {
     if (!KZ.site || !KZ.site.telegramChannel) return '';
     var url = 'https://t.me/' + esc(KZ.site.telegramChannel);

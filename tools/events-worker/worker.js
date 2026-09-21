@@ -11,7 +11,7 @@ const ALLOWED = [                      // откуда принимаем соб
   'https://qazaq-trainer.k-k-g-inter.workers.dev',  // площадка Cloudflare, пока домен не привязан
   'https://qqg4.github.io',           // старый адрес, пока живы ссылки на него
 ];
-const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error'];
+const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share'];
 const MAX_BODY = 64 * 1024;   // анкета эксперта бывает длинной
 
 function cors(origin) {

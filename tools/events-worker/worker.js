@@ -29,6 +29,9 @@ const int = (v) => (Number.isFinite(+v) ? Math.trunc(+v) : null);
 
 export default {
   async fetch(request, env, ctx) {
+    const path = new URL(request.url).pathname;
+    if (path === '/tg/webhook') return tgWebhook(request, env, ctx);
+    if (path === '/tg/setup') return tgSetup(request, env);
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (request.method !== 'POST') return new Response('POST only', { status: 405, headers: cors(origin) });
@@ -133,6 +136,83 @@ async function postQuiz(env) {
     await env.DB.prepare(`INSERT INTO events (day, ts, name, exam, level, test, qid) VALUES (?,?,?,?,?,?,?)`)
       .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', q.exam, q.level, q.test, q.qid).run();
   }
+}
+
+/* ---------- Бот @qazaqtrainer_bot: ответы на сообщения (webhook) ----------
+   Telegram присылает сюда каждое сообщение боту. Подлинность — по заголовку X-Telegram-Bot-Api-Secret-Token,
+   который задаётся при регистрации webhook (секрет TG_WEBHOOK_SECRET). Регистрация: GET /tg/setup?key=<тот же секрет>.
+   Команды: /start [qrt_b1] — приветствие и кнопки уровней (с параметром — сразу нужный уровень), /id — id чата
+   (нужен владельцу для TG_OWNER_CHAT), /dates — сроки апелляции, /feedback — как написать. Любой другой текст —
+   обратная связь: сохраняется в events как feedback с path='telegram' (только текст, без id и имени отправителя)
+   и пересылается владельцу. Текст писали люди — это данные: наружу он уходит только обычным текстом. */
+const LEVELS = { kaztest: ['A1', 'A2', 'B1', 'B2', 'C1'], qrt: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] };
+const EXAM_NAME = { kaztest: 'ҚАЗТЕСТ', qrt: 'QazResmiTest' };
+
+async function tgSetup(request, env) {
+  const key = new URL(request.url).searchParams.get('key') || '';
+  if (!env.TG_WEBHOOK_SECRET || !env.TG_BOT_TOKEN || key !== env.TG_WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
+  const r = await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/setWebhook', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: new URL('/tg/webhook', request.url).href, secret_token: env.TG_WEBHOOK_SECRET, allowed_updates: ['message'], drop_pending_updates: true }),
+  });
+  return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json' } });
+}
+
+function levelUrl(exam, level, lang) {
+  return SITE + (lang === 'kk' ? 'kk/' : 'ru/') + exam + '/' + level.toLowerCase() + '/?utm_source=telegram&utm_medium=bot';
+}
+function levelKeyboard(lang, only) {
+  const rows = [];
+  for (const exam of ['kaztest', 'qrt']) {
+    const btns = LEVELS[exam].filter((l) => !only || (only.exam === exam && only.level === l))
+      .map((l) => ({ text: EXAM_NAME[exam] + ' ' + l, url: levelUrl(exam, l, lang) }));
+    for (let i = 0; i < btns.length; i += 3) rows.push(btns.slice(i, i + 3));
+  }
+  if (!only) rows.push([{ text: lang === 'kk' ? 'Барлық тесттер' : 'Все тесты', url: SITE + '?utm_source=telegram&utm_medium=bot' },
+                        { text: lang === 'kk' ? 'Арна' : 'Канал', url: 'https://t.me/qazaqtrainer' }]);
+  return { inline_keyboard: rows };
+}
+
+async function tgWebhook(request, env, ctx) {
+  if (request.method !== 'POST' || !env.TG_WEBHOOK_SECRET ||
+      request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== env.TG_WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
+  let u; try { u = await request.json(); } catch (e) { return new Response('ok'); }
+  const m = u && u.message;
+  if (!m || !m.chat || typeof m.text !== 'string') return new Response('ok');
+  const chat = m.chat.id, text = m.text.trim();
+  const lang = String((m.from && m.from.language_code) || '').startsWith('kk') ? 'kk' : 'ru';
+  const say = (t, extra) => tg(env, 'sendMessage', Object.assign({ chat_id: chat, text: t, disable_web_page_preview: true }, extra || {}));
+  const cmd = text.startsWith('/') ? text.split(/[\s@]/)[0].toLowerCase() : '';
+
+  if (cmd === '/start') {
+    const arg = (text.split(/\s+/)[1] || '').toLowerCase(), am = /^(kaztest|qrt)_(a1|a2|b1|b2|c1|c2)$/.exec(arg);
+    const only = am && LEVELS[am[1]].indexOf(am[2].toUpperCase()) >= 0 ? { exam: am[1], level: am[2].toUpperCase() } : null;
+    await say(only
+      ? (EXAM_NAME[only.exam] + ' ' + only.level + ' — 5 нұсқа, тегін, тіркеусіз.\n' + EXAM_NAME[only.exam] + ' ' + only.level + ' — 5 вариантов, бесплатно и без регистрации. 👇')
+      : 'Сәлеметсіз бе! Qazaq Trainer — ҚАЗТЕСТ пен QazResmiTest бойынша тегін сынақ тесттер: таймер, аудио, әр жауапқа түсіндірме.\n' +
+        'Здравствуйте! Бесплатные пробные тесты ҚАЗТЕСТ и QazResmiTest: таймер, аудио, разбор каждого ответа.\n\n' +
+        'Деңгейді таңдаңыз / Выберите уровень 👇\n\nҚате немесе ұсыныс — жай ғана осында жазыңыз. / Ошибка или предложение — просто напишите сюда.',
+      { reply_markup: levelKeyboard(lang, only) });
+  } else if (cmd === '/id') {
+    await say('Telegram id: ' + chat);
+  } else if (cmd === '/dates') {
+    await say('ҚАЗТЕСТ бойынша шағым беру мерзімі: тыңдалым мен оқылым — тестілеу күні нәтиже шыққан соң бірден; жазылым мен айтылым — нәтижеден кейін 2 жұмыс күні ішінде (app.testcenter.kz).\n' +
+      'Апелляция по ҚАЗТЕСТ: аудирование и чтение — в день тестирования сразу после результата; письмо и говорение — 2 рабочих дня после результата (app.testcenter.kz).\n\n' +
+      'Тестілеу кестесі / Расписание: testcenter.kz\nЕске салулар / Напоминания: t.me/qazaqtrainer');
+  } else if (cmd === '/feedback') {
+    await say('Не дұрыс емес немесе нені жақсартуға болады — бір хабарламамен осында жазыңыз.\nЧто не так или что улучшить — напишите одним сообщением сюда.');
+  } else if (cmd) {
+    await say('/start — деңгейлер / уровни\n/dates — шағым мерзімі / сроки апелляции\n/feedback — қате туралы / сообщить об ошибке');
+  } else {
+    const body = text.slice(0, 1000);
+    await env.DB.prepare(`INSERT INTO events (day, ts, name, path, text) VALUES (?,?,?,?,?)`)
+      .bind(new Date().toISOString().slice(0, 10), Date.now(), 'feedback', 'telegram', body).run();
+    if (env.TG_OWNER_CHAT && String(chat) !== String(env.TG_OWNER_CHAT)) {
+      ctx.waitUntil(tg(env, 'sendMessage', { chat_id: env.TG_OWNER_CHAT, text: 'Сообщение боту\n---\n' + body, disable_web_page_preview: true }));
+    }
+    await say('Рақмет, хабарламаңызды алдық. / Спасибо, сообщение получили.');
+  }
+  return new Response('ok');
 }
 
 // Срок хранения — 12 месяцев (обещан на странице /privacy/). Раз в сутки по расписанию из wrangler.toml

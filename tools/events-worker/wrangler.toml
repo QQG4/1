@@ -16,4 +16,6 @@ crons = ["17 3 * * *", "0 4 * * *"]
 TG_CHANNEL = "@qazaqtrainer"
 # Секреты (npx wrangler secret put ... --config wrangler.toml):
 #   TG_BOT_TOKEN  — токен бота от @BotFather
-#   TG_OWNER_CHAT — id личного чата владельца с ботом: туда идут отзывы, жалобы и ошибки сайта
+#   TG_OWNER_CHAT — id личного чата владельца с ботом: туда идут отзывы, жалобы и ошибки сайта (узнать — команда /id боту)
+#   TG_WEBHOOK_SECRET — секрет webhook бота (копия у владельца в ~/.config/qazaq-trainer/telegram.env);
+#     после смены секрета или адреса воркера: открыть <адрес воркера>/tg/setup?key=<секрет>

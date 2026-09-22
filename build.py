@@ -53,7 +53,7 @@ site_cfg = {}
 import re
 _site = read(src / 'data' / 'site.js')
 for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('events', 'eventsUrl'), ('email', 'supportEmail'),
-                   ('gverify', 'googleVerify'), ('yverify', 'yandexVerify')):
+                   ('gverify', 'googleVerify'), ('yverify', 'yandexVerify'), ('tg', 'telegramChannel')):
     m = re.search(field + r":\s*'([^']*)'", _site); site_cfg[key] = m.group(1) if m else ''
 
 # ---- метаданные для посадочных страниц под поиск ----
@@ -137,6 +137,9 @@ LANDING_CSS = (
     '.more{font-size:.95rem}.more a{display:inline-block;margin:.15em .7em .15em 0}'
     'footer{margin-top:2.5em;padding-top:1.2em;border-top:1px solid var(--line);font-size:.85rem;color:var(--mut)}'
     '.tbl-wrap{overflow-x:auto}'
+    '.tgbox{border:1px solid var(--line);border-radius:.6rem;padding:1em 1.2em;margin:2em 0}'
+    '.tgbox b{display:block;margin-bottom:.2em}.tgbox p{margin:.2em 0 .7em;color:var(--mut)}'
+    '.tgbox a{font-weight:600}'
 )
 
 def landing_page(lang, eid, ex, lv, tests, base):
@@ -217,6 +220,15 @@ def landing_page(lang, eid, ex, lv, tests, base):
         sm = _lk(x, 'summary', lang)
         h.append('<li><a href="/#/test/' + e(x['id']) + '">' + e(nm) + '</a>' + (' — ' + e(sm) if sm else '') + '</li>')
     h.append('</ol>')
+
+    # Канал в Telegram: сюда приходят из поиска, и это первое место, где человек может «остаться» с нами.
+    # Клик уходит событием remind с where=landing (как ссылка в подвале приложения).
+    if site_cfg.get('tg'):
+        tg_url = 'https://t.me/' + site_cfg['tg']   # метки Telegram не читает — клик считаем сами событием remind
+        h.append('<div class="tgbox"><b>' + ('Күн сайын бір тапсырма — Telegram-да' if lang == 'kk' else 'Задание дня — в Telegram') + '</b><p>' +
+                 e('Әр таңертең — сынақ тесттен бір сұрақ пен оның түсіндірмесі, ҚАЗТЕСТ тіркеу мерзімдері туралы еске салу.' if lang == 'kk'
+                   else 'Каждое утро — вопрос из пробных тестов с разбором и напоминания о сроках регистрации на ҚАЗТЕСТ.') +
+                 '</p><a href="' + e(tg_url) + '" data-remind="landing" target="_blank" rel="noopener">t.me/' + e(site_cfg['tg']) + ' →</a></div>')
 
     others = [(o_eid, o_ex, o_lv) for (o_eid, o_ex, o_lv, _t) in landing_pairs() if not (o_eid == eid and o_lv == lv)]
     if others:
@@ -301,7 +313,8 @@ def landing_script(lang, eid, lv):
             + ('var u=' + json.dumps(ev) + ';if(u&&navigator.sendBeacon){var p={path:' + json.dumps('lp/' + lang + '/' + eid + '/' + lv.lower()) + '};'
                'if(ref)p.ref=ref.replace(/^www\\./,"").slice(0,80);var m=["utm_source","utm_medium","utm_campaign"].map(function(k){return(sp.get(k)||"").slice(0,40)});'
                'if(m.join(""))p.utm=m.join("/");'
-               'try{navigator.sendBeacon(u,new Blob([JSON.stringify({e:"pageview",sid:Math.random().toString(36).slice(2,12),lang:' + json.dumps(lang) + ',ts:Date.now(),p:p})],{type:"text/plain;charset=UTF-8"}))}catch(e){}}'
+               'var sid=Math.random().toString(36).slice(2,12),send=function(n,pp){try{navigator.sendBeacon(u,new Blob([JSON.stringify({e:n,sid:sid,lang:' + json.dumps(lang) + ',ts:Date.now(),p:pp})],{type:"text/plain;charset=UTF-8"}))}catch(e){}};'
+               'send("pageview",p);document.addEventListener("click",function(ev){var a=ev.target.closest&&ev.target.closest("a[data-remind]");if(a)send("remind",{where:a.getAttribute("data-remind"),path:p.path})})}'
                if ev else '')
             + '})();</script>')
 

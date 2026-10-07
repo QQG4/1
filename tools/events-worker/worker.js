@@ -13,7 +13,7 @@ const ALLOWED = [                      // откуда принимаем соб
   'https://qazaq-trainer.k-k-g-inter.workers.dev',  // площадка Cloudflare, пока домен не привязан
   'https://qqg4.github.io',           // старый адрес, пока живы ссылки на него
 ];
-const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share'];
+const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share', 'sync'];
 const MAX_BODY = 64 * 1024;   // анкета эксперта бывает длинной
 
 function cors(origin) {
@@ -35,6 +35,7 @@ export default {
     if (path === '/tg/webhook') return tgWebhook(request, env, ctx);
     if (path === '/tg/setup') return tgSetup(request, env);
     if (path === '/agent/report') return agentReport(request, env);
+    if (path === '/sync/put' || path === '/sync/get') return transfer(request, env, path);
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (request.method !== 'POST') return new Response('POST only', { status: 405, headers: cors(origin) });
@@ -247,6 +248,38 @@ async function tgWebhook(request, env, ctx) {
   return new Response('ok');
 }
 
+/* Перенос прогресса между устройствами по коду. Без аккаунта: POST /sync/put кладёт прогресс и возвращает код,
+   GET /sync/get?code=… отдаёт его обратно. В прогрессе нет ни имени, ни почты — только результаты разделов;
+   запись живёт 24 часа и удаляется ночным cron. Код из 8 знаков без похожих букв (0/O, 1/I) — 32^8 ≈ 1e12 вариантов. */
+const CODE_ABC = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const SYNC_MAX = 512 * 1024;
+const SYNC_TTL = 24 * 3600e3;
+function newCode() {
+  const r = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(r, (b) => CODE_ABC[b % 32]).join('');
+}
+async function transfer(request, env, path) {
+  const origin = request.headers.get('Origin') || '';
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
+  if (origin && ALLOWED.indexOf(origin) < 0) return new Response('forbidden origin', { status: 403, headers: cors(origin) });
+  const json = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: Object.assign({ 'Content-Type': 'application/json' }, cors(origin)) });
+
+  if (path === '/sync/put') {
+    if (request.method !== 'POST') return json({ error: 'post only' }, 405);
+    const body = await request.text();
+    if (!body || body.length > SYNC_MAX) return json({ error: 'size' }, 413);
+    try { JSON.parse(body); } catch (e) { return json({ error: 'bad json' }, 400); }
+    const code = newCode();
+    await env.DB.prepare(`INSERT OR REPLACE INTO transfers (code, ts, data) VALUES (?,?,?)`).bind(code, Date.now(), body).run();
+    return json({ code, hours: 24 });
+  }
+  const code = (new URL(request.url).searchParams.get('code') || '').toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 8);
+  if (code.length !== 8) return json({ error: 'bad code' }, 400);
+  const row = await env.DB.prepare(`SELECT data, ts FROM transfers WHERE code = ?`).bind(code).first();
+  if (!row || Date.now() - row.ts > SYNC_TTL) return json({ error: 'not found' }, 404);
+  return new Response(row.data, { headers: Object.assign({ 'Content-Type': 'application/json' }, cors(origin)) });
+}
+
 /* Утренний отчёт дежурного агента (задача Claude на Mac владельца) → личный чат владельца.
    Токен бота живёт только в Cloudflare, поэтому агент шлёт отчёт сюда: POST с заголовком X-Agent-Key
    (секрет AGENT_KEY; копия у владельца в ~/.config/qazaq-trainer/telegram.env) и телом — обычным текстом.
@@ -269,5 +302,6 @@ async function purge(env) {
   await env.DB.batch([
     env.DB.prepare(`DELETE FROM events WHERE day < date('now', '-365 day')`),
     env.DB.prepare(`DELETE FROM answers WHERE day < date('now', '-365 day')`),
+    env.DB.prepare(`DELETE FROM transfers WHERE ts < ?`).bind(Date.now() - SYNC_TTL),
   ]);
 }

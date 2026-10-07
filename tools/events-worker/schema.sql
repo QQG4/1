@@ -26,3 +26,13 @@ CREATE TABLE IF NOT EXISTS answers (
   ok INTEGER                   -- 1 верно, 0 неверно
 );
 CREATE INDEX IF NOT EXISTS answers_q ON answers (test, section, qid);
+
+-- Код переноса прогресса между устройствами (app.js → «Получить код переноса»). Личных данных нет:
+-- только сам прогресс (какие разделы пройдены и с каким результатом) под случайным кодом. Живёт 24 часа,
+-- старые записи удаляет ночной cron воркера.
+CREATE TABLE IF NOT EXISTS transfers (
+  code TEXT PRIMARY KEY,
+  ts INTEGER NOT NULL,
+  data TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS transfers_ts ON transfers (ts);

@@ -486,6 +486,18 @@
       return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + (c.stats.uniqueWords || c.stats.words) + ' ' + T('слов') + (c.coverage ? ' (' + LK(c, 'coverage') + ')' : '') + ' · ' + c.stats.grammar + ' ' + plural(c.stats.grammar, T('грамматическая тема'), T('грамматические темы'), T('грамматических тем')) + ' · ' + c.stats.texts + ' ' + T('текстов') + (c.stats.textsWithQuestions != null ? ', ' + T('с вопросами') + ' ' + c.stats.textsWithQuestions : '') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
     }).join('') + '</div></section>';
   }
+  /* Перенос прогресса по коду: сайт кладёт текущий прогресс в приёмник статистики и показывает код из 8 знаков,
+     на другом устройстве код вводят — прогресс переезжает. Аккаунта не нужно, личных данных в прогрессе нет,
+     запись живёт сутки. Без настроенного eventsUrl блок не показывается: складывать некуда. */
+  function syncPanel() {
+    if (!KZ.site || !KZ.site.eventsUrl) return '';
+    return '<div class="block io"><h3>' + T('Код переноса') + '</h3>' +
+      '<p class="small muted">' + T('Получите код на этом устройстве и введите его на другом — прогресс переедет. Код действует 24 часа, входить никуда не нужно.') + '</p>' +
+      '<div class="actions"><button class="btn small" data-act="sync-make">' + T('Получить код') + '</button>' +
+      '<input id="sync-code" class="code-in" maxlength="9" autocomplete="off" spellcheck="false" placeholder="' + T('Код с другого устройства') + '" aria-label="' + T('Код с другого устройства') + '">' +
+      '<button class="btn secondary small" data-act="sync-use">' + T('Перенести сюда') + '</button>' +
+      '<span class="hint" id="sync-msg" role="status" aria-live="polite"></span></div></div>';
+  }
   function ioPanel() {
     return '<div class="block io"><h3>' + T('Экспорт и импорт прогресса') + '</h3>' +
       '<p class="small muted">' + T('Скопируйте JSON и сохраните где удобно; на другом устройстве вставьте его в поле и нажмите «Импортировать». Импорт заменяет текущий прогресс.') + '</p>' +
@@ -1299,7 +1311,7 @@
     var head = topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Мой прогресс') }]) +
       '<div class="kicker">' + T('Прогресс') + '</div><h1>' + T('Мой прогресс') + '</h1>' +
       '<p class="lede">' + T('Результаты хранятся только в этом браузере. Каждая завершённая попытка попадает в историю, поэтому рост виден, даже если раздел пройден заново.') + '</p>';
-    var io = '<section><details class="io-details"><summary>' + T('Перенести прогресс на другое устройство') + '</summary>' + ioPanel() + '</details></section>';
+    var io = '<section><details class="io-details"><summary>' + T('Перенести прогресс на другое устройство') + '</summary>' + syncPanel() + ioPanel() + '</details></section>';
     if (!tests.length && !hist.length) return head + '<div class="notice info"><b class="t">' + T('Пока пусто') + '</b><p>' + T('Пройдите любой раздел мок-теста — здесь появятся таблица результатов и график.') + ' <a href="#/">' + T('На хаб') + '</a></p></div>' + io;
 
     var tiles = '<div class="tiles">' +
@@ -1421,6 +1433,34 @@
     if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); track('lang', { to: KZ.lang }); saveUi(); route(); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
     else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
+    if (act === 'sync-make' || act === 'sync-use') {
+      var sm = document.getElementById('sync-msg'), url = KZ.site && KZ.site.eventsUrl;
+      if (!url) return;
+      var base = url.replace(/\/$/, '');
+      if (act === 'sync-make') {
+        sm.textContent = T('Готовим код…');
+        track('sync', { where: 'make' });
+        fetch(base + '/sync/put', { method: 'POST', body: JSON.stringify(state) })
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+          .then(function (d) { sm.innerHTML = T('Код на 24 часа:') + ' <b class="code-out">' + esc(d.code.slice(0, 4) + '-' + d.code.slice(4)) + '</b>'; })
+          .catch(function () { sm.textContent = T('Не удалось получить код, попробуйте ещё раз.'); });
+      } else {
+        var code = (document.getElementById('sync-code').value || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+        if (code.length !== 8) { sm.textContent = T('Код состоит из 8 знаков.'); return; }
+        sm.textContent = T('Переносим…');
+        fetch(base + '/sync/get?code=' + code)
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+          .then(function (s) {
+            if (!s || typeof s.tests !== 'object') return Promise.reject('bad');
+            var nT = Object.keys(s.tests).length;
+            if (!confirm(T('Заменить текущий прогресс перенесённым?') + ' (' + T('тестов') + ': ' + nT + ')')) { sm.textContent = ''; return; }
+            track('sync', { where: 'use' });
+            state = cleanState(s); saveState(); route();
+          })
+          .catch(function (e) { sm.textContent = e === 404 ? T('Код не найден или устарел.') : T('Не удалось перенести, попробуйте ещё раз.'); });
+      }
+      return;
+    }
     if (act === 'io-copy') {
       var ta = document.getElementById('io-text'), im = document.getElementById('io-msg');
       function copyFallback() { try { ta.select(); if (document.execCommand('copy')) { im.textContent = T('Скопировано.'); return; } } catch (x) {} im.textContent = T('Не удалось скопировать — выделите текст и скопируйте вручную.'); }

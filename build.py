@@ -151,8 +151,9 @@ def landing_page(lang, eid, ex, lv, tests, base):
     n = len(tests)
     if lang == 'ru':
         # в заголовок — написание, которым ищут: «казтест» обычной К; официальное ҚАЗТЕСТ остаётся в H1
-        alias = 'Казтест' if eid == 'kaztest' else ex_name + ' (Казресмитест)'
-        title = f'Пробный {alias} {lv} онлайн: подготовка, {_plural_ru(n, "вариант", "варианта", "вариантов")} бесплатно'
+        alias = 'Казтест' if eid == 'kaztest' else ex_name
+        # Google показывает примерно 60 знаков: держим заголовок коротким, синонимы («Казресмитест») — в описании и H1
+        title = f'Пробный {alias} {lv} онлайн — {_plural_ru(n, "вариант", "варианта", "вариантов")} бесплатно'
         h1 = f'Пробный {ex_name} {lv} онлайн' + (' (Казтест)' if eid == 'kaztest' else ' (Казресмитест)')
         vheading = f'{_plural_ru(n, "вариант", "варианта", "вариантов")} мок-теста'
     else:
@@ -351,7 +352,7 @@ def body(mode):
 SITE_NAME = 'Qazaq Trainer'
 TITLES = {
     # люди ищут «казтест» обычной К, а в тексте было только официальное ҚАЗТЕСТ с Қ: для поиска это разные слова (19.09.2026)
-    'site': 'Казтест и QazResmiTest онлайн — бесплатные пробные тесты A1–C2 | Qazaq Trainer',
+    'site': 'Казтест и QazResmiTest — бесплатные пробные тесты A1–C2',
     'lab': 'Qazaq Trainer · лаборатория',
     'inline': 'Qazaq Trainer',
 }

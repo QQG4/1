@@ -91,14 +91,34 @@ export default {
   },
 
   /* Расписания в wrangler.toml: 03:17 UTC — чистка старых записей, 04:00 UTC (09:00 по Алматы) — «задание дня» в канал. */
+  /* Расписания в wrangler.toml: 03:17 UTC — чистка старых записей; ежечасно — задания дня в канал
+     (09:00, 13:00 и 19:00 по Алматы, то есть 04, 08 и 14 UTC). Часы держим в одном месте — TASKS. */
   async scheduled(event, env) {
-    if (event.cron === QUIZ_CRON) { await postReminders(env); return postQuiz(env); }
-    return purge(env);
+    if (event.cron !== HOURLY_CRON) return purge(env);
+    const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
+    if (!task) return;
+    if (h === 4) await postReminders(env);
+    return postTask(env, typeof task.kind === 'function' ? task.kind() : task.kind);
   },
 };
 
 /* ---------- Telegram ---------- */
-const QUIZ_CRON = '0 4 * * *';
+const HOURLY_CRON = '0 * * * *';
+const dayNo = () => Math.floor(Date.now() / 864e5);
+/* Три задания в день. Утром — чтение с текстом, днём — грамматика и лексика через день (грамматических заданий
+   меньше, так набор растягивается), вечером — аудирование с нашим mp3. Ссылка на сайт идёт только в вечернем
+   посте: решение владельца — не больше одного рекламного поста в день. */
+const TASKS = [
+  { utc: 4, kind: 'reading' },
+  { utc: 8, kind: () => (dayNo() % 2 ? 'grammar' : 'lexis') },
+  { utc: 14, kind: 'listening' },
+];
+const KIND_HEAD = {
+  reading: '📖 Оқылым / Чтение',
+  grammar: '✍️ Грамматика',
+  lexis: '🔤 Лексика',
+  listening: '🎧 Тыңдалым / Аудирование',
+};
 const ALERTS = ['feedback', 'report', 'js-error'];
 const SITE = 'https://qazaqtrainer.com/';
 
@@ -110,36 +130,47 @@ async function tg(env, method, body) {
   return r.ok;
 }
 
-/* «Задание дня»: вопрос из docs/quiz.json публикуется как викторина Telegram с пояснением,
-   следом — короткое сообщение со ссылкой на полный тест. Вопрос выбирается по номеру дня:
-   шаг 7919 взаимно прост с любым разумным размером списка, поэтому вопросы не повторяются,
-   пока не кончится список (сейчас ~380, то есть больше года). Без канала и токена ничего не делает. */
-async function postQuiz(env) {
+/* Задание дня: вопрос из docs/quiz.json публикуется викториной Telegram с пояснением. Для чтения перед викториной
+   уходит сам текст, для аудирования — mp3 с сайта. Вопрос выбирается по номеру дня: шаг 7919 взаимно прост с любым
+   разумным размером набора, поэтому задания не повторяются, пока набор не кончится (в каждом от 85 до 320).
+   Без канала и токена ничего не делает. */
+async function postTask(env, kind) {
   if (!env.TG_BOT_TOKEN || !env.TG_CHANNEL) return;
   const res = await fetch(SITE + 'quiz.json', { cf: { cacheTtl: 300 } });
   if (!res.ok) return console.log('quiz.json → ' + res.status);
-  const list = await res.json();
-  if (!Array.isArray(list) || !list.length) return;
-  const day = Math.floor(Date.now() / 864e5);
-  const q = list[(day * 7919) % list.length];
+  const data = await res.json();
+  const pool = (data && data[kind]) || [];
+  if (!pool.length) return console.log('пустой набор: ' + kind);
+  const q = pool[(dayNo() * 7919) % pool.length];
   const exam = q.exam === 'kaztest' ? 'ҚАЗТЕСТ' : 'QazResmiTest';
-  const link = SITE + 'kk/' + q.exam + '/' + String(q.level).toLowerCase() + '/?utm_source=telegram&utm_medium=quiz';
+  const head = KIND_HEAD[kind] + ' · ' + exam + ' ' + q.level;
+
+  if (kind === 'reading') {
+    await tg(env, 'sendMessage', { chat_id: env.TG_CHANNEL, disable_web_page_preview: true,
+      text: head + '\n\n' + (q.title ? q.title + '\n\n' : '') + String(q.body || '').slice(0, 3400) +
+        '\n\nМәтінді оқып, төмендегі сұраққа жауап беріңіз. / Прочитайте текст и ответьте на вопрос ниже.' });
+  } else if (kind === 'listening') {
+    await tg(env, 'sendAudio', { chat_id: env.TG_CHANNEL, audio: SITE + q.audio, title: q.title || exam + ' ' + q.level,
+      performer: 'Qazaq Trainer', caption: head + '\nТыңдап, сұраққа жауап беріңіз. / Послушайте и ответьте на вопрос.' });
+  }
+
   const ok = await tg(env, 'sendPoll', {
     chat_id: env.TG_CHANNEL,
-    question: (exam + ' · ' + q.level + '\n' + q.text).slice(0, 300),
+    question: ((kind === 'reading' || kind === 'listening' ? '' : head + '\n') + q.text).slice(0, 300),
     options: q.options.map((o) => String(o).slice(0, 100)),
     type: 'quiz', correct_option_id: q.answer, is_anonymous: true,
     explanation: (q.explain || '').slice(0, 200),
   });
-  if (ok) {
-    await tg(env, 'sendMessage', {
-      chat_id: env.TG_CHANNEL,
-      text: 'Толық сынақ тест (тегін, тіркеусіз): ' + link + '\nПолный пробный тест — бесплатно, без регистрации.',
-      disable_web_page_preview: false,
-    });
-    await env.DB.prepare(`INSERT INTO events (day, ts, name, exam, level, test, qid) VALUES (?,?,?,?,?,?,?)`)
-      .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', q.exam, q.level, q.test, q.qid).run();
+  if (!ok) return;
+
+  // Ссылка на сайт — один раз в день, в вечернем посте
+  if (kind === 'listening') {
+    await tg(env, 'sendMessage', { chat_id: env.TG_CHANNEL, disable_web_page_preview: false,
+      text: 'Толық сынақ тест (тегін, тіркеусіз): ' + SITE + 'kk/' + q.exam + '/' + String(q.level).toLowerCase() + '/?utm_source=telegram&utm_medium=quiz' +
+        '\nПолный пробный тест — бесплатно, без регистрации.' });
   }
+  await env.DB.prepare(`INSERT INTO events (day, ts, name, exam, level, test, section, qid) VALUES (?,?,?,?,?,?,?,?)`)
+    .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', q.exam, q.level, q.test, kind, q.qid).run();
 }
 
 /* Напоминания о сессиях ҚАЗТЕСТ из sessions.js. Сегодняшняя дата — по Астане (UTC+5). */

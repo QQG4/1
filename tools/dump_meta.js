@@ -24,21 +24,34 @@ const out = {
   exams: Object.fromEntries(Object.entries(KZ.exams).map(([k, v]) => [k, Object.assign(
     pick(v, ['id', 'name', 'short', 'kicker', 'tagline', 'tagline_kk', 'verified', 'examLevels', 'totalMinutes']),
     { sections: (v.sections || []).map((s) => pick(s, ['type', 'num', 'title', 'kk', 'minutes', 'tasks', 'tasks_kk', 'desc', 'desc_kk'])) })])),
-  // Вопросы для «задания дня» в Telegram: только те, что понятны без текста и аудио —
-  // лексика QRT и лексико-грамматические задания ҚАЗТЕСТ. Ограничения викторины Telegram:
-  // вопрос до 300 знаков, вариант до 100, пояснение до 200.
-  quiz: KZ.tests
-    .filter((t) => t.status !== 'draft')
-    .flatMap((t) => (t.sections || []).flatMap((s) => (s.questions || [])
-      .filter((q) => (s.type === 'lexis' || (s.type === 'reading' && q.tag)) &&
-        Array.isArray(q.options) && q.options.length >= 2 && q.options.length <= 10 &&
-        (q.text || '').length <= 280 && q.options.every((o) => String(o).length <= 100) &&
-        !/мәтін/i.test(q.text || ''))
-      .map((q) => ({
-        exam: t.exam, level: t.level, test: t.id, qid: q.id,
-        text: q.text, options: q.options, answer: q.answer,
-        explain: String(q.explain_kk || q.explain || '').slice(0, 180),
-      })))),
+/* Задания для Telegram: четыре набора под три поста в день (чтение утром, грамматика или лексика днём,
+     аудирование вечером). Ограничения Telegram: вопрос викторины до 300 знаков, вариант до 100, пояснение до 200,
+     обычное сообщение до 4096. Поэтому вопросы и варианты фильтруются по длине, а текст чтения обрезается. */
+  quiz: (() => {
+    const ok = (q) => Array.isArray(q.options) && q.options.length >= 2 && q.options.length <= 10 &&
+      (q.text || '').length <= 260 && q.options.every((o) => String(o).length <= 100);
+    const base = (t, s, q) => ({ exam: t.exam, level: t.level, test: t.id, qid: q.id, text: q.text,
+      options: q.options, answer: q.answer, explain: String(q.explain_kk || q.explain || '').slice(0, 180) });
+    const out = { lexis: [], grammar: [], reading: [], listening: [] };
+    for (const t of KZ.tests.filter((t) => t.status !== 'draft')) {
+      for (const s of t.sections || []) {
+        for (const q of s.questions || []) {
+          if (!ok(q)) continue;
+          // лексика и грамматика понятны сами по себе, без текста и аудио
+          if (s.type === 'lexis' && !/мәтін/i.test(q.text || '')) out.lexis.push(base(t, s, q));
+          else if (s.type === 'reading' && q.tag && !/мәтін/i.test(q.text || '')) out.grammar.push(base(t, s, q));
+          // к вопросу на понимание прикладываем сам текст, к вопросу аудирования — mp3 с сайта
+          else if (s.type === 'reading' && !q.tag && s.passage && q.kind !== 'tf') {
+            const body = (s.passage.paragraphs || []).join('\n\n');
+            if (body.length <= 2600) out.reading.push(Object.assign(base(t, s, q), { title: s.passage.title, body }));
+          } else if (s.type === 'listening' && s.script && q.kind !== 'tf') {
+            out.listening.push(Object.assign(base(t, s, q), { title: s.script.title, audio: 'audio/' + t.id + '.mp3' }));
+          }
+        }
+      }
+    }
+    return out;
+  })(),
   tests: KZ.tests
     .filter((t) => t.status !== 'draft' && (t.sections || []).length)
     .map((t) => pick(t, ['id', 'exam', 'level', 'title', 'title_kk', 'summary', 'summary_kk'])),

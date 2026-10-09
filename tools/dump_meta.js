@@ -42,8 +42,19 @@ const out = {
           else if (s.type === 'reading' && q.tag && !/мәтін/i.test(q.text || '')) out.grammar.push(base(t, s, q));
           // к вопросу на понимание прикладываем сам текст, к вопросу аудирования — mp3 с сайта
           else if (s.type === 'reading' && !q.tag && s.passage && q.kind !== 'tf') {
-            const body = (s.passage.paragraphs || []).join('\n\n');
-            if (body.length <= 2600) out.reading.push(Object.assign(base(t, s, q), { title: s.passage.title, body }));
+            // В Telegram длинный текст отпугивает, поэтому берём один абзац — тот, откуда взят ответ.
+            // Пояснение к вопросу почти всегда цитирует нужное место в «ёлочках», по этой цитате абзац и находится.
+            // Если цитаты нет, подходит только короткий текст целиком; остальные вопросы в набор не попадают.
+            const paras = s.passage.paragraphs || [], whole = paras.join('\n\n');
+            let body = '', excerpt = false;
+            for (const qu of String(q.explain_kk || q.explain || '').match(/«[^»]{15,}»/g) || []) {
+              const core = qu.replace(/[«»]/g, '').split('...')[0].split('…')[0].trim().slice(0, 40);
+              if (core.length < 15) continue;
+              const hit = paras.find((p) => p.includes(core));
+              if (hit && hit.length <= 700) { body = hit; excerpt = true; break; }
+            }
+            if (!body && whole.length <= 800) body = whole;
+            if (body) out.reading.push(Object.assign(base(t, s, q), { title: s.passage.title, body, excerpt }));
           } else if (s.type === 'listening' && s.script && q.kind !== 'tf') {
             out.listening.push(Object.assign(base(t, s, q), { title: s.script.title, audio: 'audio/' + t.id + '.mp3' }));
           }

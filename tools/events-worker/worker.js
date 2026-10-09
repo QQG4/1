@@ -98,7 +98,10 @@ export default {
     const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
     if (!task) return;
     if (h === 4) await postReminders(env);
-    return postTask(env, typeof task.kind === 'function' ? task.kind() : task.kind);
+    const kind = typeof task.kind === 'function' ? task.kind() : task.kind;
+    if (kind === 'ask') return postAsk(env);
+    if (kind === 'weekly') return postWeekly(env);
+    return postTask(env, kind);
   },
 };
 
@@ -110,7 +113,12 @@ const dayNo = () => Math.floor(Date.now() / 864e5);
    посте: решение владельца — не больше одного рекламного поста в день. */
 const TASKS = [
   { utc: 4, kind: 'reading' },
-  { utc: 8, kind: () => (dayNo() % 2 ? 'grammar' : 'lexis') },
+  { utc: 8, kind: () => {
+      const wd = new Date().getUTCDay();          // 0 — воскресенье, 5 — пятница
+      if (wd === 0) return 'weekly';              // разбор самого трудного вопроса недели
+      if (wd === 5) return 'ask';                 // опрос подписчиков
+      return dayNo() % 2 ? 'grammar' : 'lexis';
+    } },
   { utc: 14, kind: 'listening' },
 ];
 const KIND_HEAD = {
@@ -126,8 +134,8 @@ async function tg(env, method, body) {
   const r = await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/' + method, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
-  if (!r.ok) console.log('telegram ' + method + ' → ' + r.status + ' ' + (await r.text()).slice(0, 300));
-  return r.ok;
+  if (!r.ok) { console.log('telegram ' + method + ' → ' + r.status + ' ' + (await r.text()).slice(0, 300)); return null; }
+  try { return (await r.json()).result || true; } catch (e) { return true; }   // result нужен ради id викторины
 }
 
 /* Задание дня: вопрос из docs/quiz.json публикуется викториной Telegram с пояснением. Для чтения перед викториной
@@ -147,21 +155,27 @@ async function postTask(env, kind) {
 
   if (kind === 'reading') {
     await tg(env, 'sendMessage', { chat_id: env.TG_CHANNEL, disable_web_page_preview: true,
-      text: head + '\n\n' + (q.title ? q.title + '\n\n' : '') + String(q.body || '').slice(0, 3400) +
-        '\n\nМәтінді оқып, төмендегі сұраққа жауап беріңіз. / Прочитайте текст и ответьте на вопрос ниже.' });
+      text: head + (q.excerpt ? ' (үзінді / отрывок)' : '') + '\n\n' + (q.title ? q.title + '\n\n' : '') + String(q.body || '').slice(0, 3400) +
+        '\n\nСұраққа жауап беріңіз 👇 / Ответьте на вопрос ниже 👇' });
   } else if (kind === 'listening') {
     await tg(env, 'sendAudio', { chat_id: env.TG_CHANNEL, audio: SITE + q.audio, title: q.title || exam + ' ' + q.level,
       performer: 'Qazaq Trainer', caption: head + '\nТыңдап, сұраққа жауап беріңіз. / Послушайте и ответьте на вопрос.' });
   }
 
-  const ok = await tg(env, 'sendPoll', {
+  const sent = await tg(env, 'sendPoll', {
     chat_id: env.TG_CHANNEL,
     question: ((kind === 'reading' || kind === 'listening' ? '' : head + '\n') + q.text).slice(0, 300),
     options: q.options.map((o) => String(o).slice(0, 100)),
     type: 'quiz', correct_option_id: q.answer, is_anonymous: true,
     explanation: (q.explain || '').slice(0, 200),
   });
-  if (!ok) return;
+  if (!sent) return;
+  if (sent.poll && sent.poll.id) {
+    await env.DB.prepare(`INSERT OR REPLACE INTO tg_polls (poll_id, day, kind, test, qid, question, answer, explain, votes, right_votes)
+                          VALUES (?,?,?,?,?,?,?,?,0,0)`)
+      .bind(String(sent.poll.id), new Date().toISOString().slice(0, 10), kind, q.test, q.qid,
+            q.text.slice(0, 300), q.answer, (q.explain || '').slice(0, 300)).run();
+  }
 
   // Ссылка на сайт — один раз в день, в вечернем посте
   if (kind === 'listening') {
@@ -171,6 +185,40 @@ async function postTask(env, kind) {
   }
   await env.DB.prepare(`INSERT INTO events (day, ts, name, exam, level, test, section, qid) VALUES (?,?,?,?,?,?,?,?)`)
     .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', q.exam, q.level, q.test, kind, q.qid).run();
+}
+
+/* Опрос подписчиков по пятницам: обычный опрос (не викторина), тема меняется по номеру недели.
+   Ответы видно в самом Telegram — это и способ узнать аудиторию, и повод зайти в канал. */
+const ASKS = [
+  { q: 'Қай бөлім сізге қиын? / Какой раздел даётся труднее всего?', o: ['Тыңдалым / Аудирование', 'Оқылым / Чтение', 'Лексика, грамматика', 'Жазылым / Письмо', 'Айтылым / Говорение'] },
+  { q: 'Қай емтиханға дайындаласыз? / К какому экзамену готовитесь?', o: ['ҚАЗТЕСТ', 'QazResmiTest', 'Екеуіне де / К обоим', 'Әзірге шешпедім / Пока не решил'] },
+  { q: 'Қандай деңгей керек? / Какой уровень нужен?', o: ['A1–A2', 'B1', 'B2', 'C1', 'C2'] },
+  { q: 'Емтиханды қашан тапсырасыз? / Когда сдаёте экзамен?', o: ['Бір ай ішінде / В течение месяца', '2–3 ай ішінде / Через 2–3 месяца', 'Биыл / В этом году', 'Әлі белгісіз / Пока не знаю'] },
+  { q: 'Арнада не көбірек керек? / Чего не хватает в канале?', o: ['Тыңдалым / Аудирование', 'Жазылым үлгілері / Образцы письма', 'Грамматика түсіндірмесі / Разбор грамматики', 'Сөздік / Лексика', 'Бәрі жеткілікті / Всего хватает'] },
+];
+async function postAsk(env) {
+  const a = ASKS[Math.floor(dayNo() / 7) % ASKS.length];
+  const sent = await tg(env, 'sendPoll', { chat_id: env.TG_CHANNEL, question: a.q.slice(0, 300), options: a.o, is_anonymous: true });
+  if (sent) await env.DB.prepare(`INSERT INTO events (day, ts, name, section) VALUES (?,?,?,?)`)
+    .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', 'ask').run();
+}
+
+/* Вопрос недели по воскресеньям: из викторин за семь дней берём ту, где доля верных ответов ниже всего
+   (и где проголосовало хотя бы трое), и разбираем её ещё раз. Если данных не набралось, вместо разбора
+   выходит обычное задание — пустой пост в канал не уходит. */
+async function postWeekly(env) {
+  const row = await env.DB.prepare(
+    `SELECT question, explain, votes, right_votes FROM tg_polls
+     WHERE day >= date('now','-7 day') AND votes >= 3
+     ORDER BY (right_votes * 1.0 / votes) ASC, votes DESC LIMIT 1`).first();
+  if (!row) return postTask(env, dayNo() % 2 ? 'grammar' : 'lexis');
+  const pct = Math.round(100 * row.right_votes / row.votes);
+  await tg(env, 'sendMessage', { chat_id: env.TG_CHANNEL, disable_web_page_preview: true,
+    text: '🏁 Апта сұрағы / Вопрос недели\n\n' + row.question + '\n\n' +
+      'Дұрыс жауап берген / Ответили верно: ' + pct + ' % (' + row.votes + ' дауыс / голосов)\n\n' +
+      (row.explain || '') });
+  await env.DB.prepare(`INSERT INTO events (day, ts, name, section) VALUES (?,?,?,?)`)
+    .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', 'weekly').run();
 }
 
 /* Напоминания о сессиях ҚАЗТЕСТ из sessions.js. Сегодняшняя дата — по Астане (UTC+5). */
@@ -217,7 +265,7 @@ async function tgSetup(request, env) {
   if (!env.TG_WEBHOOK_SECRET || !env.TG_BOT_TOKEN || key !== env.TG_WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
   const r = await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/setWebhook', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url: new URL('/tg/webhook', request.url).href, secret_token: env.TG_WEBHOOK_SECRET, allowed_updates: ['message'], drop_pending_updates: true }),
+    body: JSON.stringify({ url: new URL('/tg/webhook', request.url).href, secret_token: env.TG_WEBHOOK_SECRET, allowed_updates: ['message', 'poll'], drop_pending_updates: true }),
   });
   return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json' } });
 }
@@ -241,6 +289,13 @@ async function tgWebhook(request, env, ctx) {
   if (request.method !== 'POST' || !env.TG_WEBHOOK_SECRET ||
       request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== env.TG_WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
   let u; try { u = await request.json(); } catch (e) { return new Response('ok'); }
+  if (u && u.poll) {   // Telegram присылает обновлённые счётчики нашей викторины
+    const p = u.poll, votes = p.total_voter_count || 0;
+    const right = (p.options && p.correct_option_id != null && p.options[p.correct_option_id])
+      ? (p.options[p.correct_option_id].voter_count || 0) : 0;
+    await env.DB.prepare(`UPDATE tg_polls SET votes = ?, right_votes = ? WHERE poll_id = ?`).bind(votes, right, String(p.id)).run();
+    return new Response('ok');
+  }
   const m = u && u.message;
   if (!m || !m.chat || typeof m.text !== 'string') return new Response('ok');
   const chat = m.chat.id, text = m.text.trim();

@@ -24,10 +24,20 @@ EXAM = {'kaztest': 'ҚАЗТЕСТ', 'qrt': 'QazResmiTest'}
 SECTION = {'lexis': ('Лексика', 'Лексика'), 'reading': ('Оқылым', 'Чтение'), 'listening': ('Тыңдалым', 'Аудирование')}
 # Крючок на первые секунды: честное обещание, без выдуманной статистики. Ключ — признак вопроса.
 HOOKS = {
-    'phrase': ('Сөзбе-сөз аударсаңыз — қателесесіз', 'Переведёте дословно — ошибётесь'),
-    'default': ('10 секундта жауап бере аласыз ба?', 'Ответите за 10 секунд?'),
+    'phrase': ('Сөзбе-сөз аударсаңыз, қателесесіз', 'Переведёте дословно, ошибётесь'),
+    'default': ('Жауабын білесіз бе?', 'Знаете ответ?'),
 }
-OUTRO = ('Тағы 55 сынақ тест — профильдегі сілтемеде', 'Ещё 55 пробных тестов — по ссылке в профиле')
+# Без чисел и слова «бесплатно» в концовке: решение владельца 10.10.2026 («это дешевит»)
+OUTRO = ('Басқа тапсырмалар мен толық сынақ тесттер біздің сайтта', 'Больше заданий и полные пробные тесты на нашем сайте')
+COUNTDOWN = 4   # секунд на раздумье (решение владельца 10.10.2026)
+# Два голоса: вопрос читает один, ответ другой. Кто начинает, зависит от вопроса, чтобы в серии чередовались.
+VOICES = ('kk-KZ-AigulNeural', 'kk-KZ-DauletNeural')
+
+def nodash(t):
+    """Длинное тире в роликах и подписях не используем (решение владельца 10.10.2026). В данных оно стоит
+    между подлежащим и сказуемым («термин — значение», «буквальное прочтение — ловушка»), поэтому меняем на
+    двоеточие: запятая в этих местах читается как ошибка."""
+    return str(t).replace(' — ', ': ').replace('—', ': ').replace(' :', ':')
 
 # ---------- данные ----------
 def load_question(test_id, qid):
@@ -133,13 +143,14 @@ def frame_outro(meta, path):
     im, d = base(meta)
     d.ellipse([W / 2 - 120, 520, W / 2 + 120, 760], fill=WHITE)
     d.text((W / 2, 640), 'Q', font=font('Georgia Bold.ttf', 170), fill=TEAL, anchor='mm')
-    y = text_block(d, OUTRO[0], font('Arial Bold.ttf', 70), 80, 860, W - 160, WHITE, center=True)
-    y = text_block(d, OUTRO[1], font('Arial.ttf', 46), 80, y + 30, W - 160, '#d8ecf1', center=True)
-    text_block(d, 'Күн сайын тапсырма · Задание дня: t.me/qazaqtrainer', font('Arial Bold.ttf', 40), 80, y + 70, W - 160, GOLD, center=True)
+    y = text_block(d, OUTRO[0], font('Arial Bold.ttf', 66), 80, 860, W - 160, WHITE, center=True)
+    y = text_block(d, OUTRO[1], font('Arial.ttf', 44), 80, y + 25, W - 160, '#d8ecf1', center=True)
+    y = text_block(d, 'qazaqtrainer.com', font('Arial Bold.ttf', 76), 80, y + 60, W - 160, GOLD, center=True)
+    text_block(d, 'Күн сайын тапсырма · Задание дня: t.me/qazaqtrainer', font('Arial.ttf', 38), 80, y + 40, W - 160, '#d8ecf1', center=True)
     im.save(path)
 
 # ---------- сборка ----------
-def build(test_id, qid, out_dir, voice, mute=False):
+def build(test_id, qid, out_dir, voice=None, mute=False):
     meta = load_question(test_id, qid); q = dict(meta['q'])
     # в данных ключ часто стоит первым (на сайте варианты перемешиваются при загрузке) — без перемешивания
     # в роликах верным всегда был бы вариант A. Сид от id вопроса: один и тот же ролик пересобирается одинаково.
@@ -149,22 +160,24 @@ def build(test_id, qid, out_dir, voice, mute=False):
     out_dir.mkdir(parents=True, exist_ok=True)
     name = '%s-%s' % (test_id, qid)
     tmp = pathlib.Path(tempfile.mkdtemp(prefix='short-'))
+    q['text'] = nodash(q['text']); q['options'] = [nodash(o) for o in q['options']]
     correct = q['options'][q['answer']]
-    ex_kk, ex_ru = (q.get('explain_kk') or q.get('explain') or ''), (q.get('explain') if q.get('explain_kk') else '')
+    ex_kk, ex_ru = nodash(q.get('explain_kk') or q.get('explain') or ''), (nodash(q['explain']) if q.get('explain_kk') else '')
+    v1, v2 = VOICES if sum(map(ord, test_id + qid)) % 2 == 0 else VOICES[::-1]
     # озвучка: крючок, вопрос, ответ с пояснением (казахский — только из данных теста и крючка)
     if mute:   # --mute: без озвучки (проверить вид или если ключ Azure недоступен) — паузы по длине текста
         for n, sec in (('a_hook', 2.0), ('a_q', 3.0 + len(q['text']) / 40), ('a_ans', 3.0 + len(ex_kk) / 30)):
             subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', '%.2f' % sec, str(tmp / (n + '.mp3'))], check=True)
     else:
-        tts(hook[0], voice, tmp / 'a_hook.mp3')
-        tts(q['text'], voice, tmp / 'a_q.mp3')
-        tts('Дұрыс жауап: ' + correct + '. ' + ex_kk, voice, tmp / 'a_ans.mp3')
+        tts(hook[0], v1, tmp / 'a_hook.mp3')
+        tts(q['text'], v1, tmp / 'a_q.mp3')
+        tts('Дұрыс жауап: ' + correct + '. ' + ex_kk, v2, tmp / 'a_ans.mp3')
     d_hook, d_q, d_ans = duration(tmp / 'a_hook.mp3'), duration(tmp / 'a_q.mp3'), duration(tmp / 'a_ans.mp3')
 
     seg = []   # (картинка, длительность)
     frame_hook(meta, hook, tmp / 'f_hook.png'); seg.append(('f_hook.png', max(2.2, d_hook + 0.4)))
     frame_question(meta, q, tmp / 'f_q.png'); seg.append(('f_q.png', max(3.0, d_q + 0.6)))
-    for c in (5, 4, 3, 2, 1):
+    for c in range(COUNTDOWN, 0, -1):
         frame_question(meta, q, tmp / ('f_c%d.png' % c), count=c); seg.append(('f_c%d.png' % c, 1.0))
     frame_question(meta, q, tmp / 'f_ans.png', reveal=True, explain=(ex_kk, ex_ru)); seg.append(('f_ans.png', max(4.0, d_ans + 1.2)))
     frame_outro(meta, tmp / 'f_out.png'); seg.append(('f_out.png', 3.0))
@@ -191,8 +204,8 @@ def build(test_id, qid, out_dir, voice, mute=False):
     lvl = meta['level'].lower()
     def link(src): return 'https://qazaqtrainer.com/kk/%s/%s/?utm_source=%s&utm_medium=short' % (meta['exam'], lvl, src)
     tags = '#казтест #қазтест #qazresmitest #қазақтілі #казахскийязык #қазақшаүйрену #%s' % meta['level'].lower()
-    caption = (hook[0] + ' / ' + hook[1] + '\n\n' + q['text'] + '\nЖауабы — видеоның соңында. Ответ — в конце видео.\n\n'
-               'Тегін сынақ тесттер / Бесплатные пробные тесты: {link}\nКүн сайын тапсырма / Задание дня: t.me/qazaqtrainer\n\n' + tags)
+    caption = (hook[0] + ' / ' + hook[1] + '\n\n' + q['text'] + '\nЖауабы видеоның соңында. Ответ в конце видео.\n\n'
+               'Толық сынақ тесттер біздің сайтта / Полные пробные тесты на сайте: {link}\nКүн сайын тапсырма / Задание дня: t.me/qazaqtrainer\n\n' + tags)
     txt = out_dir / (name + '.txt')
     txt.write_text('\n\n'.join('=== %s ===\n%s' % (p, caption.format(link=link(p))) for p in ('tiktok', 'instagram', 'youtube')) + '\n')
     print('%s  %.1f с  %d КБ\n%s' % (mp4, total, mp4.stat().st_size // 1024, txt))

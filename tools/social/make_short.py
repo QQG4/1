@@ -4,8 +4,8 @@
 Запуск:  python3 tools/social/make_short.py <testId> <qid> [--out=../соцсети/проба] [--voice=kk-KZ-DauletNeural]
 Пример:  python3 tools/social/make_short.py qrt-c1-04 x1
 
-Ролик: крючок (2–3 с) → вопрос и варианты, голос читает вопрос → отсчёт 5 с → ответ с пояснением, голос читает
-правильный вариант и пояснение → концовка со ссылкой. Рядом кладётся текст поста с хэштегами и ссылками с метками.
+Ролик: крючок (2–3 с) → вопрос и варианты, голос читает вопрос → отсчёт → верный ответ и тизер «разбор на сайте»
+→ концовка, голос зовёт на сайт и в Telegram. Рядом кладётся текст поста с хэштегами и ссылками с метками.
 Тексты на экране и в озвучке берутся из данных теста (вопрос, варианты, explain / explain_kk); своего казахского
 текста здесь только крючок и концовка (HOOKS, OUTRO) — их стоит показать носителю.
 Нужны: ffmpeg, PIL, ключ Azure в ~/.config/qazaq-trainer/azure.env (тот же, что у tools/tts_azure.py).
@@ -29,6 +29,10 @@ HOOKS = {
 }
 # Без чисел и слова «бесплатно» в концовке: решение владельца 10.10.2026 («это дешевит»)
 OUTRO = ('Басқа тапсырмалар мен толық сынақ тесттер біздің сайтта', 'Больше заданий и полные пробные тесты на нашем сайте')
+# Объяснения в ролике нет (решение владельца 10.10.2026): «почему этот ответ» — повод перейти на сайт.
+# Вместо него на экране тизер, а голос в концовке зовёт на сайт и в Telegram. Казахский — наш, показать носителю.
+TEASER = ('Неге дәл осы жауап? Түсіндірмесі сайтта', 'Почему именно этот ответ? Разбор на сайте')
+CTA_VOICE = 'Неге дәл осы жауап? Түсіндірмесі біздің сайтта. Ал күн сайынғы тапсырмалар Telegram арнамызда.'
 COUNTDOWN = 4   # секунд на раздумье (решение владельца 10.10.2026)
 # Один голос на ролик, голоса чередуются между роликами; Daulet звучит в двух роликах из трёх (решение владельца
 # 10.10.2026). Второй голос внутри ролика — только когда по сюжету действительно говорят двое (диалог в аудировании).
@@ -133,13 +137,13 @@ def frame_question(meta, q, path, count=None, reveal=False, explain=None):
         cy = max(y + 140, 1350)
         d.ellipse([W / 2 - 110, cy - 110, W / 2 + 110, cy + 110], outline=GOLD, width=12)
         d.text((W / 2, cy), str(count), font=font('Arial Bold.ttf', 130), fill=WHITE, anchor='mm')
-    if explain:
-        ey = y + 30
-        box_bottom = text_block(ImageDraw.Draw(Image.new('RGB', (1, 1))), explain[0], font('Arial.ttf', 44), 0, 0, W - 240, INK) \
-            + (text_block(ImageDraw.Draw(Image.new('RGB', (1, 1))), explain[1], font('Arial.ttf', 38), 0, 0, W - 240, INK) if explain[1] else 0) + 90
-        d.rounded_rectangle([80, ey, W - 80, ey + box_bottom], 28, fill=GOOD_SOFT)
-        ny = text_block(d, explain[0], font('Arial.ttf', 44), 120, ey + 35, W - 240, INK)
-        if explain[1]: text_block(d, explain[1], font('Arial.ttf', 38), 120, ny + 15, W - 240, MUTED)
+    if explain:   # здесь это тизер (kk, ru), а не разбор: разбор — на сайте
+        ey = y + 40
+        probe = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        hgt = text_block(probe, explain[0], font('Arial Bold.ttf', 50), 0, 0, W - 240, INK) + text_block(probe, explain[1], font('Arial.ttf', 40), 0, 0, W - 240, INK) + 95
+        d.rounded_rectangle([80, ey, W - 80, ey + hgt], 28, fill=GOOD_SOFT)
+        ny = text_block(d, explain[0], font('Arial Bold.ttf', 50), 120, ey + 35, W - 240, INK)
+        text_block(d, explain[1], font('Arial.ttf', 40), 120, ny + 15, W - 240, MUTED)
     im.save(path)
 
 def frame_outro(meta, path):
@@ -169,23 +173,24 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
     v = voice or voice_for(test_id, qid)
     # озвучка: крючок, вопрос, ответ с пояснением (казахский — только из данных теста и крючка)
     if mute:   # --mute: без озвучки (проверить вид или если ключ Azure недоступен) — паузы по длине текста
-        for n, sec in (('a_hook', 2.0), ('a_q', 3.0 + len(q['text']) / 40), ('a_ans', 3.0 + len(ex_kk) / 30)):
+        for n, sec in (('a_hook', 2.0), ('a_q', 3.0 + len(q['text']) / 40), ('a_ans', 2.5), ('a_cta', 5.0)):
             subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', '%.2f' % sec, str(tmp / (n + '.mp3'))], check=True)
     else:
         tts(hook[0], v, tmp / 'a_hook.mp3')
         tts(q['text'], v, tmp / 'a_q.mp3')
-        tts('Дұрыс жауап: ' + correct + '. ' + ex_kk, v, tmp / 'a_ans.mp3')
-    d_hook, d_q, d_ans = duration(tmp / 'a_hook.mp3'), duration(tmp / 'a_q.mp3'), duration(tmp / 'a_ans.mp3')
+        tts('Дұрыс жауап: ' + correct + '.', v, tmp / 'a_ans.mp3')
+        tts(CTA_VOICE, v, tmp / 'a_cta.mp3')
+    d_hook, d_q, d_ans, d_cta = (duration(tmp / (n + '.mp3')) for n in ('a_hook', 'a_q', 'a_ans', 'a_cta'))
 
     seg = []   # (картинка, длительность)
     frame_hook(meta, hook, tmp / 'f_hook.png'); seg.append(('f_hook.png', max(2.2, d_hook + 0.4)))
     frame_question(meta, q, tmp / 'f_q.png'); seg.append(('f_q.png', max(3.0, d_q + 0.6)))
     for c in range(COUNTDOWN, 0, -1):
         frame_question(meta, q, tmp / ('f_c%d.png' % c), count=c); seg.append(('f_c%d.png' % c, 1.0))
-    frame_question(meta, q, tmp / 'f_ans.png', reveal=True, explain=(ex_kk, ex_ru)); seg.append(('f_ans.png', max(4.0, d_ans + 1.2)))
-    frame_outro(meta, tmp / 'f_out.png'); seg.append(('f_out.png', 3.0))
+    frame_question(meta, q, tmp / 'f_ans.png', reveal=True, explain=TEASER); seg.append(('f_ans.png', max(3.0, d_ans + 1.0)))
+    frame_outro(meta, tmp / 'f_out.png'); seg.append(('f_out.png', max(3.5, d_cta + 1.0)))
 
-    t_q = seg[0][1]; t_ans = sum(s for _, s in seg[:-2])
+    t_q = seg[0][1]; t_ans = sum(s for _, s in seg[:-2]); t_cta = sum(s for _, s in seg[:-1])
     total = sum(s for _, s in seg)
     mp4 = out_dir / (name + '.mp4')
     # каждая картинка — отдельный вход точной длины, склейка фильтром concat: склейка через список файлов
@@ -195,10 +200,10 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
     n = len(seg); a0 = n   # индексы звуковых входов идут после картинок
     graph = (''.join('[%d:v]' % i for i in range(n)) + 'concat=n=%d:v=1:a=0[v];' % n +
              # громкость — к норме соцсетей (около −14 LUFS)
-             '[%d:a]adelay=%d|%d[q];[%d:a]adelay=%d|%d[a];[%d:a][q][a]amix=inputs=3:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11,apad[aud]'
-             % (a0 + 1, t_q * 1000, t_q * 1000, a0 + 2, t_ans * 1000, t_ans * 1000, a0))
+             '[%d:a]adelay=%d|%d[q];[%d:a]adelay=%d|%d[a];[%d:a]adelay=%d|%d[c];[%d:a][q][a][c]amix=inputs=4:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11,apad[aud]'
+             % (a0 + 1, t_q * 1000, t_q * 1000, a0 + 2, t_ans * 1000, t_ans * 1000, a0 + 3, t_cta * 1000, t_cta * 1000, a0))
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error'] + vin +
-                   ['-i', str(tmp / 'a_hook.mp3'), '-i', str(tmp / 'a_q.mp3'), '-i', str(tmp / 'a_ans.mp3'),
+                   ['-i', str(tmp / 'a_hook.mp3'), '-i', str(tmp / 'a_q.mp3'), '-i', str(tmp / 'a_ans.mp3'), '-i', str(tmp / 'a_cta.mp3'),
                     '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % total,
                     '-r', '30', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '20',
                     '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(mp4)], check=True)
@@ -207,7 +212,7 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
     lvl = meta['level'].lower()
     def link(src): return 'https://qazaqtrainer.com/kk/%s/%s/?utm_source=%s&utm_medium=short' % (meta['exam'], lvl, src)
     tags = '#казтест #қазтест #qazresmitest #қазақтілі #казахскийязык #қазақшаүйрену #%s' % meta['level'].lower()
-    caption = (hook[0] + ' / ' + hook[1] + '\n\n' + q['text'] + '\nЖауабы видеоның соңында. Ответ в конце видео.\n\n'
+    caption = (hook[0] + ' / ' + hook[1] + '\n\n' + q['text'] + '\nЖауабы видеоның соңында, түсіндірмесі сайтта. Ответ в конце видео, разбор на сайте.\n\n'
                'Толық сынақ тесттер біздің сайтта / Полные пробные тесты на сайте: {link}\nКүн сайын тапсырма / Задание дня: t.me/qazaqtrainer\n\n' + tags)
     txt = out_dir / (name + '.txt')
     txt.write_text('\n\n'.join('=== %s ===\n%s' % (p, caption.format(link=link(p))) for p in ('tiktok', 'instagram', 'youtube')) + '\n')

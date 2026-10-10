@@ -509,7 +509,8 @@
   function blockRow(eid) {
     var bl = blocksFor(eid); if (!bl.length) return '';
     var full = eid === 'kaztest';
-    var chips = '<span class="variants">' + bl.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (full ? i + 1 : esc(x.level)) + '</span>'; }).join('') + '</span>';
+    var seen = {};   // у QazResmiTest на уровень несколько моков: подпись «A1·1», «A1·2»
+    var chips = '<span class="variants">' + bl.map(function (x, i) { var sx = testStatus(x); seen[x.level] = (seen[x.level] || 0) + 1; return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (full ? i + 1 : esc(x.level) + '·' + seen[x.level]) + '</span>'; }).join('') + '</span>';
     return '<a class="level-row" href="#/exam/' + eid + '"><span class="lvl lvl-au">' + T('Ауд.') + '</span><span><div class="nm hub-nm"><span>' + T('Блоки аудирования') + ' <span class="muted small">· ' + bl.length + '</span></span></div><div class="dsc">' +
       (full ? T('Как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут. Уровень — по проценту за блок.') : T('Раздел аудирования в формате экзамена по уровням: одна запись, 5 заданий, 10 минут.')) +
       '</div></span><span class="st hub-st">' + chips + '</span></a>';

@@ -23,7 +23,17 @@ FIRST = {'qrt-a1-01': D, 'qrt-a2-01': A, 'qrt-b1-01': A, 'qrt-b2-01': D, 'qrt-c1
          'kaztest-c1-03': D, 'kaztest-c1-04': A, 'kaztest-c1-05': D, 'qrt-c1-03': D, 'qrt-c1-04': A, 'qrt-c1-05': D,
          'qrt-c2-03': A, 'qrt-c2-04': D, 'qrt-c2-05': A,
          'kaztest-listen-01-p1': D, 'kaztest-listen-01-p2': A, 'kaztest-listen-01-p3': D, 'kaztest-listen-01-p4': D,
-         'qrt-listen-b1-01': D}
+         'qrt-listen-b1-01': D,
+         'kaztest-listen-02-p1': A, 'kaztest-listen-02-p2': D, 'kaztest-listen-02-p3': A, 'kaztest-listen-02-p4': D,
+         'kaztest-listen-03-p1': D, 'kaztest-listen-03-p2': A, 'kaztest-listen-03-p3': D, 'kaztest-listen-03-p4': D,
+         'kaztest-listen-04-p1': A, 'kaztest-listen-04-p2': D, 'kaztest-listen-04-p3': A, 'kaztest-listen-04-p4': D,
+         'kaztest-listen-05-p1': D, 'kaztest-listen-05-p2': A, 'kaztest-listen-05-p3': D, 'kaztest-listen-05-p4': D,
+         'kaztest-listen-06-p1': A, 'kaztest-listen-06-p2': D, 'kaztest-listen-06-p3': A, 'kaztest-listen-06-p4': D,
+         'kaztest-listen-07-p1': D, 'kaztest-listen-07-p2': A, 'kaztest-listen-07-p3': D, 'kaztest-listen-07-p4': D,
+         'kaztest-listen-08-p1': A, 'kaztest-listen-08-p2': D, 'kaztest-listen-08-p3': A, 'kaztest-listen-08-p4': D,
+         'kaztest-listen-09-p1': D, 'kaztest-listen-09-p2': A, 'kaztest-listen-09-p3': D, 'kaztest-listen-09-p4': D,
+         'kaztest-listen-10-p1': A, 'kaztest-listen-10-p2': D, 'kaztest-listen-10-p3': A, 'kaztest-listen-10-p4': D,
+         'qrt-listen-a1-01': D, 'qrt-listen-a1-02': D, 'qrt-listen-a1-03': A, 'qrt-listen-a2-01': D, 'qrt-listen-a2-02': D, 'qrt-listen-a2-03': A, 'qrt-listen-b1-02': D, 'qrt-listen-b1-03': D, 'qrt-listen-b2-01': A, 'qrt-listen-b2-02': D, 'qrt-listen-b2-03': D, 'qrt-listen-c1-01': A, 'qrt-listen-c1-02': D, 'qrt-listen-c1-03': D, 'qrt-listen-c2-01': A, 'qrt-listen-c2-02': D, 'qrt-listen-c2-03': D}
 # Темп 0 % для всех уровней и паузы 350 мс между репликами: выбрано пользователем по прослушиванию 06.09.2026
 # (замедление −10 % делало Aigul «тормозящей»). Замедление можно вернуть флагом --rate=-10%.
 # Настройки по прослушиванию пользователя 06.09.2026: тире и многоточия — как в тексте (голос сам ставит интонационную паузу),

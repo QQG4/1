@@ -107,6 +107,7 @@ section{margin-bottom:44px}
 .level-row:hover{background:var(--surface-raised)}
 .level-row.draft{opacity:.7;cursor:default}
 .level-row .lvl{font-family:var(--mono);font-weight:700;font-size:1rem;color:var(--accent);width:34px}
+.level-row .lvl-au{font-size:0.8125rem;letter-spacing:.02em}   /* «Ауд.» — строка блоков аудирования */
 .level-row .nm{font-weight:600;font-size:0.9375rem}
 .level-row .dsc{font-size:0.8125rem;color:var(--ink-muted)}
 .level-row .st{text-align:right;font-family:var(--mono);font-size:0.75rem;color:var(--ink-faint)}

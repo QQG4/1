@@ -83,9 +83,10 @@ def duration(path):
 
 # ---------- рисование ----------
 def wrap(d, text, f, width):
-    words, lines, cur = text.split(), [], ''
+    words, lines, cur = text.split(' '), [], ''   # только обычный пробел: неразрывный («9\u00a0своих») не рвём
     for w in words:
         t = (cur + ' ' + w).strip()
+        if not w: continue
         if d.textlength(t, font=f) <= width: cur = t
         else: lines.append(cur); cur = w
     if cur: lines.append(cur)
@@ -98,8 +99,10 @@ def text_block(d, text, f, x, y, width, fill, gap=1.25, center=False):
 def base(meta):
     im = Image.new('RGB', (W, H), TEAL); d = ImageDraw.Draw(im)
     d.rectangle([0, int(H * 0.72), W, H], fill=TEAL_DARK)
-    kk, ru = SECTION.get(meta['section'], ('', ''))
-    badge = '%s · %s · %s' % (EXAM[meta['exam']], meta['level'], kk)
+    if meta.get('badge'): badge = meta['badge']   # ролики по сценариям (reels.py): своя плашка
+    else:
+        kk, ru = SECTION.get(meta['section'], ('', ''))
+        badge = '%s · %s · %s' % (EXAM[meta['exam']], meta['level'], kk)
     f = font('Arial Bold.ttf', 40)
     d.rounded_rectangle([80, 170, 80 + d.textlength(badge, font=f) + 56, 240], 35, fill='#2b8ba3', outline='#8cc4d2', width=2)   # RGB-картинка: без прозрачности
     d.text((108, 183), badge, font=f, fill=WHITE)
@@ -116,6 +119,7 @@ def frame_hook(meta, hook, path):
 def frame_question(meta, q, path, count=None, reveal=False, explain=None):
     im, d = base(meta)
     y = text_block(d, q['text'], font('Arial Bold.ttf', 62), 80, 330, W - 160, WHITE)
+    if q.get('sub'): y = text_block(d, q['sub'], font('Arial.ttf', 46), 80, y + 10, W - 160, '#d8ecf1')   # перевод вопроса (reels.py)
     y += 40
     fo = font('Arial Bold.ttf', 50)
     for i, o in enumerate(q['options']):
@@ -144,8 +148,9 @@ def frame_question(meta, q, path, count=None, reveal=False, explain=None):
         hgt = text_block(probe, explain[0], font('Arial Bold.ttf', 50), 0, 0, W - 240, INK) + text_block(probe, explain[1], font('Arial.ttf', 40), 0, 0, W - 240, INK) + 95
         d.rounded_rectangle([80, ey, W - 80, ey + hgt], 28, fill=GOOD_SOFT)
         ny = text_block(d, explain[0], font('Arial Bold.ttf', 50), 120, ey + 35, W - 240, INK)
-        text_block(d, explain[1], font('Arial.ttf', 40), 120, ny + 15, W - 240, MUTED)
+        y = text_block(d, explain[1], font('Arial.ttf', 40), 120, ny + 15, W - 240, MUTED) + 35
     im.save(path)
+    return y   # нижний край содержимого: reels.py проверяет, что кадр не залез на подпись внизу
 
 def frame_outro(meta, path):
     im, d = base(meta)

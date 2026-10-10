@@ -112,7 +112,7 @@ def landing_pairs():
     out = []
     for eid, ex in META['exams'].items():
         for lv in ex.get('examLevels', []):
-            tests = [x for x in META['tests'] if x['exam'] == eid and x['level'] == lv]
+            tests = [x for x in META['tests'] if x['exam'] == eid and x['level'] == lv and not x.get('block')]   # блоки аудирования — не варианты уровня
             if tests: out.append((eid, ex, lv, sorted(tests, key=lambda x: x['id'])))
     return out
 def landing_url(lang, eid, lv): return f'{lang}/{eid}/{lv.lower()}/'
@@ -417,7 +417,7 @@ docs = root / 'docs'; docs.mkdir(exist_ok=True)
 # Ссылку на тест он строит сам из exam/level, поэтому здесь только вопросы.
 if META and META.get('quiz'):
     (docs / 'quiz.json').write_text(json.dumps(META['quiz'], ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
-    print('docs/quiz.json: %d вопросов' % len(META['quiz']))
+    print('docs/quiz.json: %d заданий (%s)' % (sum(len(v) for v in META['quiz'].values()), ', '.join('%s %d' % (k, len(v)) for k, v in META['quiz'].items())))
 def _tests_count_ru():
     """«27 мок-тестов» для анкеты эксперта: число файлов в src/data/tests, чтобы подпись не устаревала при добавлении вариантов."""
     n = len(glob.glob(str(src / 'data' / 'tests' / '*.js'))); d, h = n % 10, n % 100

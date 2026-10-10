@@ -438,5 +438,45 @@
   "seconds": 81,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1270
+ },
+ "kaztest-listen-01-p1": {
+  "title": "Дәріханада",
+  "voices": "Aigul + Daulet",
+  "bytes": 728928,
+  "seconds": 61,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 648
+ },
+ "kaztest-listen-01-p2": {
+  "title": "Спорт залында",
+  "voices": "Aigul + Daulet",
+  "bytes": 817056,
+  "seconds": 68,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 907
+ },
+ "kaztest-listen-01-p3": {
+  "title": "Кітап дүкенінің иесімен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1110528,
+  "seconds": 93,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1316
+ },
+ "kaztest-listen-01-p4": {
+  "title": "Ауызша тарих: әжелердің әңгімесі неге маңызды?",
+  "voices": "Daulet",
+  "bytes": 1128672,
+  "seconds": 94,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1531
+ },
+ "qrt-listen-b1-01": {
+  "title": "Жұмысқа велосипедпен",
+  "voices": "Daulet",
+  "bytes": 491904,
+  "seconds": 41,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 646
  }
 }

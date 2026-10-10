@@ -71,6 +71,7 @@ var KZ = { tests: [] };
   KZ.tests.forEach(function (t) {
     var secs = {};
     (t.sections || []).forEach(function (s) {
+      if (!s.questions && s.parts) s.questions = [].concat.apply([], s.parts.map(function (p) { return p.questions; }));   // блок аудирования
       if (!s.questions) return;
       var qs = {}; s.questions.forEach(function (q, i) { qs[q.id] = { i: i, text: q.text || '', options: q.options || (q.kind === 'tf' ? ['Дұрыс', 'Бұрыс'] : []), answer: q.answer }; });
       secs[s.type] = qs;

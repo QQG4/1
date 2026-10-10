@@ -21,7 +21,9 @@ FIRST = {'qrt-a1-01': D, 'qrt-a2-01': A, 'qrt-b1-01': A, 'qrt-b2-01': D, 'qrt-c1
          'kaztest-b1-03': D, 'kaztest-b1-04': A, 'kaztest-b1-05': D, 'qrt-b1-03': D, 'qrt-b1-04': A, 'qrt-b1-05': D,
          'kaztest-b2-03': A, 'kaztest-b2-04': D, 'kaztest-b2-05': A, 'qrt-b2-03': A, 'qrt-b2-04': D, 'qrt-b2-05': A,
          'kaztest-c1-03': D, 'kaztest-c1-04': A, 'kaztest-c1-05': D, 'qrt-c1-03': D, 'qrt-c1-04': A, 'qrt-c1-05': D,
-         'qrt-c2-03': A, 'qrt-c2-04': D, 'qrt-c2-05': A}
+         'qrt-c2-03': A, 'qrt-c2-04': D, 'qrt-c2-05': A,
+         'kaztest-listen-01-p1': D, 'kaztest-listen-01-p2': A, 'kaztest-listen-01-p3': D, 'kaztest-listen-01-p4': D,
+         'qrt-listen-b1-01': D}
 # Темп 0 % для всех уровней и паузы 350 мс между репликами: выбрано пользователем по прослушиванию 06.09.2026
 # (замедление −10 % делало Aigul «тормозящей»). Замедление можно вернуть флагом --rate=-10%.
 # Настройки по прослушиванию пользователя 06.09.2026: тире и многоточия — как в тексте (голос сам ставит интонационную паузу),
@@ -37,17 +39,16 @@ SUFFIX = OPTS.get('suffix', '')
 FMT = OPTS.get('fmt', 'audio-24khz-96kbitrate-mono-mp3')  # 96 кбит/с: меньше «металла», чем у 48
 
 def load_tests():
-    out = []
-    for f in sorted((ROOT / 'src/data/tests').glob('*.js')):
-        s = f.read_text(encoding='utf-8')
-        tid = re.search(r"id: '([^']+)'", s).group(1)
-        lvl = re.search(r"level: '([^']+)'", s).group(1)
-        m = re.search(r"type: 'listening',[\s\S]*?script: \{\s*title: '((?:[^'\\]|\\.)*)',\s*text: '((?:[^'\\]|\\.)*)'", s)
-        if not m: continue
-        title = m.group(1).replace("\\'", "'")
-        text = m.group(2).replace('\\n', '\n').replace("\\'", "'")
-        out.append({'id': tid, 'level': lvl, 'title': title, 'text': text})
-    return out
+    """Что озвучивать: по записи на раздел аудирования. У полного блока (sec.parts, 10.10.2026) — по записи на каждый
+    текст: id «<тест>-p1», «-p2»… Тест читается через node: в файлах данных у текстов уже не один шаблон."""
+    js = ("global.KZ={tests:[]};const fs=require('fs');for(const f of fs.readdirSync('src/data/tests').sort())require('./src/data/tests/'+f);"
+          "const out=[];for(const t of KZ.tests)for(const s of t.sections){if(s.type!=='listening')continue;"
+          "if(s.parts)s.parts.forEach((p,i)=>out.push({id:t.id+'-p'+(i+1),test:t.id,level:(p.label||t.level).split(/[–-]/).pop(),title:p.script.title,text:p.script.text}));"
+          "else if(s.script)out.push({id:t.id,test:t.id,level:t.level,title:s.script.title,text:s.script.text});}"
+          "process.stdout.write(JSON.stringify(out));")
+    import subprocess
+    r = subprocess.run(['node', '-e', js], cwd=ROOT, capture_output=True, text=True, check=True)
+    return json.loads(r.stdout)
 
 SIL = OPTS.get('sil'); COMMA = OPTS.get('comma', COMMA_DEFAULT)
 def silence(level='B2'):
@@ -96,7 +97,7 @@ def synth(ssml):
             time.sleep(5 * (attempt + 1))
 
 want = set(a for a in sys.argv[1:] if not a.startswith('--'))
-tests = [t for t in load_tests() if not want or t['id'] in want]
+tests = [t for t in load_tests() if not want or t['id'] in want or t['test'] in want]   # id теста озвучивает все его части
 manifest_path = ROOT / 'audio' / 'manifest.json'
 manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 for t in tests:

@@ -65,6 +65,6 @@ const out = {
   })(),
   tests: KZ.tests
     .filter((t) => t.status !== 'draft' && (t.sections || []).length)
-    .map((t) => pick(t, ['id', 'exam', 'level', 'title', 'title_kk', 'summary', 'summary_kk'])),
+    .map((t) => pick(t, ['id', 'exam', 'level', 'block', 'title', 'title_kk', 'summary', 'summary_kk'])),
 };
 process.stdout.write(JSON.stringify(out, null, 1));

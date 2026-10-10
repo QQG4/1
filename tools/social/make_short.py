@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Короткий вертикальный ролик (1080×1920) из вопроса мок-теста — для TikTok, Instagram Reels и YouTube Shorts.
 
-Запуск:  python3 tools/social/make_short.py <testId> <qid> [--out ../соцсети/проба] [--voice kk-KZ-AigulNeural]
+Запуск:  python3 tools/social/make_short.py <testId> <qid> [--out=../соцсети/проба] [--voice=kk-KZ-DauletNeural]
 Пример:  python3 tools/social/make_short.py qrt-c1-04 x1
 
 Ролик: крючок (2–3 с) → вопрос и варианты, голос читает вопрос → отсчёт 5 с → ответ с пояснением, голос читает
@@ -30,8 +30,11 @@ HOOKS = {
 # Без чисел и слова «бесплатно» в концовке: решение владельца 10.10.2026 («это дешевит»)
 OUTRO = ('Басқа тапсырмалар мен толық сынақ тесттер біздің сайтта', 'Больше заданий и полные пробные тесты на нашем сайте')
 COUNTDOWN = 4   # секунд на раздумье (решение владельца 10.10.2026)
-# Два голоса: вопрос читает один, ответ другой. Кто начинает, зависит от вопроса, чтобы в серии чередовались.
-VOICES = ('kk-KZ-AigulNeural', 'kk-KZ-DauletNeural')
+# Один голос на ролик, голоса чередуются между роликами; Daulet звучит в двух роликах из трёх (решение владельца
+# 10.10.2026). Второй голос внутри ролика — только когда по сюжету действительно говорят двое (диалог в аудировании).
+AIGUL, DAULET = 'kk-KZ-AigulNeural', 'kk-KZ-DauletNeural'
+def voice_for(test_id, qid):
+    return AIGUL if sum(map(ord, test_id + qid)) % 3 == 0 else DAULET
 
 def nodash(t):
     """Длинное тире в роликах и подписях не используем (решение владельца 10.10.2026). В данных оно стоит
@@ -163,15 +166,15 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
     q['text'] = nodash(q['text']); q['options'] = [nodash(o) for o in q['options']]
     correct = q['options'][q['answer']]
     ex_kk, ex_ru = nodash(q.get('explain_kk') or q.get('explain') or ''), (nodash(q['explain']) if q.get('explain_kk') else '')
-    v1, v2 = VOICES if sum(map(ord, test_id + qid)) % 2 == 0 else VOICES[::-1]
+    v = voice or voice_for(test_id, qid)
     # озвучка: крючок, вопрос, ответ с пояснением (казахский — только из данных теста и крючка)
     if mute:   # --mute: без озвучки (проверить вид или если ключ Azure недоступен) — паузы по длине текста
         for n, sec in (('a_hook', 2.0), ('a_q', 3.0 + len(q['text']) / 40), ('a_ans', 3.0 + len(ex_kk) / 30)):
             subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', '%.2f' % sec, str(tmp / (n + '.mp3'))], check=True)
     else:
-        tts(hook[0], v1, tmp / 'a_hook.mp3')
-        tts(q['text'], v1, tmp / 'a_q.mp3')
-        tts('Дұрыс жауап: ' + correct + '. ' + ex_kk, v2, tmp / 'a_ans.mp3')
+        tts(hook[0], v, tmp / 'a_hook.mp3')
+        tts(q['text'], v, tmp / 'a_q.mp3')
+        tts('Дұрыс жауап: ' + correct + '. ' + ex_kk, v, tmp / 'a_ans.mp3')
     d_hook, d_q, d_ans = duration(tmp / 'a_hook.mp3'), duration(tmp / 'a_q.mp3'), duration(tmp / 'a_ans.mp3')
 
     seg = []   # (картинка, длительность)
@@ -208,11 +211,11 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
                'Толық сынақ тесттер біздің сайтта / Полные пробные тесты на сайте: {link}\nКүн сайын тапсырма / Задание дня: t.me/qazaqtrainer\n\n' + tags)
     txt = out_dir / (name + '.txt')
     txt.write_text('\n\n'.join('=== %s ===\n%s' % (p, caption.format(link=link(p))) for p in ('tiktok', 'instagram', 'youtube')) + '\n')
-    print('%s  %.1f с  %d КБ\n%s' % (mp4, total, mp4.stat().st_size // 1024, txt))
+    print('%s  %.1f с  %d КБ  %s\n%s' % (mp4, total, mp4.stat().st_size // 1024, v.split('-')[2].replace('Neural', ''), txt))
     return mp4
 
 if __name__ == '__main__':
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     if len(args) != 2: sys.exit(__doc__)
     opt = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '=' in a)
-    build(args[0], args[1], pathlib.Path(opt.get('out', ROOT.parent / 'соцсети' / 'проба')), opt.get('voice', 'kk-KZ-AigulNeural'), mute='--mute' in sys.argv)
+    build(args[0], args[1], pathlib.Path(opt.get('out', ROOT.parent / 'соцсети' / 'проба')), opt.get('voice'), mute='--mute' in sys.argv)

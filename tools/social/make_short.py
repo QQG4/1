@@ -169,17 +169,21 @@ def build(test_id, qid, out_dir, voice, mute=False):
     frame_question(meta, q, tmp / 'f_ans.png', reveal=True, explain=(ex_kk, ex_ru)); seg.append(('f_ans.png', max(4.0, d_ans + 1.2)))
     frame_outro(meta, tmp / 'f_out.png'); seg.append(('f_out.png', 3.0))
 
-    (tmp / 'list.txt').write_text(''.join("file '%s'\nduration %.2f\n" % (f, s) for f, s in seg) + "file '%s'\n" % seg[-1][0])
     t_q = seg[0][1]; t_ans = sum(s for _, s in seg[:-2])
     total = sum(s for _, s in seg)
     mp4 = out_dir / (name + '.mp4')
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error',
-                    '-f', 'concat', '-safe', '0', '-i', str(tmp / 'list.txt'),
-                    '-i', str(tmp / 'a_hook.mp3'), '-i', str(tmp / 'a_q.mp3'), '-i', str(tmp / 'a_ans.mp3'),
-                    '-filter_complex',
-                    '[2:a]adelay=%d|%d[q];[3:a]adelay=%d|%d[a];[1:a][q][a]amix=inputs=3:normalize=0,apad[aud]'
-                    % (t_q * 1000, t_q * 1000, t_ans * 1000, t_ans * 1000),
-                    '-map', '0:v', '-map', '[aud]', '-t', '%.2f' % total,
+    # каждая картинка — отдельный вход точной длины, склейка фильтром concat: склейка через список файлов
+    # теряла около двух секунд, и картинка заканчивалась раньше звука
+    vin = []
+    for f, dur in seg: vin += ['-loop', '1', '-framerate', '30', '-t', '%.3f' % dur, '-i', str(tmp / f)]
+    n = len(seg); a0 = n   # индексы звуковых входов идут после картинок
+    graph = (''.join('[%d:v]' % i for i in range(n)) + 'concat=n=%d:v=1:a=0[v];' % n +
+             # громкость — к норме соцсетей (около −14 LUFS)
+             '[%d:a]adelay=%d|%d[q];[%d:a]adelay=%d|%d[a];[%d:a][q][a]amix=inputs=3:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11,apad[aud]'
+             % (a0 + 1, t_q * 1000, t_q * 1000, a0 + 2, t_ans * 1000, t_ans * 1000, a0))
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error'] + vin +
+                   ['-i', str(tmp / 'a_hook.mp3'), '-i', str(tmp / 'a_q.mp3'), '-i', str(tmp / 'a_ans.mp3'),
+                    '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % total,
                     '-r', '30', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '20',
                     '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(mp4)], check=True)
 

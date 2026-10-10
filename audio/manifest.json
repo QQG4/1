@@ -902,5 +902,413 @@
   "seconds": 104,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1663
+ },
+ "qrt-listen-a1-04": {
+  "title": "Менің көршім",
+  "voices": "Daulet",
+  "bytes": 406080,
+  "seconds": 34,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 470
+ },
+ "qrt-listen-a1-05": {
+  "title": "Таңғы ас",
+  "voices": "Aigul",
+  "bytes": 392832,
+  "seconds": 33,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 445
+ },
+ "qrt-listen-a1-06": {
+  "title": "Аулада ойнаймыз",
+  "voices": "Daulet",
+  "bytes": 419616,
+  "seconds": 35,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 486
+ },
+ "qrt-listen-a2-04": {
+  "title": "Мұражайға бардық",
+  "voices": "Daulet",
+  "bytes": 495648,
+  "seconds": 41,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 620
+ },
+ "qrt-listen-a2-05": {
+  "title": "Жаңа телефон сатып алдым",
+  "voices": "Aigul",
+  "bytes": 471456,
+  "seconds": 39,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 587
+ },
+ "qrt-listen-a2-06": {
+  "title": "Атамның бағы",
+  "voices": "Daulet",
+  "bytes": 474048,
+  "seconds": 40,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 567
+ },
+ "qrt-listen-b1-04": {
+  "title": "Ағылшын тілі курсы",
+  "voices": "Daulet",
+  "bytes": 568224,
+  "seconds": 47,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 774
+ },
+ "qrt-listen-b1-05": {
+  "title": "Балконда көкөніс өсіру",
+  "voices": "Aigul",
+  "bytes": 550656,
+  "seconds": 46,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 706
+ },
+ "qrt-listen-b1-06": {
+  "title": "Отбасылық бюджет",
+  "voices": "Daulet",
+  "bytes": 590688,
+  "seconds": 49,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 799
+ },
+ "qrt-listen-b2-04": {
+  "title": "Қала шуы және денсаулық",
+  "voices": "Daulet",
+  "bytes": 1010592,
+  "seconds": 84,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1358
+ },
+ "qrt-listen-b2-05": {
+  "title": "Онлайн сауда: тұтынушы құқығы",
+  "voices": "Aigul",
+  "bytes": 989568,
+  "seconds": 82,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1330
+ },
+ "qrt-listen-b2-06": {
+  "title": "Мектептегі инклюзия",
+  "voices": "Daulet",
+  "bytes": 1038528,
+  "seconds": 87,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1389
+ },
+ "qrt-listen-c1-04": {
+  "title": "Ашық деректер және мемлекет",
+  "voices": "Daulet",
+  "bytes": 1097856,
+  "seconds": 91,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1517
+ },
+ "qrt-listen-c1-05": {
+  "title": "Бизнестің әлеуметтік жауапкершілігі",
+  "voices": "Aigul",
+  "bytes": 1124064,
+  "seconds": 94,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1539
+ },
+ "qrt-listen-c1-06": {
+  "title": "Аз тұтыну мәдениеті",
+  "voices": "Daulet",
+  "bytes": 1054368,
+  "seconds": 88,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1387
+ },
+ "qrt-listen-c2-04": {
+  "title": "Сарапшыға сену: кімнің сөзі салмақты?",
+  "voices": "Daulet",
+  "bytes": 906624,
+  "seconds": 76,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1245
+ },
+ "qrt-listen-c2-05": {
+  "title": "Тарих: дерек пен түсіндірме",
+  "voices": "Aigul",
+  "bytes": 960480,
+  "seconds": 80,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1283
+ },
+ "qrt-listen-c2-06": {
+  "title": "Креативті индустрия: өнер ме, бизнес пе?",
+  "voices": "Daulet",
+  "bytes": 953280,
+  "seconds": 79,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1301
+ },
+ "kaztest-listen-11-p1": {
+  "title": "Жиһаз дүкенінде",
+  "voices": "Aigul + Daulet",
+  "bytes": 726048,
+  "seconds": 61,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 632
+ },
+ "kaztest-listen-11-p2": {
+  "title": "Тіс дәрігеріне жазылу",
+  "voices": "Aigul + Daulet",
+  "bytes": 871776,
+  "seconds": 73,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 944
+ },
+ "kaztest-listen-11-p3": {
+  "title": "Жас сәулетшімен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1085472,
+  "seconds": 90,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1244
+ },
+ "kaztest-listen-11-p4": {
+  "title": "Ересек жаста тіл үйрену",
+  "voices": "Daulet",
+  "bytes": 1212768,
+  "seconds": 101,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1617
+ },
+ "kaztest-listen-12-p1": {
+  "title": "Киім тазалау орнында",
+  "voices": "Aigul + Daulet",
+  "bytes": 666432,
+  "seconds": 56,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 621
+ },
+ "kaztest-listen-12-p2": {
+  "title": "Жүргізуші куәлігіне дайындық курсы",
+  "voices": "Aigul + Daulet",
+  "bytes": 940896,
+  "seconds": 78,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1014
+ },
+ "kaztest-listen-12-p3": {
+  "title": "Тау құтқарушысымен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1086048,
+  "seconds": 91,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1253
+ },
+ "kaztest-listen-12-p4": {
+  "title": "Мұражайдың қоғамдағы рөлі",
+  "voices": "Daulet",
+  "bytes": 1246176,
+  "seconds": 104,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1669
+ },
+ "kaztest-listen-13-p1": {
+  "title": "Пойызда көршімен әңгіме",
+  "voices": "Aigul + Daulet",
+  "bytes": 713376,
+  "seconds": 59,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 642
+ },
+ "kaztest-listen-13-p2": {
+  "title": "Аквапаркке бару жоспары",
+  "voices": "Aigul + Daulet",
+  "bytes": 740448,
+  "seconds": 62,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 816
+ },
+ "kaztest-listen-13-p3": {
+  "title": "Аспазшымен сұхбат: мейрамхана ашу",
+  "voices": "Aigul + Daulet",
+  "bytes": 1123200,
+  "seconds": 94,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1299
+ },
+ "kaztest-listen-13-p4": {
+  "title": "Киіз үй: көшпелі тұрмыстың данышпандығы",
+  "voices": "Daulet",
+  "bytes": 1221408,
+  "seconds": 102,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1607
+ },
+ "kaztest-listen-14-p1": {
+  "title": "Гүл дүкенінде",
+  "voices": "Aigul + Daulet",
+  "bytes": 639936,
+  "seconds": 53,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 585
+ },
+ "kaztest-listen-14-p2": {
+  "title": "Интернет-провайдерге өтініш",
+  "voices": "Aigul + Daulet",
+  "bytes": 878976,
+  "seconds": 73,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 970
+ },
+ "kaztest-listen-14-p3": {
+  "title": "Мектеп психологымен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1089792,
+  "seconds": 91,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1304
+ },
+ "kaztest-listen-14-p4": {
+  "title": "Қашықтан оқыту: тәжірибе мен сабақ",
+  "voices": "Daulet",
+  "bytes": 1200672,
+  "seconds": 100,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1645
+ },
+ "kaztest-listen-15-p1": {
+  "title": "Сағат жөндеу шеберханасында",
+  "voices": "Aigul + Daulet",
+  "bytes": 703008,
+  "seconds": 59,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 639
+ },
+ "kaztest-listen-15-p2": {
+  "title": "Мерекелік дастархан дайындау",
+  "voices": "Aigul + Daulet",
+  "bytes": 844416,
+  "seconds": 70,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 897
+ },
+ "kaztest-listen-15-p3": {
+  "title": "Велосипедші-саяхатшымен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1178208,
+  "seconds": 98,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1348
+ },
+ "kaztest-listen-15-p4": {
+  "title": "Ертегінің бала тәрбиесіндегі рөлі",
+  "voices": "Daulet",
+  "bytes": 1255104,
+  "seconds": 105,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1674
+ },
+ "kaztest-listen-17-p4": {
+  "title": "Жасанды интеллект және мамандықтардың болашағы",
+  "voices": "Daulet",
+  "bytes": 1286496,
+  "seconds": 107,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1750
+ },
+ "kaztest-listen-18-p1": {
+  "title": "Қалалық автобусқа билет",
+  "voices": "Aigul + Daulet",
+  "bytes": 687456,
+  "seconds": 57,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 664
+ },
+ "kaztest-listen-18-p2": {
+  "title": "Дұрыс тамақтану: дәрігер кеңесі",
+  "voices": "Aigul + Daulet",
+  "bytes": 911520,
+  "seconds": 76,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 981
+ },
+ "kaztest-listen-18-p3": {
+  "title": "Тігін цехының иесімен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1049472,
+  "seconds": 87,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1231
+ },
+ "kaztest-listen-18-p4": {
+  "title": "Ақша мен бақыт: экономистің ойы",
+  "voices": "Daulet",
+  "bytes": 1260288,
+  "seconds": 105,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1704
+ },
+ "kaztest-listen-19-p1": {
+  "title": "Көршіден көмек сұрау",
+  "voices": "Aigul + Daulet",
+  "bytes": 679392,
+  "seconds": 57,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 620
+ },
+ "kaztest-listen-19-p2": {
+  "title": "Балаларды жазғы лагерьге жазу",
+  "voices": "Aigul + Daulet",
+  "bytes": 909504,
+  "seconds": 76,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1024
+ },
+ "kaztest-listen-19-p3": {
+  "title": "Мұражай реставраторымен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1022112,
+  "seconds": 85,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1200
+ },
+ "kaztest-listen-19-p4": {
+  "title": "Отбасы құндылықтары: өзгеріс пен сабақтастық",
+  "voices": "Daulet",
+  "bytes": 1237824,
+  "seconds": 103,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1686
+ },
+ "kaztest-listen-20-p1": {
+  "title": "Телефон дүкенінде",
+  "voices": "Aigul + Daulet",
+  "bytes": 705888,
+  "seconds": 59,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 662
+ },
+ "kaztest-listen-20-p2": {
+  "title": "Жоғалған құжатты қалпына келтіру",
+  "voices": "Aigul + Daulet",
+  "bytes": 899424,
+  "seconds": 75,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 924
+ },
+ "kaztest-listen-20-p3": {
+  "title": "Жаңашыл мұғаліммен сұхбат",
+  "voices": "Aigul + Daulet",
+  "bytes": 1126368,
+  "seconds": 94,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1357
+ },
+ "kaztest-listen-20-p4": {
+  "title": "Үлкен сауда орталығы ма, шағын дүкен бе?",
+  "voices": "Daulet",
+  "bytes": 1162368,
+  "seconds": 97,
+  "format": "audio-24khz-96kbitrate-mono-mp3",
+  "chars": 1577
  }
 }

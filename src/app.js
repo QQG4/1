@@ -509,8 +509,19 @@
   function blockRow(eid) {
     var bl = blocksFor(eid); if (!bl.length) return '';
     var full = eid === 'kaztest';
-    var seen = {};   // у QazResmiTest на уровень несколько моков: подпись «A1·1», «A1·2»
-    var chips = '<span class="variants">' + bl.map(function (x, i) { var sx = testStatus(x); seen[x.level] = (seen[x.level] || 0) + 1; return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (full ? i + 1 : esc(x.level) + '·' + seen[x.level]) + '</span>'; }).join('') + '</span>';
+    var chips;
+    if (full) chips = '<span class="variants v-grid">' + bl.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (i + 1) + '</span>'; }).join('') + '</span>';
+    else {
+      /* QazResmiTest: по моку на уровень было бы 36 кнопок — показываем уровни (11.10.2026). Кнопка ведёт на первый
+         непройденный мок уровня, цвет — сколько пройдено: ничего / часть / все. */
+      chips = '<span class="variants v-grid v-lv">' + LEVEL_ORDER5.map(function (lv) {
+        var ts = bl.filter(function (x) { return x.level === lv; }); if (!ts.length) return '';
+        var done = ts.filter(function (x) { var r = sp(x.id, 'listening'); return r && r.status === 'done'; });
+        var next = ts.filter(function (x) { return done.indexOf(x) < 0; })[0] || ts[0];
+        var cls = done.length === ts.length ? 'ok' : done.length ? 'warn' : 'muted';
+        return '<span class="vchip vchip-lv ' + cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + next.id + '" title="' + lv + ' · ' + T('пройдено') + ' ' + done.length + ' ' + T('из') + ' ' + ts.length + '">' + lv + '</span>';
+      }).join('') + '</span>';
+    }
     return '<a class="level-row" href="#/exam/' + eid + '"><span class="lvl lvl-au">' + T('Ауд.') + '</span><span><div class="nm hub-nm"><span>' + T('Блоки аудирования') + ' <span class="muted small">· ' + bl.length + '</span></span></div><div class="dsc">' +
       (full ? T('Как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут. Уровень — по проценту за блок.') : T('Раздел аудирования в формате экзамена по уровням: одна запись, 5 заданий, 10 минут.')) +
       '</div></span><span class="st hub-st">' + chips + '</span></a>';

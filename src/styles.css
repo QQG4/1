@@ -107,6 +107,7 @@ section{margin-bottom:44px}
 .level-row:hover{background:var(--surface-raised)}
 .level-row.draft{opacity:.7;cursor:default}
 .level-row .lvl{font-family:var(--mono);font-weight:700;font-size:1rem;color:var(--accent);width:34px}
+.vchip.vchip-lv{width:auto;min-width:2.1em;padding:0 .45em}   /* кнопки уровней в строке блоков QazResmiTest */
 .level-row .lvl-au{font-size:0.8125rem;letter-spacing:.02em}   /* «Ауд.» — строка блоков аудирования */
 .level-row .nm{font-weight:600;font-size:0.9375rem}
 .level-row .dsc{font-size:0.8125rem;color:var(--ink-muted)}
@@ -351,6 +352,9 @@ figure.picture figcaption{font-size:0.7812rem;color:var(--ink-faint);padding:8px
 .vchip.ok{color:var(--good);border-color:var(--good)}.vchip.warn{color:var(--gold);border-color:var(--gold)}
 .hub-nm{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:2px}
 .hub-st .variants{flex-direction:column;margin:0;gap:4px}
+/* строка «Блоки аудирования»: много кнопок — сеткой, а не столбиком (11.10.2026): ҚАЗТЕСТ по 5 номеров, QazResmiTest по 3 уровня */
+.hub-st .variants.v-grid{display:grid;grid-template-columns:repeat(5,auto);justify-content:end}
+.hub-st .variants.v-grid.v-lv{grid-template-columns:repeat(3,auto)}
 .hub-st .vchip{min-width:26px;height:24px}
 
 /* жалоба на вопрос в разборе */

@@ -6,6 +6,8 @@
    Деплой: см. README.md рядом. */
 
 import { SESSIONS } from './sessions.js';
+import { VIDEO_UTC, NUDGE_UTC, previewNext, onCallback, onOwnerText, publishVideo, queueStatus, queue } from './videos.js';
+import { IG_PREP_UTC, IG_PUB_UTC, igPrepare, igPublish, igRefresh, saveToken } from './ig.js';
 
 const ALLOWED = [                      // откуда принимаем события (CORS + защита от чужих сайтов)
   'https://qazaqtrainer.com',         // основной домен
@@ -94,8 +96,12 @@ export default {
   /* Расписания в wrangler.toml: 03:17 UTC — чистка старых записей; ежечасно — задания дня в канал
      (09:00, 13:00 и 19:00 по Алматы, то есть 04, 08 и 14 UTC). Часы держим в одном месте — TASKS. */
   async scheduled(event, env) {
-    if (event.cron !== HOURLY_CRON) return purge(env);
+    if (event.cron !== HOURLY_CRON) { await igRefresh(env); return purge(env); }   // ночью — и продление токена Instagram
     const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
+    if (IG_PREP_UTC.includes(h)) await igPrepare(env, queue);   // Instagram: контейнер за час до эфира (ig.js)
+    if (IG_PUB_UTC.includes(h)) await igPublish(env);           // Instagram: эфир 12:00 и 19:00 по Алматы
+    if (h === VIDEO_UTC) return publishVideo(env);    // ролик дня (videos.js)
+    if (h === NUDGE_UTC) await previewNext(env);       // вечером — следующий ролик владельцу на одобрение
     if (!task) return;
     if (h === 4) await postReminders(env);
     const kind = typeof task.kind === 'function' ? task.kind() : task.kind;
@@ -265,7 +271,7 @@ async function tgSetup(request, env) {
   if (!env.TG_WEBHOOK_SECRET || !env.TG_BOT_TOKEN || key !== env.TG_WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
   const r = await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/setWebhook', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url: new URL('/tg/webhook', request.url).href, secret_token: env.TG_WEBHOOK_SECRET, allowed_updates: ['message', 'poll'], drop_pending_updates: true }),
+    body: JSON.stringify({ url: new URL('/tg/webhook', request.url).href, secret_token: env.TG_WEBHOOK_SECRET, allowed_updates: ['message', 'poll', 'callback_query'], drop_pending_updates: true }),
   });
   return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json' } });
 }
@@ -296,12 +302,29 @@ async function tgWebhook(request, env, ctx) {
     await env.DB.prepare(`UPDATE tg_polls SET votes = ?, right_votes = ? WHERE poll_id = ?`).bind(votes, right, String(p.id)).run();
     return new Response('ok');
   }
+  if (u && u.callback_query) { await onCallback(env, u.callback_query); return new Response('ok'); }   // кнопки под роликами
   const m = u && u.message;
   if (!m || !m.chat || typeof m.text !== 'string') return new Response('ok');
+  const owner = env.TG_OWNER_CHAT && String(m.chat.id) === String(env.TG_OWNER_CHAT);
   const chat = m.chat.id, text = m.text.trim();
   const lang = String((m.from && m.from.language_code) || '').startsWith('kk') ? 'kk' : 'ru';
   const say = (t, extra) => tg(env, 'sendMessage', Object.assign({ chat_id: chat, text: t, disable_web_page_preview: true }, extra || {}));
   const cmd = text.startsWith('/') ? text.split(/[\s@]/)[0].toLowerCase() : '';
+
+  if (owner && cmd === '/queue') { await say(await queueStatus(env)); return new Response('ok'); }
+  if (owner && cmd === '/next') { await previewNext(env, true); return new Response('ok'); }
+  if (owner && cmd === '/igdone') {   // ролики, загруженные в Instagram вручную: бот их пропустит, без дублей
+    const ns = text.split(/[\s,]+/).slice(1).map(Number).filter((n) => Number.isInteger(n) && n > 0);
+    for (const n of ns) await env.DB.prepare(`INSERT OR REPLACE INTO ig_posts (n, status, container_id, media_id, err, ts) VALUES (?, 'published', NULL, 'manual', NULL, ?)`).bind(n, Date.now()).run();
+    await say(ns.length ? 'Отметил как уже выложенные в Instagram: ' + ns.join(', ') + '. Бот их пропустит.' : 'Напишите номера роликов: /igdone 1 2 3');
+    return new Response('ok');
+  }
+  if (owner && cmd === '/igtoken') {   // токен Instagram: сообщение сразу удаляем, токен храним только в D1
+    await tg(env, 'deleteMessage', { chat_id: chat, message_id: m.message_id });
+    await say(await saveToken(env, (text.split(/\s+/)[1] || '').trim()));
+    return new Response('ok');
+  }
+  if (owner && !cmd && await onOwnerText(env, text)) return new Response('ok');   // записка «что поменять в ролике»
 
   if (cmd === '/start') {
     const arg = (text.split(/\s+/)[1] || '').toLowerCase(), am = /^(kaztest|qrt)_(a1|a2|b1|b2|c1|c2)$/.exec(arg);

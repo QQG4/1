@@ -46,3 +46,15 @@ CREATE TABLE IF NOT EXISTS tg_polls (
   votes INTEGER DEFAULT 0, right_votes INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS tg_polls_day ON tg_polls (day);
+CREATE TABLE IF NOT EXISTS tg_videos (
+  n INTEGER PRIMARY KEY,
+  vid TEXT,
+  status TEXT NOT NULL,        -- preview | approved | published | skipped | change | queued
+  file_id TEXT,                -- file_id из превью: в канал уходит тот же файл
+  msg_id INTEGER,
+  note TEXT,                   -- что поменять (записка владельца)
+  ts INTEGER
+);
+-- Instagram (ig.js): токен владельца и публикации Reels. n — номер ролика в queue.json, как в tg_videos.
+CREATE TABLE IF NOT EXISTS ig_auth (id INTEGER PRIMARY KEY, token TEXT NOT NULL, user_id TEXT NOT NULL, username TEXT, ts INTEGER);
+CREATE TABLE IF NOT EXISTS ig_posts (n INTEGER PRIMARY KEY, status TEXT NOT NULL, container_id TEXT, media_id TEXT, err TEXT, ts INTEGER);

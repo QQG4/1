@@ -10,7 +10,7 @@
 текста здесь только крючок и концовка (HOOKS, OUTRO) — их стоит показать носителю.
 Нужны: ffmpeg, PIL, ключ Azure в ~/.config/qazaq-trainer/azure.env (тот же, что у tools/tts_azure.py).
 Музыку не добавляем: её берут из библиотеки площадки при загрузке, так нет вопросов с авторскими правами."""
-import json, os, pathlib, random, subprocess, sys, tempfile, urllib.request, http.client, time
+import json, os, pathlib, random, re, subprocess, sys, tempfile, urllib.request, http.client, time
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -63,10 +63,15 @@ def azure_env():
     for line in pathlib.Path(os.path.expanduser('~/.config/qazaq-trainer/azure.env')).read_text().splitlines():
         if '=' in line and not line.startswith('#'): k, v = line.split('=', 1); env[k.strip()] = v.strip()
     return env
-def tts(text, voice, path):
+def tts(text, voice, path, rate='-5%', sentence_pause=None):
     env = azure_env()
-    ssml = ('<speak version="1.0" xml:lang="kk-KZ"><voice name="%s"><prosody rate="-5%%">%s</prosody></voice></speak>'
-            % (voice, text.replace('&', 'және').replace('<', '').replace('>', '')))
+    body = text.replace('&', 'және').replace('<', '').replace('>', '')
+    # sentence_pause: точная пауза на границе предложений вместо стандартной (~0,5 с у Azure). reels.py ставит
+    # короткую: точку слышно, но внимание не проседает (замечание владельца 11.10.2026)
+    sil = ('<mstts:silence type="Sentenceboundary-exact" value="%s"/>' % sentence_pause) if sentence_pause else ''
+    ssml = ('<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" '
+            'xml:lang="%s"><voice name="%s">%s<prosody rate="%s">%s</prosody></voice></speak>'
+            % (voice[:5], voice, sil, rate, body))
     req = urllib.request.Request('https://%s.tts.speech.microsoft.com/cognitiveservices/v1' % env.get('AZURE_SPEECH_REGION', 'westeurope'),
                                  data=ssml.encode('utf-8'), method='POST',
                                  headers={'Ocp-Apim-Subscription-Key': env['AZURE_SPEECH_KEY'], 'Content-Type': 'application/ssml+xml',

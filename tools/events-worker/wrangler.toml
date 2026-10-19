@@ -21,3 +21,9 @@ TG_CHANNEL = "@qazaqtrainer"
 #   AGENT_KEY — ключ утреннего агента для POST /agent/report (копия в ~/.config/qazaq-trainer/telegram.env)
 #   TG_WEBHOOK_SECRET — секрет webhook бота (копия у владельца в ~/.config/qazaq-trainer/telegram.env);
 #     после смены секрета или адреса воркера: открыть <адрес воркера>/tg/setup?key=<секрет>
+
+# Ролики для канала (videos.js): mp4 и queue.json из соцсети/_publish, собирает tools/social/publish_tg.py.
+# Telegram забирает видео по адресу воркера; файлы публичные, как и сами ролики в канале.
+[assets]
+directory = "../../../соцсети/_publish"
+binding = "ASSETS"

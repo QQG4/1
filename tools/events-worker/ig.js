@@ -7,12 +7,11 @@
    если токену больше 20 дней, воркер его продлевает (refresh_access_token, токен должен быть старше суток и живой).
    Лимит API — 100 публикаций в сутки, нам нужно 2. Музыку из библиотеки через API не добавить — публикуем без неё. */
 
-/* Пауза (26.10.2026, решение владельца по аналитике 12–26.10): Reels смотрели ~1,4 с, переходов на сайт ноль;
-   ролики сначала проверяем в TikTok. Пока true, воркер в Instagram ничего не публикует, а запас одобренных
-   считается по Telegram. Токен продолжает продлеваться, чтобы после паузы не подключать заново. */
-export const IG_PAUSED = true;
-export const IG_PREP_UTC = [6, 13];   // контейнер: за час до эфира
-export const IG_PUB_UTC = [7, 14];    // эфир: 12:00 и 19:00 по Алматы
+/* Пауза 26.10.2026 (Reels смотрели ~1,4 с), в тот же день снята: один Reels в день в 19:00 по Алматы — те же
+   ролики нового формата, что в TikTok (№25–38 очереди), чтобы сравнить площадки. true — снова пауза. */
+export const IG_PAUSED = false;
+export const IG_PREP_UTC = [13];      // контейнер: за час до эфира
+export const IG_PUB_UTC = [14];       // эфир: 19:00 по Алматы (с 27.10.2026 один в день, было 12:00 и 19:00)
 const GRAPH = 'https://graph.instagram.com/v25.0/';
 const SELF = 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev/';
 
@@ -48,7 +47,7 @@ export async function igReady(env) { return !IG_PAUSED && !!(await auth(env)); }
 /* Ролики, одобренные владельцем и ещё не ушедшие в Instagram (для запаса одобренных в videos.js). */
 export async function igBacklog(env) {
   const [{ c }] = await rows(env, `SELECT COUNT(*) AS c FROM tg_videos WHERE status IN ('approved', 'published')
-    AND n NOT IN (SELECT n FROM ig_posts WHERE status IN ('published', 'container'))`);
+    AND n NOT IN (SELECT n FROM ig_posts WHERE status IN ('published', 'container', 'skipped'))`);
   return c;
 }
 
@@ -58,7 +57,7 @@ export async function igPrepare(env, queue) {
   const a = await auth(env); if (!a) return;
   if ((await rows(env, `SELECT n FROM ig_posts WHERE status = 'container'`)).length) return;   // прошлый ещё не вышел
   const next = await rows(env, `SELECT n FROM tg_videos WHERE status IN ('approved', 'published')
-    AND n NOT IN (SELECT n FROM ig_posts WHERE status IN ('published', 'container', 'error')) ORDER BY n LIMIT 1`);
+    AND n NOT IN (SELECT n FROM ig_posts WHERE status IN ('published', 'container', 'error', 'skipped')) ORDER BY n LIMIT 1`);
   if (!next.length) return owner(env, 'Instagram: одобренных роликов нет, ближайший Reels не выйдет. Нажмите ✅ под роликом в боте.');
   const item = (await queue(env)).find((x) => x.n === next[0].n);
   if (!item) return;

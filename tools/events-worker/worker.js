@@ -98,7 +98,7 @@ export default {
     if (event.cron !== HOURLY_CRON) { await igRefresh(env); return purge(env); }   // ночью — и продление токена Instagram
     const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
     if (IG_PREP_UTC.includes(h)) await igPrepare(env, queue);   // Instagram: контейнер за час до эфира (ig.js)
-    if (IG_PUB_UTC.includes(h)) await igPublish(env);           // Instagram: эфир 12:00 и 19:00 по Алматы
+    if (IG_PUB_UTC.includes(h)) await igPublish(env);           // Instagram: эфир 19:00 по Алматы
     if (h === VIDEO_UTC) return publishVideo(env);    // ролик дня (videos.js)
     if (h === NUDGE_UTC) await previewNext(env);       // вечером — следующий ролик владельцу на одобрение
     if (!task) return;

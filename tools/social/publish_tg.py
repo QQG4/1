@@ -18,7 +18,7 @@ def tg_caption(txt):
     return '\n'.join(lines).strip()
 
 def ig_caption(txt):
-    """Подпись для Instagram — блок «instagram» из <id>.txt (там «ссылка в профиле» и хэштеги)."""
+    """Подпись для Instagram — блок «instagram» из <id>.txt (адрес сайта текстом и хэштеги)."""
     return txt.split('=== instagram ===', 1)[1].split('=== telegram ===', 1)[0].strip()
 
 def main():
@@ -27,6 +27,8 @@ def main():
         data = json.loads(week.read_text())
         for v in data['videos']:
             mp4 = week.parent / (v['id'] + '.mp4')
+            new = ROOT / 'tiktok-полигон' / (v['id'] + '.mp4')   # новый формат (26.10.2026) важнее старой сборки недели
+            if new.exists(): mp4 = new
             if mp4.exists(): items.append((v, mp4))
     items.sort(key=lambda x: x[0]['id'])   # 1012-1-… < 1012-2-… < … < 1101-…: день, затем слот
     (OUT / 'v').mkdir(parents=True, exist_ok=True)

@@ -11,6 +11,8 @@ story — «История»: «типичная ситуация» фразам
 Голос один на ролик (решение владельца 10.10.2026): в cards/quiz/poll казахский, русский только на экране; в tip/story
 русский, казахские слова только на экране (в голосе казахских букв быть не должно — проверяется). Один призыв на
 ролик: cta = "S" (сайт) или "T" (Телеграм). Разбора в квизе нет, на экране только короткая пометка note.
+Первая секунда (26.10.2026): заставки нет, с 0,0 с на экране вопрос, слово или первый шаг, голос сразу; тема
+(topic или hook.ru) — строкой в шапке всех кадров. Длина по шаблону — DUR.
 
 Казахский — самое чувствительное место. Поля с казахским: *_kk, say, kk у карточек, options при options_lang=kk.
 Перед сборкой они проходят kk_check.py; SWAP и RARE вне kk_allow.txt останавливают сборку. Варианты, которые
@@ -28,7 +30,10 @@ SENT_GAP = 0.15       # пауза между предложениями вну�
 STEP_GAP = 0.25        # пауза между шагами «Разбора» и «Истории» (было 0,5 с)
 EMOJI_FONT = '/System/Library/Fonts/Apple Color Emoji.ttc'
 BOTTOM = 1740            # ниже подпись qazaqtrainer.com: содержимое кадра не должно туда заходить
-DUR = (10, 45)           # допустимая длина ролика, с
+# Длина по шаблону (решение владельца 26.10.2026 по аналитике 12–26.10: смотрят 2–5 с, лучше всех держат «Дни недели»
+# 18 с и квиз 16 с). Короткие слоты 11–18 с, «Разбор» и «История» около 20 с. Было 10–45 с на всё
+DUR = {'cards': (11, 18), 'quiz': (11, 18), 'poll': (11, 18), 'tip': (11, 22), 'story': (11, 22)}
+LEAD = 0.15              # голос вступает через 0,15 с после смены кадра; у первого кадра 0: голос с 0,0 с
 BADGE = {'cards': 'Qazaq Trainer · Тіл сабағы', 'quiz': 'Qazaq Trainer · Өзіңді тексер', 'poll': 'Qazaq Trainer · Сауалнама',
          'tip': 'Qazaq Trainer · Талдау', 'story': 'Qazaq Trainer · Оқиға'}
 RU_TYPES = ('tip', 'story')
@@ -39,7 +44,6 @@ KK_LETTERS = set('әғқңөұүһіӘҒҚҢӨҰҮҺІ')
 # слух). Правило: в голосе только слова языка этого голоса, названия на чужом языке — только на экране (поле text).
 # Список пополнять, когда голос споткнётся на новом слове.
 FOREIGN_RU = re.compile(r'[A-Za-z]+|(?i:казтест|каз ?ресми|болаша[кг]|наурыз|жұма)')
-HOOK_DEFAULT = ('Жауабын білесіз бе?', 'Знаете ответ?')
 # один призыв на ролик (решение владельца 10.10.2026); казахские строки взяты из одобренной концовки make_short
 CTA = {
     'S': {'say': 'Толық сынақ тесттер біздің сайтта.', 'kk': 'Толық сынақ тесттер біздің сайтта',
@@ -47,7 +51,12 @@ CTA = {
     'T': {'say': 'Күн сайынғы тапсырмалар Телеграм арнамызда.', 'kk': 'Күн сайынғы тапсырмалар Телеграм арнамызда',
           'ru': 'Задания каждый день в нашем Телеграм-канале', 'url': 't.me/qazaqtrainer'},
 }
-CTA_RU = {'S': 'Пробные тесты на нашем сайте, ссылка в профиле.', 'T': 'Задания каждый день в нашем Телеграм-канале.'}
+# «Ссылка в профиле» не используем (26.10.2026): в TikTok она не кликается до 1 000 подписчиков. Адрес — на экране
+CTA_RU = {'S': 'Полные пробные тесты на нашем сайте.', 'T': 'Задания каждый день в нашем Телеграм-канале.'}
+# подписи TikTok и Instagram: адрес текстом (ссылки в подписи не кликаются), канал ищется поиском внутри Телеграма.
+# «@qazaqtrainer» не пишем: в TikTok это упоминание чужого аккаунта
+CTA_SOCIAL = {'S': 'Полные пробные тесты ҚАЗТЕСТ и QazResmiTest на сайте qazaqtrainer.com',
+              'T': 'Задание каждый день в Телеграм-канале t.me/qazaqtrainer: найди qazaqtrainer поиском в Телеграме.'}
 TAGS = '#казахскийязык #қазақтілі #казтест #қазтест #qazresmitest #учимказахский'
 
 # ---------- казахский: что проверять ----------
@@ -107,6 +116,7 @@ def plain_checks(v):
             if len(st.get('text') or say) > 120: errs.append('шаг %d: субтитр длиннее 120 знаков' % (i + 1))
     blob = json.dumps(v, ensure_ascii=False)
     if '—' in blob: errs.append('длинное тире в сценарии')
+    if 'в профиле' in blob: errs.append('«ссылка в профиле»: в TikTok не кликается, писать адрес или звать в Телеграм')
     if '📅' in blob: errs.append('эмодзи 📅: у Apple на нём дата «JUL 17», брать 🗓')
     return errs
 
@@ -160,6 +170,18 @@ def fit(d, text, name, size, width):
     while size > 40 and d.textlength(text, font=ms.font(name, size)) > width: size -= 4
     return ms.font(name, size)
 
+HEAD_TOP = 280
+def header(d, text, size=64, fill=ms.GOLD):
+    """Тема ролика строкой под плашкой, на всех кадрах (26.10.2026). Заставки-крючка больше нет: с 0,0 с на экране
+    материал, а тема видна и тем, кто пролистал первые секунды. Не больше двух строк. Возвращает нижний край."""
+    text = ' '.join(ms.nodash(text).split())
+    while size > 44 and len(ms.wrap(d, text, ms.font('Arial Bold.ttf', size), W - 160)) > 2: size -= 4
+    return ms.text_block(d, text, ms.font('Arial Bold.ttf', size), 80, HEAD_TOP, W - 160, fill, center=True)
+
+def topic(v):
+    """Тема для строки header: поле topic, иначе русская строка бывшего крючка."""
+    return v.get('topic') or (v.get('hook') or {}).get('ru')
+
 def marked(text, mark):
     """Какие позиции подсветить: одна буква — все её вхождения (ролик про буквы); несколько букв — последнее
     вхождение (окончание: мектеп|ке|, кітаб|ым|, бар|ма|дым — для середины слова mark пишется «ма»)."""
@@ -198,8 +220,9 @@ def frame_card(v, c, idx, n, path):
         fr = ms.font('Arial.ttf', 64)
         h = len(ms.wrap(d, c['ru'], fr, W - 160)) * 80
         parts.append((h + 20, lambda y: ms.text_block(d, c['ru'], fr, 80, y + 20, W - 160, '#d8ecf1', center=True)))
+    top = header(d, topic(v), 54, '#d8ecf1') + 20 if topic(v) else 300
     total = sum(h for h, _ in parts)
-    y = 300 + (BOTTOM - 300 - total) / 2
+    y = top + (BOTTOM - top - total) / 2
     for h, draw in parts: draw(y); y += h
     im.save(path)
     return y
@@ -281,19 +304,20 @@ def scheme(im, d, card, y0, y1):
 def base_tip(v, st, shots_dir):
     """Кадр «Разбора» без субтитра: скриншот или схема. Возвращает (картинка, нижний край содержимого)."""
     im, d = ms.base({'badge': BADGE['tip']})
+    top = header(d, topic(v)) + 30
     if st.get('shot'):
         sh = Image.open(shots_dir / st['shot']).convert('RGB')
         y0, y1 = st.get('crop', [0, 1250])
         sh = sh.crop((0, y0, sh.size[0], y1))
         k = 940 / sh.size[0]; sh = sh.resize((940, round(sh.size[1] * k)), Image.LANCZOS)
-        hmax = SUB_TOP - 40 - 290
+        hmax = SUB_TOP - 40 - top
         if sh.size[1] > hmax: sh = sh.crop((0, 0, 940, hmax))
         mask = Image.new('L', sh.size, 0); ImageDraw.Draw(mask).rounded_rectangle([0, 0, *sh.size], 34, fill=255)
-        im.paste(sh, (70, 290), mask)
-        bottom = 290 + sh.size[1]
+        im.paste(sh, (70, top), mask)
+        bottom = top + sh.size[1]
     elif st.get('card'):
-        bottom = scheme(im, d, st['card'], 330, SUB_TOP - 60)
-    else: bottom = 300
+        bottom = scheme(im, d, st['card'], top + 20, SUB_TOP - 60)
+    else: bottom = top
     if st.get('kk'):   # казахское слово крупно над субтитром
         d.text((W / 2, SUB_TOP - 90), st['kk'], font=fit(d, st['kk'], 'Arial Bold.ttf', 110, W - 160), fill=ms.GOLD, anchor='mm')
     return im, bottom
@@ -305,8 +329,9 @@ def draw_tip(im, st, shown):
 def base_story(v, st, last):
     im, d = ms.base({'badge': BADGE['story']})
     d.text((W - 80, 205), 'типичная ситуация', font=ms.font('Arial.ttf', 38), fill='#d8ecf1', anchor='rm')   # правило банка
-    e = emoji(st.get('emoji') or v.get('emoji') or '💬', 260)
-    im.paste(e, (int((W - e.size[0]) / 2), 470), e)
+    top = header(d, topic(v))
+    e = emoji(st.get('emoji') or v.get('emoji') or '💬', 260 if top < 420 else 220)
+    im.paste(e, (int((W - e.size[0]) / 2), int(max(470, top + 40))), e)
     if last:   # вывод: золотая плашка по размеру всего текста
         n = len(ms.wrap(d, ' '.join(ms.nodash(st.get('text') or st['say']).split()), ms.font('Arial Bold.ttf', 76), W - 180))
         d.rounded_rectangle([60, 840, W - 60, 840 + n * 96 + 70], 36, fill=ms.GOLD)
@@ -315,21 +340,6 @@ def base_story(v, st, last):
 def draw_story(im, st, last, shown):
     text = ' '.join(ms.nodash(st.get('text') or st['say']).split())
     return draw_words(ImageDraw.Draw(im), text, ms.font('Arial Bold.ttf', 76), 900, 96, W - 180, ms.INK if last else ms.WHITE, shown) + 40
-
-def base_hook(v):
-    im, d = ms.base({'badge': BADGE[v['type']]})
-    return im
-
-def draw_hook(im, v, shown):
-    """Крючок русских роликов: заголовок проявляется по слову, линия и «типичная ситуация» видны сразу."""
-    d = ImageDraw.Draw(im)
-    f = ms.font('Arial Bold.ttf', 92)
-    text = ' '.join(ms.nodash(v['hook']['ru']).split())
-    y = draw_words(d, text, f, 640, 115, W - 160, ms.WHITE, shown, anchor='la')
-    d.line([(W / 2 - 90, y + 40), (W / 2 + 90, y + 40)], fill=ms.GOLD, width=8)
-    if v['type'] == 'story':
-        ms.text_block(d, 'Типичная ситуация', ms.font('Arial.ttf', 52), 80, y + 90, W - 160, '#d8ecf1', center=True)
-    return y
 
 # ---------- слова во времени ----------
 ALIGN_PY = pathlib.Path.home() / 'transcribe-env' / 'venv' / 'bin' / 'python'
@@ -369,10 +379,10 @@ def word_starts(mp3, say, text, dur):
     for i in range(1, len(starts)): starts[i] = max(starts[i], starts[i - 1])   # не раньше предыдущего слова
     return starts
 
-def reveal(base, draw, starts, dur, tmp, name, seg, audio, key):
-    """Кадры одного шага: по картинке на каждое новое слово. Голос стартует через 0,15 с после начала шага."""
+def reveal(base, draw, starts, dur, tmp, name, seg, audio, key, lead=LEAD):
+    """Кадры одного шага: по картинке на каждое новое слово. Голос стартует через lead после начала шага."""
     n = len(starts)
-    marks = [0.0] + [s + 0.15 for s in starts[1:]] + [dur]
+    marks = [0.0] + [s + lead for s in starts[1:]] + [dur]
     bottom = 0
     for k in range(1, n + 1):
         im = base.copy(); bottom = draw(im, k)
@@ -388,13 +398,13 @@ MUSIC_GAIN = -18      # дБ: в паузах музыка примерно на
 MUSIC_STARTS = [0, 20, 40, 60, 80, 100]   # с какой секунды трека начинать — по ролику, чтобы подряд не звучали одинаково
 
 def assemble(segs, mp4, music_start=None):
-    """segs: [(png, длительность, mp3 или None)]; голос стартует вместе со своим кадром (+0,15 с).
+    """segs: [(png, длительность, mp3 или None)]; голос стартует вместе со своим кадром (+LEAD, у первого кадра сразу).
     music_start — секунда трека, с которой идёт фон; None — без музыки. Под речью музыка приглушается сильнее
     (sidechaincompress по голосу), в начале плавно нарастает, в конце затухает."""
     vin, ain, delays, t = [], [], [], 0.0
     for png, dur, mp3 in segs:
         vin += ['-loop', '1', '-framerate', '30', '-t', '%.3f' % dur, '-i', str(png)]
-        if mp3: ain.append(mp3); delays.append(int((t + 0.15) * 1000))
+        if mp3: ain.append(mp3); delays.append(int((t + (LEAD if t else 0)) * 1000))
         t += dur
     n = len(segs)
     graph = ''.join('[%d:v]' % i for i in range(n)) + 'concat=n=%d:v=1:a=0[v];' % n
@@ -428,11 +438,10 @@ def build(v, out, mute):
     def seg(png, dur, mp3=None, key=False):
         segs.append((png, dur, mp3))
         if key: keys.append(png)
-    if v['type'] in ('cards', 'quiz'):
-        hook = v.get('hook') or {'kk': HOOK_DEFAULT[0], 'ru': HOOK_DEFAULT[1]}
-        a, dur = tts(hook.get('say') or hook['kk'], voice, mute)
-        ms.frame_hook({'badge': BADGE[v['type']]}, (hook['kk'], hook['ru']), tmp / 'hook.png')
-        seg(tmp / 'hook.png', max(2.2, dur + 0.5), a, key=True)
+    # Заставки-крючка нет (решение владельца 26.10.2026): с 0,0 с на экране вопрос или казахское слово, голос сразу.
+    # Поле hook в сценариях осталось: его русская строка — тема в шапке кадров (header) и первая строка подписи
+    cta_a, cta_dur = tts(CTA_RU[v['cta']] if v['type'] in RU_TYPES else CTA[v['cta']]['say'], voice, mute)
+    d_cta = max(2.8, cta_dur + 0.8)
     if v['type'] == 'cards':
         for i, c in enumerate(v['cards']):
             p = tmp / ('c%02d.png' % i)
@@ -444,6 +453,9 @@ def build(v, out, mute):
         order = list(range(len(opts))); random.Random(v['id']).shuffle(order)   # ключ не всегда на месте A
         q = {'text': v['q'].get('kk') or v['q']['ru'], 'sub': v['q']['ru'] if v['q'].get('kk') else '',
              'options': [opts[i] for i in order], 'answer': order.index(v['answer'])}
+        # вопрос — первое, что видит зритель: крупнее прежних 62 px, если укладывается в три строки
+        probe = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        q['size'] = 80 if len(ms.wrap(probe, q['text'], ms.font('Arial Bold.ttf', 80), W - 160)) <= 3 else 62
         meta = {'badge': BADGE['quiz']}
         def fq(*a, **kw):   # кадр квиза; emoji у ролика — картинка внизу, под отсчётом (слон, стетоскоп, корзина)
             y = ms.frame_question(*a, **kw)
@@ -464,50 +476,48 @@ def build(v, out, mute):
     elif v['type'] == 'poll':
         bottoms.append(('опрос', frame_poll(v, tmp / 'poll.png')))
         a, dur = tts(v['q']['say'], voice, mute)
-        seg(tmp / 'poll.png', dur + 3.0 + 1.3 * len(v['poll']), a, key=True)   # время прочитать каждый вариант
+        # время прочитать каждый вариант; вместе с призывом не короче DUR
+        seg(tmp / 'poll.png', max(dur + 3.0 + 1.3 * len(v['poll']), DUR['poll'][0] + 0.2 - d_cta), a, key=True)
     elif v['type'] in RU_TYPES:
-        hook = v['hook']
-        say = hook.get('say') or hook['ru']
-        a, dur = tts(say, voice, mute)
-        d_hook = max(2.0, dur + 0.35)
-        bottoms.append(('крючок', reveal(base_hook(v), lambda im, k: draw_hook(im, v, k), word_starts(a, say, hook['ru'], dur),
-                                         d_hook, tmp, 'hook', seg, a, True)))
         for i, st in enumerate(v['steps']):
             last = i == len(v['steps']) - 1
             a, dur = tts(st['say'], voice, mute)
             starts = word_starts(a, st['say'], st.get('text') or st['say'], dur)
-            d_step = dur + (1.0 if last else STEP_GAP)
+            d_step = dur + (0.8 if last else STEP_GAP)
             key = i in (0, len(v['steps']) // 2, len(v['steps']) - 1)
+            lead = 0.0 if i == 0 else LEAD
             if v['type'] == 'tip':
                 base, top = base_tip(v, st, out)
-                b = reveal(base, lambda im, k, st=st: draw_tip(im, st, k), starts, d_step, tmp, 's%02d' % i, seg, a, key)
+                b = reveal(base, lambda im, k, st=st: draw_tip(im, st, k), starts, d_step, tmp, 's%02d' % i, seg, a, key, lead)
                 b = BOTTOM + 1 if top > SUB_TOP - 40 else b   # схема залезла на субтитр — ошибка вёрстки
             else:
-                b = reveal(base_story(v, st, last), lambda im, k, st=st, last=last: draw_story(im, st, last, k), starts, d_step, tmp, 's%02d' % i, seg, a, key)
+                b = reveal(base_story(v, st, last), lambda im, k, st=st, last=last: draw_story(im, st, last, k), starts, d_step, tmp, 's%02d' % i, seg, a, key, lead)
             bottoms.append(('шаг %d' % (i + 1), b))
     bottoms.append(('призыв', frame_cta(v, tmp / 'cta.png')))
-    a, dur = tts(CTA_RU[v['cta']] if v['type'] in RU_TYPES else CTA[v['cta']]['say'], voice, mute)
-    seg(tmp / 'cta.png', max(3.5, dur + 1.2), a, key=True)
+    seg(tmp / 'cta.png', d_cta, cta_a, key=True)
 
     mp4 = out / (v['id'] + '.mp4')
     total = assemble(segs, mp4, None if '--no-music' in sys.argv else MUSIC_STARTS[sum(map(ord, v['id'])) % len(MUSIC_STARTS)])
     problems = ['%s: текст заходит на подпись внизу (до %d px)' % (w, b) for w, b in bottoms if b > BOTTOM]
-    if not DUR[0] <= total <= DUR[1]: problems.append('длина %.1f с вне %d–%d с' % (total, *DUR))
+    lo, hi = DUR[v['type']]
+    if not lo <= total <= hi: problems.append('длина %.1f с вне %d–%d с' % (total, lo, hi))
     write_caption(v, out)
     return total, voice, keys, problems
 
-def write_caption(v, out):
-    """Подписи: TikTok и Instagram (ссылка в профиле, в подписи она не кликается) и копия в Telegram-канал."""
+def captions(v):
+    """Подписи {площадка: текст}: TikTok и Instagram (адрес текстом, хештеги обязательны: по ним TikTok понимает тему;
+    с 21.10 ролики вышли без подписи) и копия в Telegram-канал. tiktok_week.py берёт подпись отсюда же."""
     hook = v.get('hook') or {'kk': v['q'].get('kk', ''), 'ru': v['q']['ru']}
     head = '%s / %s' % (hook['kk'], hook['ru']) if hook.get('kk') else hook['ru']
     if v['type'] == 'story': head += ' (типичная ситуация)'
     body = v.get('caption', '')
-    cta_social = {'S': 'Полные пробные тесты ҚАЗТЕСТ и QazResmiTest: ссылка в профиле.',
-                  'T': 'Задание каждый день в Телеграм-канале t.me/qazaqtrainer (ссылка в профиле).'}[v['cta']]
     # в самом канале звать в канал незачем: у роликов с призывом «Т» копия в Telegram идёт без призыва
     cta_tg = 'Полные пробные тесты: https://qazaqtrainer.com/?utm_source=telegram&utm_medium=short&utm_campaign=%s' % v['campaign'] if v['cta'] == 'S' else ''
-    parts = {'tiktok': [head, body, cta_social, TAGS], 'instagram': [head, body, cta_social, TAGS], 'telegram': [head, body, cta_tg]}
-    (out / (v['id'] + '.txt')).write_text('\n\n'.join('=== %s ===\n%s' % (k, '\n\n'.join(ms.nodash(x) for x in p if x)) for k, p in parts.items()) + '\n')
+    parts = {'tiktok': [head, body, CTA_SOCIAL[v['cta']], TAGS], 'instagram': [head, body, CTA_SOCIAL[v['cta']], TAGS], 'telegram': [head, body, cta_tg]}
+    return {k: '\n\n'.join(ms.nodash(x) for x in p if x) for k, p in parts.items()}
+
+def write_caption(v, out):
+    (out / (v['id'] + '.txt')).write_text('\n\n'.join('=== %s ===\n%s' % kv for kv in captions(v).items()) + '\n')
 
 def contact_sheets(rows, out):
     """Обзорный лист: колонка на ролик, в ней ключевые кадры. Один взгляд на неделю вместо сотни кадров."""
@@ -566,7 +576,7 @@ def main():
         for v in videos:
             if v['type'] not in RU_TYPES: continue
             voice = RU_VOICE[v.get('voice') or ms.voice_for(v['id'], '')]
-            for say in [v['hook'].get('say') or v['hook']['ru']] + [st['say'] for st in v['steps']]:
+            for say in [st['say'] for st in v['steps']]:
                 pairs.append((tts(say, voice, False)[0], say))
         align_batch(pairs)
     rows = []

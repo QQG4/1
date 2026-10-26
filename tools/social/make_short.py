@@ -4,7 +4,7 @@
 Запуск:  python3 tools/social/make_short.py <testId> <qid> [--out=../соцсети/проба] [--voice=kk-KZ-DauletNeural]
 Пример:  python3 tools/social/make_short.py qrt-c1-04 x1
 
-Ролик: крючок (2–3 с) → вопрос и варианты, голос читает вопрос → отсчёт → верный ответ и тизер «разбор на сайте»
+Ролик: вопрос и варианты с 0,0 с, голос сразу читает вопрос (заставку-крючок убрали 26.10.2026) → отсчёт → верный ответ и тизер «разбор на сайте»
 → концовка, голос зовёт на сайт и в Telegram. Рядом кладётся текст поста с хэштегами и ссылками с метками.
 Тексты на экране и в озвучке берутся из данных теста (вопрос, варианты, explain / explain_kk); своего казахского
 текста здесь только крючок и концовка (HOOKS, OUTRO) — их стоит показать носителю.
@@ -114,16 +114,9 @@ def base(meta):
     d.text((80, 1790), 'qazaqtrainer.com', font=font('Arial Bold.ttf', 38), fill='#d8ecf1')
     return im, d
 
-def frame_hook(meta, hook, path):
-    im, d = base(meta)
-    y = text_block(d, hook[0], font('Arial Bold.ttf', 92), 80, 640, W - 160, WHITE, center=True)
-    d.line([(W / 2 - 90, y + 40), (W / 2 + 90, y + 40)], fill=GOLD, width=8)
-    text_block(d, hook[1], font('Arial.ttf', 52), 80, y + 90, W - 160, '#d8ecf1', center=True)
-    im.save(path)
-
 def frame_question(meta, q, path, count=None, reveal=False, explain=None):
     im, d = base(meta)
-    y = text_block(d, q['text'], font('Arial Bold.ttf', 62), 80, 330, W - 160, WHITE)
+    y = text_block(d, q['text'], font('Arial Bold.ttf', q.get('size', 62)), 80, 330, W - 160, WHITE)   # size: reels.py крупнее
     if q.get('sub'): y = text_block(d, q['sub'], font('Arial.ttf', 46), 80, y + 10, W - 160, '#d8ecf1')   # перевод вопроса (reels.py)
     y += 40
     fo = font('Arial Bold.ttf', 50)
@@ -184,24 +177,23 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
     v = voice or voice_for(test_id, qid)
     # озвучка: крючок, вопрос, ответ с пояснением (казахский — только из данных теста и крючка)
     if mute:   # --mute: без озвучки (проверить вид или если ключ Azure недоступен) — паузы по длине текста
-        for n, sec in (('a_hook', 2.0), ('a_q', 3.0 + len(q['text']) / 40), ('a_ans', 2.5), ('a_cta', 5.0)):
+        for n, sec in (('a_q', 3.0 + len(q['text']) / 40), ('a_ans', 2.5), ('a_cta', 5.0)):
             subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', '%.2f' % sec, str(tmp / (n + '.mp3'))], check=True)
     else:
-        tts(hook[0], v, tmp / 'a_hook.mp3')
         tts(q['text'], v, tmp / 'a_q.mp3')
         tts('Дұрыс жауап: ' + correct + '.', v, tmp / 'a_ans.mp3')
         tts(CTA_VOICE, v, tmp / 'a_cta.mp3')
-    d_hook, d_q, d_ans, d_cta = (duration(tmp / (n + '.mp3')) for n in ('a_hook', 'a_q', 'a_ans', 'a_cta'))
+    d_q, d_ans, d_cta = (duration(tmp / (n + '.mp3')) for n in ('a_q', 'a_ans', 'a_cta'))
 
     seg = []   # (картинка, длительность)
-    frame_hook(meta, hook, tmp / 'f_hook.png'); seg.append(('f_hook.png', max(2.2, d_hook + 0.4)))
+    # без кадра-крючка: в TikTok почти все уходили на первой секунде (аналитика 12–26.10.2026)
     frame_question(meta, q, tmp / 'f_q.png'); seg.append(('f_q.png', max(3.0, d_q + 0.6)))
     for c in range(COUNTDOWN, 0, -1):
         frame_question(meta, q, tmp / ('f_c%d.png' % c), count=c); seg.append(('f_c%d.png' % c, 1.0))
     frame_question(meta, q, tmp / 'f_ans.png', reveal=True, explain=TEASER); seg.append(('f_ans.png', max(3.0, d_ans + 1.0)))
     frame_outro(meta, tmp / 'f_out.png'); seg.append(('f_out.png', max(3.5, d_cta + 1.0)))
 
-    t_q = seg[0][1]; t_ans = sum(s for _, s in seg[:-2]); t_cta = sum(s for _, s in seg[:-1])
+    t_ans = sum(s for _, s in seg[:-2]); t_cta = sum(s for _, s in seg[:-1])
     total = sum(s for _, s in seg)
     mp4 = out_dir / (name + '.mp4')
     # каждая картинка — отдельный вход точной длины, склейка фильтром concat: склейка через список файлов
@@ -213,10 +205,10 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
              # громкость: ровное усиление на весь ролик + ограничитель пиков. Нормализатор loudnorm в один проход
              # подстраивал уровень на ходу, и во второй половине звук проседал (замечание владельца 10.10.2026);
              # голоса Azure и так одного уровня, поэтому хватает постоянного усиления.
-             '[%d:a]adelay=%d|%d[q];[%d:a]adelay=%d|%d[a];[%d:a]adelay=%d|%d[c];[%d:a][q][a][c]amix=inputs=4:normalize=0,volume=9dB,alimiter=limit=0.89:level=false,apad[aud]'
-             % (a0 + 1, t_q * 1000, t_q * 1000, a0 + 2, t_ans * 1000, t_ans * 1000, a0 + 3, t_cta * 1000, t_cta * 1000, a0))
+             '[%d:a]adelay=%d|%d[a];[%d:a]adelay=%d|%d[c];[%d:a][a][c]amix=inputs=3:normalize=0,volume=9dB,alimiter=limit=0.89:level=false,apad[aud]'
+             % (a0 + 1, t_ans * 1000, t_ans * 1000, a0 + 2, t_cta * 1000, t_cta * 1000, a0))
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error'] + vin +
-                   ['-i', str(tmp / 'a_hook.mp3'), '-i', str(tmp / 'a_q.mp3'), '-i', str(tmp / 'a_ans.mp3'), '-i', str(tmp / 'a_cta.mp3'),
+                   ['-i', str(tmp / 'a_q.mp3'), '-i', str(tmp / 'a_ans.mp3'), '-i', str(tmp / 'a_cta.mp3'),
                     '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % total,
                     '-r', '30', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '20',
                     '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(mp4)], check=True)

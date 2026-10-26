@@ -9829,7 +9829,7 @@ window.KZ = window.KZ || {};
     'Настройки': 'Баптаулар', 'Размер текста': 'Мәтін өлшемі', 'Шрифт': 'Қаріп', 'обычный': 'қалыпты', 'для дислексии': 'дислексияға арналған',
     'Напоминания в Telegram': 'Telegram-дағы еске салу', 'Не пропустите регистрацию': 'Тіркеуді өткізіп алмаңыз',
     'Подписаться на напоминания': 'Еске салуға жазылу',
-    'Поделиться в Telegram': 'Telegram-да бөлісу', 'Поделиться…': 'Бөлісу…',
+    'Поделиться в Telegram': 'Telegram-да бөлісу', 'Картинка для сторис': 'Сторис үшін сурет', 'Поделиться…': 'Бөлісу…',
     'пройдено': 'өтілді',
     'Пройдите блок целиком, чтобы увидеть уровень по аудированию.': 'Тыңдалым деңгейін көру үшін блокты толық өтіңіз.',
     'Ваш уровень по аудированию:': 'Тыңдалым бойынша деңгейіңіз:',
@@ -10020,6 +10020,7 @@ window.KZ = window.KZ || {};
         ev.preventDefault();
         navigator.share({ title: 'Qazaq Trainer', text: sh.getAttribute('data-share-text'), url: sh.getAttribute('data-share-url') }).catch(function () {});
       }
+      if (how === 'image') { ev.preventDefault(); shareImage(sh); }
     }
   });
 
@@ -11220,8 +11221,63 @@ window.KZ = window.KZ || {};
       ? exam + ' ' + t.level + ' сынақ тесті, Qazaq Trainer: ' + label.toLowerCase() + ' — ' + saved.score + '/' + saved.total + '. Тегін, тіркеусіз:'
       : 'Пробный ' + exam + ' ' + t.level + ' на Qazaq Trainer: ' + label.toLowerCase() + ' — ' + saved.score + ' из ' + saved.total + '. Бесплатно и без регистрации:';
     var tg = 'https://t.me/share/url?url=' + encodeURIComponent(url + 'telegram') + '&text=' + encodeURIComponent(text);
-    return '<div class="actions share"><a class="btn ghost" href="' + esc(tg) + '" target="_blank" rel="noopener" data-share="telegram">' + T('Поделиться в Telegram') + '</a>' +
+    var card = ' data-exam="' + esc(exam) + '" data-level="' + esc(t.level) + '" data-label="' + esc(label) + '" data-score="' + saved.score + '" data-total="' + saved.total + '"' +
+      ' data-share-text="' + esc(text) + '" data-share-url="' + esc(url + 'image') + '"';
+    return '<div class="actions share"><button class="btn" data-share="image"' + card + '>' + T('Картинка для сторис') + '</button>' +
+      '<a class="btn ghost" href="' + esc(tg) + '" target="_blank" rel="noopener" data-share="telegram">' + T('Поделиться в Telegram') + '</a>' +
       (navigator.share ? '<button class="btn ghost" data-share="native" data-share-url="' + esc(url + 'native') + '" data-share-text="' + esc(text) + '">' + T('Поделиться…') + '</button>' : '') + '</div>';
+  }
+  /* Картинка результата 1080×1920 для сторис (26.10.2026): за месяц ссылкой «Поделиться» не воспользовался никто,
+     а результат картинкой выкладывают охотнее. Рисуется на canvas прямо в браузере, никуда не отправляется.
+     На телефоне уходит в системное меню «Поделиться» файлом (если браузер умеет делиться файлами), иначе скачивается. */
+  function shareImage(btn) {
+    var d = function (k) { return btn.getAttribute('data-' + k) || ''; };
+    var kk = KZ.lang === 'kk', W = 1080, H = 1920;
+    var score = +d('score'), total = +d('total'), pct = total ? Math.round(100 * score / total) : 0;
+    var c = document.createElement('canvas'); c.width = W; c.height = H;
+    var g = c.getContext('2d');
+    var ready = document.fonts && document.fonts.load
+      ? Promise.all(['700 150px Fraunces', '600 64px "Source Sans 3"', '500 40px "JetBrains Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }))
+      : Promise.resolve();
+    ready.then(function () {
+      g.fillStyle = '#0e6e86'; g.fillRect(0, 0, W, H);
+      g.fillStyle = 'rgba(255,255,255,0.06)'; g.beginPath(); g.arc(W + 60, 260, 520, 0, 2 * Math.PI); g.fill();
+      g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+      g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '500 40px "JetBrains Mono", monospace';
+      g.fillText('QAZAQ TRAINER', W / 2, 260);
+      var head = d('exam') + ' ' + d('level'), fs = 150;
+      do { g.font = '700 ' + fs + 'px Fraunces, Georgia, serif'; fs -= 6; } while (g.measureText(head).width > W - 200 && fs > 80);
+      g.fillStyle = '#ffffff'; g.fillText(head, W / 2, 560);
+      g.font = '600 64px "Source Sans 3", system-ui, sans-serif'; g.fillStyle = 'rgba(255,255,255,0.85)';
+      g.fillText(d('label'), W / 2, 680);
+      g.fillStyle = '#ffffff'; g.font = '700 300px Fraunces, Georgia, serif';
+      g.fillText(score + '/' + total, W / 2, 1080);
+      var bx = 170, bw = W - 340, by = 1180;
+      g.fillStyle = 'rgba(255,255,255,0.18)'; roundRect(g, bx, by, bw, 36, 18); g.fill();
+      g.fillStyle = '#e0b563'; roundRect(g, bx, by, Math.max(36, bw * pct / 100), 36, 18); g.fill();
+      g.fillStyle = '#ffffff'; g.font = '600 64px "Source Sans 3", system-ui, sans-serif';
+      g.fillText(pct + ' %', W / 2, 1320);
+      g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '600 52px "Source Sans 3", system-ui, sans-serif';
+      g.fillText(kk ? 'Сынақ тест' : 'Пробный тест', W / 2, 1640);
+      g.fillStyle = '#ffffff'; g.font = '600 64px "Source Sans 3", system-ui, sans-serif';
+      g.fillText('qazaqtrainer.com', W / 2, 1730);
+      c.toBlob(function (blob) {
+        if (!blob) return;
+        var name = 'qazaq-trainer-' + d('level').toLowerCase() + '.png';
+        var file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], text: d('share-text') + ' ' + d('share-url') }).catch(function () {});
+          return;
+        }
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+      }, 'image/png');
+    });
+  }
+  function roundRect(g, x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
   }
   function remindCta(where) {
     if (!KZ.site || !KZ.site.telegramChannel) return '';

@@ -142,6 +142,33 @@ LANDING_CSS = (
     '.tgbox a{font-weight:600}'
 )
 
+def page_head(lang, title, desc, url, alts=()):
+    """Начало статической страницы до <main>: заголовок, описание, canonical, hreflang (alts — пары язык/адрес,
+       только если у страницы есть перевод), og-теги. Без url (siteUrl пуст) — без canonical и og."""
+    e = _html.escape
+    h = ['<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8">',
+         '<meta name="viewport" content="width=device-width,initial-scale=1">',
+         '<title>' + e(title) + '</title>',
+         '<meta name="description" content="' + e(desc) + '">',
+         '<meta name="theme-color" content="#0e6e86">',
+         '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">']
+    if url:
+        base = url[:url.index('/', 8) + 1]
+        h.append('<link rel="canonical" href="' + e(url) + '">')
+        for lg, u in alts:
+            h.append('<link rel="alternate" hreflang="' + lg + '" href="' + e(u) + '">')
+        h += ['<meta property="og:type" content="article">',
+              '<meta property="og:site_name" content="' + SITE_NAME + '">',
+              '<meta property="og:locale" content="' + ('ru_RU' if lang == 'ru' else 'kk_KZ') + '">',
+              '<meta property="og:title" content="' + e(title) + '">',
+              '<meta property="og:description" content="' + e(desc) + '">',
+              '<meta property="og:url" content="' + e(url) + '">',
+              '<meta property="og:image" content="' + e(base + 'og.png') + '">',
+              '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">',
+              '<meta name="twitter:card" content="summary_large_image">']
+    h.append('<style>' + LANDING_CSS + '</style></head><body><main>')
+    return h
+
 def landing_page(lang, eid, ex, lv, tests, base):
     e = _html.escape
     T = L10N[lang]
@@ -166,28 +193,8 @@ def landing_page(lang, eid, ex, lv, tests, base):
     desc = (desc[:275].rsplit(' ', 1)[0] + '…') if len(desc) > 280 else desc
     url = base + landing_url(lang, eid, lv)
 
-    h = ['<!doctype html><html lang="' + T['lang'] + '"><head><meta charset="utf-8">',
-         '<meta name="viewport" content="width=device-width,initial-scale=1">',
-         '<title>' + e(title) + '</title>',
-         '<meta name="description" content="' + e(desc) + '">',
-         '<meta name="theme-color" content="#0e6e86">',
-         '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">']
-    if base:
-        h.append('<link rel="canonical" href="' + e(url) + '">')
-        for lg in LANDING_LANGS:
-            h.append('<link rel="alternate" hreflang="' + lg + '" href="' + e(base + landing_url(lg, eid, lv)) + '">')
-        h.append('<link rel="alternate" hreflang="x-default" href="' + e(base + landing_url('ru', eid, lv)) + '">')
-        h += ['<meta property="og:type" content="article">',
-              '<meta property="og:site_name" content="' + SITE_NAME + '">',
-              '<meta property="og:locale" content="' + ('ru_RU' if lang == 'ru' else 'kk_KZ') + '">',
-              '<meta property="og:title" content="' + e(title) + '">',
-              '<meta property="og:description" content="' + e(desc) + '">',
-              '<meta property="og:url" content="' + e(url) + '">',
-              '<meta property="og:image" content="' + e(base + 'og.png') + '">',
-              '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">',
-              '<meta name="twitter:card" content="summary_large_image">']
-    h.append('<style>' + LANDING_CSS + '</style></head><body><main>')
-
+    alts = [(lg, base + landing_url(lg, eid, lv)) for lg in LANDING_LANGS] + [('x-default', base + landing_url('ru', eid, lv))]
+    h = page_head(lang, title, desc, url if base else '', alts)
     start = '/#/test/' + tests[0]['id']
     h.append('<p class="kicker">' + e(ex.get('kicker') or ex_name) + ' · ' + e(lv) + '</p>')
     h.append('<h1>' + e(h1) + '</h1>')
@@ -238,6 +245,10 @@ def landing_page(lang, eid, ex, lv, tests, base):
             h.append('<a href="/' + landing_url(lang, o_eid, o_lv) + '">' + e(o_ex.get('name', o_eid)) + ' ' + e(o_lv) + '</a>')
         h.append('</p>')
 
+    # страницы-ответы есть только на русском
+    if lang == 'ru':
+        h.append('<h2>Об экзаменах</h2><p class="more">' + ''.join('<a href="/' + u + '">' + e(t) + '</a>' for u, t in INFO_LINKS) + '</p>')
+
     faq = faq_items(lang, eid, ex, lv, n)
     if faq:
         h.append('<h2>' + ('Частые вопросы' if lang == 'ru' else 'Жиі қойылатын сұрақтар') + '</h2>')
@@ -263,6 +274,10 @@ def faq_items(lang, eid, ex, lv, n):
             (f'Как подготовиться к Казтест (ҚАЗТЕСТ) на уровень {lv}?',
              f'Пройдите пробный тест в формате экзамена: четыре блока (аудирование, чтение, письмо, говорение), таймер и озвученные тексты. '
              f'После каждого блока открывается разбор ответов с объяснениями. На уровне {lv} {_plural_ru(n, "вариант", "варианта", "вариантов")}, все бесплатно и без регистрации.'),
+            *([(f'Сколько баллов нужно на ҚАЗТЕСТ {lv}?',
+                f'От {sc["pct"][sc["levels"].index(lv)]} % в каждом блоке: {_score_row(sc, sc["levels"].index(lv))}. '
+                'Таблица по всем уровням — на странице «Сколько баллов нужно на ҚАЗТЕСТ».')]
+              if (sc := ex.get('scoring') or _exam('kaztest').get('scoring')) and lv in sc.get('levels', []) else []),
             ('Сколько длится ҚАЗТЕСТ и из чего он состоит?',
              'Сертификационное тестирование идёт 2 часа 7 минут: аудирование (20 заданий), чтение (40 заданий), письмо (2 задания) и говорение (2 задания). '
              'Уровень подтверждается, если в каждом блоке набран пороговый процент.'),
@@ -299,7 +314,236 @@ def faq_items(lang, eid, ex, lv, n):
          'Жоқ. Qazaq Trainer — тәуелсіз жаттықтырғыш. Тестің ресми сайты — qrt.kz.'),
     ]
 
-def landing_script(lang, eid, lv):
+# ---- страницы-ответы на частые поисковые вопросы (26.10.2026) ----
+# С 12–25.10 поиск стал главным источником сайта, а запросы — вопросы: «сколько баллов нужно на казтест B1»,
+# «как проходит казтест», «чем казтест отличается от казресмитест». Посадочные «экзамен × уровень» на них не отвечают.
+# Факты — только из exams.js (scoring, sections, certificateNote, unverified, sources), то есть сверенные по PDF НЦТ
+# и qrt.kz. Внутренние пороги KZ.strict сюда не попадают. Страницы только на русском: казахских текстов под них нет,
+# а на ходу не переводим. Чего нет в данных (кто принимает QRT, срок его сертификата, что будет, если блоки сданы
+# на разные уровни) — не утверждаем.
+def _exam(eid): return (META or {}).get('exams', {}).get(eid, {})
+def _sec(eid, t): return next((s for s in _exam(eid).get('sections', []) if s.get('type') == t), {})
+def _tasks_short(s): return (s.get('tasks') or '').split(' · ')[0]
+def _min_ru(n): return _plural_ru(n, 'минута', 'минуты', 'минут')
+def _sources(eid, keep):
+    return [x for x in _exam(eid).get('sources', []) if any(k in x.get('title', '') for k in keep)]
+def _src_list(items):
+    e = _html.escape
+    return ('<h2>Источники</h2><ul>' + ''.join('<li><a href="' + e(x['url']) + '" rel="noopener">' + e(x['title']) + '</a></li>' for x in items)
+            + '</ul>') if items else ''
+def _first_test(eid, lv):
+    return next((t[0]['id'] for (o, _x, l, t) in landing_pairs() if o == eid and l == lv), None)
+def _btns(eid, lv, label=None):
+    """Кнопка на тест уровня и ссылка на его посадочную."""
+    e = _html.escape; tid = _first_test(eid, lv)
+    if not tid: return ''
+    name = _exam(eid).get('name', eid)
+    return ('<p style="margin-bottom:0"><a class="cta" href="/#/test/' + e(tid) + '">' + e(label or f'Пробный {name} {lv}') + '</a></p>'
+            '<p style="margin-top:.2em"><a href="/' + landing_url('ru', eid, lv) + '">Все варианты {} {} →</a></p>'.format(e(name), e(lv)))
+
+def _sections_table(eid):
+    e = _html.escape; ex = _exam(eid)
+    # описания разделов идут ниже отдельными абзацами, в таблице — только объём и время
+    rows = ''.join('<tr><td><b>' + e(s.get('title', '')) + '</b> <span lang="kk" style="color:var(--mut)">' + e(s.get('kk', '')) + '</span>'
+                   '</td><td>' + e(s.get('tasks', '')) + '</td>'
+                   '<td>' + e(str(s.get('minutes', ''))) + '</td></tr>' for s in ex.get('sections', []))
+    return ('<div class="tbl-wrap"><table><thead><tr><th>Раздел</th><th>Заданий</th><th>Минут</th></tr></thead><tbody>' + rows +
+            '</tbody></table></div>')
+
+def _score_row(sc, i):
+    """«10 из 20 за аудирование, 20 из 40 за чтение…» для уровня с индексом i в официальной таблице."""
+    names = {'Тыңдалым': 'аудирование', 'Оқылым': 'чтение', 'Жазылым': 'письмо', 'Айтылым': 'говорение'}
+    return ', '.join(f"{b['min'][i]} из {b['max']} за {names.get(b['title'], b['title'])}" for b in sc['blocks'])
+
+def page_kaztest_scores():
+    ex = _exam('kaztest'); sc = ex.get('scoring')
+    if not sc: return None
+    e = _html.escape; lv = sc['levels']; pct = sc['pct']
+    thr = ', '.join(f'{l} — от {p} %' for l, p in zip(lv, pct))
+    b1 = lv.index('B1') if 'B1' in lv else 0
+    title = f'Сколько баллов нужно на Казтест {lv[0]}–{lv[-1]}: пороги по блокам'
+    desc = (f'Официальные пороги ҚАЗТЕСТ: {thr} в каждом блоке. Таблица минимальных баллов по аудированию, чтению, '
+            'письму и говорению для каждого уровня.')
+    b = ['<p class="kicker">ҚАЗТЕСТ · баллы</p><h1>Сколько баллов нужно на ҚАЗТЕСТ (Казтест)</h1>',
+         f'<p class="lead">Уровень присваивается по проценту, набранному в каждом блоке: {e(thr)}. '
+         f'Например, для {lv[b1]} нужно не меньше {e(_score_row(sc, b1))}.</p>',
+         '<h2>Минимальные баллы по блокам</h2><div class="tbl-wrap"><table><thead><tr><th>Блок</th><th>Макс.</th>' +
+         ''.join(f'<th>{e(l)}</th>' for l in lv) + '</tr></thead><tbody>' +
+         ''.join(f'<tr><td lang="kk"><b>{e(bl["title"])}</b></td><td>{bl["max"]}</td>' + ''.join(f'<td>{m}</td>' for m in bl['min']) + '</tr>'
+                 for bl in sc['blocks']) +
+         '<tr><td>Порог</td><td></td>' + ''.join(f'<td>{p} %</td>' for p in pct) + '</tr></tbody></table></div>',
+         '<p style="color:var(--mut);font-size:.92rem">Пороги — из «Руководства тестируемого» Национального центра тестирования '
+         '(testcenter.kz, февраль 2026). Сверено ' + e((ex.get('verifiedNote') or '').rsplit('Проверено ', 1)[-1].rstrip('.')) + '.</p>']
+    for i, l in enumerate(lv):
+        b.append(f'<h2 id="{l.lower()}">Сколько баллов нужно на ҚАЗТЕСТ {e(l)}</h2>'
+                 f'<p>От {pct[i]} % в каждом блоке: {e(_score_row(sc, i))}.</p>' + _btns('kaztest', l))
+    if ex.get('certificateNote'):
+        b.append('<h2>Когда приходит результат</h2><p>' + e(ex['certificateNote']) + '</p>')
+    b.append('<h2>Как проверить себя заранее</h2><p>В пробном тесте все четыре блока, таймер идёт в темпе экзамена, а после каждого блока '
+             'видно, сколько баллов набрано. Письмо и говорение оцениваются самопроверкой по официальным критериям. '
+             'Учтите: в пробном тесте один текст целевого уровня, на экзамене в аудировании и чтении по четыре текста от A1 до C1.</p>'
+             '<p class="more"><a href="/ru/kaztest/kak-prohodit/">Как проходит ҚАЗТЕСТ</a> '
+             '<a href="/ru/kaztest-ili-qrt/">ҚАЗТЕСТ или QazResmiTest</a> <a href="/ru/obrazcy-zadaniy/">Образцы заданий</a></p>')
+    b.append(_src_list(_sources('kaztest', ('Руководство',))))
+    return 'ru/kaztest/bally/', title, desc, b
+
+def page_kaztest_format():
+    ex = _exam('kaztest'); secs = ex.get('sections') or []
+    if not secs: return None
+    e = _html.escape
+    L, R, W, S = (_sec('kaztest', t) for t in ('listening', 'reading', 'writing', 'speaking'))
+    title = f"Как проходит Казтест: {len(secs)} блока, {_plural_ru(ex.get('totalTasks') or 0, 'задание', 'задания', 'заданий')}, {ex.get('totalMinutes')} минут"
+    desc = (f"Из чего состоит ҚАЗТЕСТ: аудирование ({_tasks_short(L)}, {L.get('minutes')} мин), чтение ({_tasks_short(R)}, {R.get('minutes')} мин), "
+            f"письмо ({_tasks_short(W)}, {W.get('minutes')} мин) и говорение ({_tasks_short(S)}, {S.get('minutes')} мин). Баллы, пороги и результат.")
+    b = ['<p class="kicker">ҚАЗТЕСТ · формат</p><h1>Как проходит ҚАЗТЕСТ (Казтест)</h1>',
+         '<p class="lead">' + e(ex.get('tagline', '')) + ' ' +
+         e(f"Аудирование — {_tasks_short(L)} за {_min_ru(L.get('minutes'))}, чтение — {_tasks_short(R)} за {_min_ru(R.get('minutes'))}, "
+           f"письмо — {_tasks_short(W)} за {_min_ru(W.get('minutes'))}, говорение — {_tasks_short(S)} за {_min_ru(S.get('minutes'))}.") + '</p>',
+         _btns('kaztest', 'B1', 'Пройти пробный ҚАЗТЕСТ'),
+         '<h2>Блоки теста</h2>' + _sections_table('kaztest')]
+    for s in secs:
+        b.append('<h3 style="font-size:1rem;margin:1.4em 0 .3em">' + e(s.get('title', '')) + ' · <span lang="kk">' + e(s.get('kk', '')) + '</span></h3>'
+                 '<p>' + e(s.get('tasks', '')) + ', ' + e(_min_ru(s.get('minutes'))) + '. ' + e(s.get('desc', '')) + '</p>')
+    sc = ex.get('scoring')
+    if sc:
+        b.append('<h2>Как считают уровень</h2><p>' + e(sc['note'].split(' Ниже')[0]) +
+                 ' Таблица минимальных баллов по каждому блоку — на странице <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
+    if ex.get('certificateNote'):
+        b.append('<h2>Результат и сертификат</h2><p>' + e(ex['certificateNote']) + '</p>')
+    if ex.get('unverified'):
+        b.append('<h2>Что официально не уточнено</h2><p>' + e(ex['unverified'][0].split('; в тренажёре')[0]) + '.</p>')
+    b.append('<h2>Пробный тест по уровню</h2><p class="more">' +
+             ''.join(f'<a href="/{landing_url("ru", "kaztest", l)}">ҚАЗТЕСТ {l}</a>' for (o, _x, l, _t) in landing_pairs() if o == 'kaztest') +
+             '</p><p class="more"><a href="/ru/kaztest-ili-qrt/">ҚАЗТЕСТ или QazResmiTest</a> <a href="/ru/obrazcy-zadaniy/">Образцы заданий</a></p>')
+    b.append(_src_list(_sources('kaztest', ('Спецификация', 'Руководство', 'Критерии', 'примеры'))))
+    return 'ru/kaztest/kak-prohodit/', title, desc, b
+
+def page_qrt_format():
+    ex = _exam('qrt'); secs = ex.get('sections') or []
+    if not secs: return None
+    e = _html.escape
+    title = 'Как проходит QazResmiTest (Казресмитест): разделы и время'
+    parts = ', '.join(f"{s.get('title','').lower()} — {s.get('minutes')} мин" for s in secs)
+    desc = f"{ex.get('tagline', '')} Разделы: {parts}. Что в каждом разделе и что официально не публикуется."
+    b = ['<p class="kicker">QazResmiTest · формат</p><h1>Как проходит QazResmiTest (Казресмитест)</h1>',
+         '<p class="lead">' + e(ex.get('tagline', '')) + ' ' + e(parts[0].upper() + parts[1:]) + '. '
+         'Это один тест для всех: отдельных вариантов по уровням нет, уровень от A1 до C2 определяется по результату.</p>',
+         _btns('qrt', 'B1', 'Пройти пробный QazResmiTest'),
+         '<h2>Разделы теста</h2>' + _sections_table('qrt')]
+    for s in secs:
+        b.append('<h3 style="font-size:1rem;margin:1.4em 0 .3em">' + e(s.get('title', '')) + ' · <span lang="kk">' + e(s.get('kk', '')) + '</span></h3>'
+                 '<p>' + e(s.get('tasks', '')) + ', ' + e(_min_ru(s.get('minutes'))) + '. ' + e(s.get('desc', '')) + '</p>')
+    un = ex.get('unverified') or []
+    # из пунктов unverified берём только то, что сказано про сам тест; описание тренажёра («в тренажёре…», «здесь…») отрезаем
+    open_q = [un[0].split(' — в тренажёре')[0]] if un else []
+    if len(un) > 2: open_q += [x.strip().rstrip('.') for x in re.split(r';\s|(?<=\.)\s', un[2]) if 'официально' in x]
+    if len(un) > 1:
+        b.append('<h2>Сколько баллов нужно на QazResmiTest</h2><p>' + e(un[1]) +
+                 ' Официальные пороги по блокам есть только у ҚАЗТЕСТ — см. <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
+    if open_q:
+        b.append('<h2>Что официально не уточнено</h2><p>' + e('. '.join(open_q)) + '.</p>')
+    b.append('<h2>Пробный тест по уровню</h2><p class="more">' +
+             ''.join(f'<a href="/{landing_url("ru", "qrt", l)}">QazResmiTest {l}</a>' for (o, _x, l, _t) in landing_pairs() if o == 'qrt') +
+             '</p><p class="more"><a href="/ru/kaztest-ili-qrt/">ҚАЗТЕСТ или QazResmiTest</a> <a href="/ru/obrazcy-zadaniy/">Образцы заданий</a></p>')
+    b.append(_src_list(_sources('qrt', ('qrt.kz',))))
+    return 'ru/qrt/kak-prohodit/', title, desc, b
+
+def page_compare():
+    k, q = _exam('kaztest'), _exam('qrt')
+    if not (k.get('sections') and q.get('sections')): return None
+    e = _html.escape
+    kl, ql = k.get('examLevels', []), q.get('examLevels', [])
+    kL, qL = _sec('kaztest', 'listening'), _sec('qrt', 'listening')
+    rows = [
+        ('Что это', 'Сертификационный тест Национального центра тестирования (testcenter.kz)', 'Дистанционный тест, официальный сайт — qrt.kz'),
+        ('Уровни', f'{kl[0]}–{kl[-1]}', f'{ql[0]}–{ql[-1]} по шкале CEFR'),
+        ('Разделы', ', '.join(s['title'].split(' и ')[0].lower() for s in k['sections']), ', '.join(s['title'].lower() for s in q['sections'])),
+        ('Время', f"{k.get('totalMinutes')} минут", f"около {q.get('totalMinutes')} минут"),
+        ('Заданий', f"{k.get('totalTasks')}", ', '.join(f"{s['title'].lower()} — {s['tasks']}" for s in q['sections'])),
+        ('Аудирование', kL.get('desc', ''), qL.get('desc', '')),
+        ('Пороги', 'Опубликованы: ' + ', '.join(f'{l} — от {p} %' for l, p in zip(k['scoring']['levels'], k['scoring']['pct'])) + ' в каждом блоке'
+                   if k.get('scoring') else '—', 'Проходные баллы не публикуются'),
+        ('Результат', k.get('certificateNote', '').split('. ')[0], 'Уровень по шкале CEFR от A1 до C2'),
+    ]
+    title = 'Казтест или Казресмитест: чем отличаются ҚАЗТЕСТ и QazResmiTest'
+    desc = (f"ҚАЗТЕСТ — {len(k['sections'])} блока, {_plural_ru(k.get('totalTasks') or 0, 'задание', 'задания', 'заданий')}, {k.get('totalMinutes')} минут, уровни {kl[0]}–{kl[-1]}. "
+            f"QazResmiTest — {len(q['sections'])} разделов, около {q.get('totalMinutes')} минут, шкала {ql[0]}–{ql[-1]}. Сравнение формата, баллов и результата.")
+    b = ['<p class="kicker">ҚАЗТЕСТ · QazResmiTest</p><h1>Чем ҚАЗТЕСТ отличается от QazResmiTest</h1>',
+         '<p class="lead">' + e(f"ҚАЗТЕСТ — сертификационный тест Национального центра тестирования: {len(k['sections'])} блока, "
+                                f"{_plural_ru(k.get('totalTasks') or 0, 'задание', 'задания', 'заданий')}, {k.get('totalMinutes')} минут, уровни {kl[0]}–{kl[-1]} и официальные пороги по каждому блоку. "
+                                f"QazResmiTest — дистанционный тест: {len(q['sections'])} разделов подряд, около {q.get('totalMinutes')} минут, "
+                                f"результат по шкале CEFR от {ql[0]} до {ql[-1]}, проходные баллы не публикуются.") + '</p>',
+         '<div class="tbl-wrap"><table><thead><tr><th></th><th>ҚАЗТЕСТ</th><th>QazResmiTest</th></tr></thead><tbody>' +
+         ''.join(f'<tr><td><b>{e(a)}</b></td><td>{e(x)}</td><td>{e(y)}</td></tr>' for a, x, y in rows) + '</tbody></table></div>',
+         '<h2>Какой тест сдавать</h2><p>Тот, который требует организация, куда вы подаёте результат: требования к экзамену и '
+         'уровню у работодателей и ведомств разные, поэтому уточните их заранее. По содержанию тесты похожи: оба проверяют '
+         'аудирование, чтение, письмо и устную речь. В QazResmiTest есть отдельный раздел лексики и орфографии, в ҚАЗТЕСТ '
+         'лексико-грамматические задания входят в блок чтения.</p>',
+         '<h2>Подробнее о каждом</h2><p class="more"><a href="/ru/kaztest/kak-prohodit/">Как проходит ҚАЗТЕСТ</a> '
+         '<a href="/ru/kaztest/bally/">Сколько баллов нужно на ҚАЗТЕСТ</a> <a href="/ru/qrt/kak-prohodit/">Как проходит QazResmiTest</a> '
+         '<a href="/ru/obrazcy-zadaniy/">Образцы заданий</a></p>',
+         '<h2>Пробные тесты</h2>' + _btns('kaztest', 'B1', 'Пробный ҚАЗТЕСТ') + _btns('qrt', 'B1', 'Пробный QazResmiTest'),
+         _src_list(_sources('kaztest', ('Спецификация', 'Руководство')) + _sources('qrt', ('структура',)))]
+    return 'ru/kaztest-ili-qrt/', title, desc, b
+
+def page_samples():
+    sm = (META or {}).get('samples') or {}
+    if not sm: return None
+    import random
+    e = _html.escape
+    title = 'Образцы заданий Казтест и QazResmiTest по уровням A1–C2 с ответами'
+    desc = ('По одному заданию каждого уровня ҚАЗТЕСТ (A1–C1) и QazResmiTest (A1–C2) с ответом и разбором. '
+            'Под каждым — полный пробный тест этого уровня, бесплатно и без регистрации.')
+    b = ['<p class="kicker">Образцы заданий</p><h1>Образцы заданий ҚАЗТЕСТ и QazResmiTest по уровням</h1>',
+         '<p class="lead">Ниже — по одному заданию каждого уровня из наших пробных тестов, с ответом и разбором. '
+         'Полный вариант в формате экзамена открывается кнопкой под заданием. Официальные примеры заданий ҚАЗТЕСТ '
+         'Национальный центр тестирования публикует архивом на testcenter.kz.</p>']
+    sec_ru = {'reading': 'Лексико-грамматическое задание из блока чтения', 'lexis': 'Задание из раздела «Лексика и орфография»'}
+    for eid in ('kaztest', 'qrt'):
+        ex = _exam(eid); name = ex.get('name', eid)
+        b.append(f'<h2>{e(name)}</h2>')
+        for (o, _x, lv, _t) in landing_pairs():
+            q = sm.get(f'{eid}-{lv}')
+            if o != eid or not q: continue
+            # в данных ключ часто стоит первым; на экране приложения варианты перемешиваются — здесь тоже, но стабильно
+            order = list(range(len(q['options']))); random.Random(q['test'] + q['id']).shuffle(order)
+            letters = 'ABCDE'
+            right = letters[order.index(q['answer'])]
+            b.append(f'<h3 id="{eid}-{lv.lower()}" style="font-size:1rem;margin:1.6em 0 .3em">{e(name)} {e(lv)}</h3>'
+                     f'<p style="color:var(--mut);font-size:.9rem;margin:.2em 0">{e(sec_ru.get(q["section"], ""))}</p>'
+                     f'<p lang="kk"><b>{e(q["text"])}</b></p><ol type="A" lang="kk">' +
+                     ''.join(f'<li>{e(q["options"][i])}</li>' for i in order) + '</ol>'
+                     f'<details><summary>Ответ и разбор</summary><p><b>{right}) <span lang="kk">{e(q["options"][q["answer"]])}</span></b>. '
+                     f'{e(q["explain"])}</p></details>' + _btns(eid, lv))
+    b.append('<p class="more"><a href="/ru/kaztest/kak-prohodit/">Как проходит ҚАЗТЕСТ</a> <a href="/ru/qrt/kak-prohodit/">Как проходит QazResmiTest</a> '
+             '<a href="/ru/kaztest/bally/">Сколько баллов нужно на ҚАЗТЕСТ</a></p>')
+    b.append(_src_list(_sources('kaztest', ('примеры',))))
+    return 'ru/obrazcy-zadaniy/', title, desc, b
+
+# короткие подписи для ссылок на страницы-ответы (посадочные и низ главной)
+INFO_LINKS = [('ru/kaztest/bally/', 'Сколько баллов нужно на ҚАЗТЕСТ'), ('ru/kaztest/kak-prohodit/', 'Как проходит ҚАЗТЕСТ'),
+              ('ru/qrt/kak-prohodit/', 'Как проходит QazResmiTest'), ('ru/kaztest-ili-qrt/', 'ҚАЗТЕСТ или QazResmiTest'),
+              ('ru/obrazcy-zadaniy/', 'Образцы заданий по уровням')]
+def info_pages():
+    """Все страницы-ответы: (адрес, title, description, тело). Пустой список, если нет метаданных."""
+    if not META: return []
+    return [p for p in (page_kaztest_scores(), page_kaztest_format(), page_qrt_format(), page_compare(), page_samples()) if p]
+
+def info_page_html(u, title, desc, body_parts, base):
+    e = _html.escape
+    h = page_head('ru', title, desc, (base + u) if base else '')
+    h += body_parts
+    if site_cfg.get('tg'):
+        h.append('<div class="tgbox"><b>Задание дня — в Telegram</b><p>Каждое утро — вопрос из пробных тестов с разбором и '
+                 'напоминания о сроках регистрации на ҚАЗТЕСТ.</p><a href="https://t.me/' + e(site_cfg['tg']) +
+                 '" data-remind="landing" target="_blank" rel="noopener">t.me/' + e(site_cfg['tg']) + ' →</a></div>')
+    h.append('<p class="note">' + e(L10N['ru']['note']) + ' Qazaq Trainer — независимый тренажёр, не официальный сайт экзаменов.</p>')
+    h.append('<footer><p><a href="/">' + e(L10N['ru']['home']) + '</a> · <a href="/privacy/">privacy</a>' +
+             (' · ' + e(site_cfg['email']) if site_cfg.get('email') else '') + '</p></footer>')
+    h.append('</main>' + landing_script('ru', path='lp/' + u.rstrip('/')) + '</body></html>\n')
+    return ''.join(h)
+
+def landing_script(lang, eid=None, lv=None, path=None):
     """Две вещи. (1) Просмотр посадочной страницы уходит в статистику событием pageview с путём lp/<lang>/<exam>/<level>:
        иначе заходы из поиска не видны вовсе, пока человек не нажмёт кнопку. (2) Ссылки внутрь приложения получают
        utm-метки и ?ref=<домен источника>: при переходе /ru/... → /#/test/... document.referrer становится нашим
@@ -311,7 +555,7 @@ def landing_script(lang, eid, lv):
             '["utm_source","utm_medium","utm_campaign"].forEach(function(k){if(sp.get(k))q.set(k,sp.get(k).slice(0,40))});'
             'if(ref)q.set("ref",ref.replace(/^www\\./,"").slice(0,80));'
             'var qs=q.toString();if(qs)document.querySelectorAll(\'a[href^="/#"]\').forEach(function(a){a.href="/?"+qs+a.getAttribute("href").slice(1)});'
-            + ('var u=' + json.dumps(ev) + ';if(u&&navigator.sendBeacon){var p={path:' + json.dumps('lp/' + lang + '/' + eid + '/' + lv.lower()) + '};'
+            + ('var u=' + json.dumps(ev) + ';if(u&&navigator.sendBeacon){var p={path:' + json.dumps(path or 'lp/' + lang + '/' + eid + '/' + lv.lower()) + '};'
                'if(ref)p.ref=ref.replace(/^www\\./,"").slice(0,80);var m=["utm_source","utm_medium","utm_campaign"].map(function(k){return(sp.get(k)||"").slice(0,40)});'
                'if(m.join(""))p.utm=m.join("/");'
                'var sid=Math.random().toString(36).slice(2,12),send=function(n,pp){try{navigator.sendBeacon(u,new Blob([JSON.stringify({e:n,sid:sid,lang:' + json.dumps(lang) + ',ts:Date.now(),p:pp})],{type:"text/plain;charset=UTF-8"}))}catch(e){}};'
@@ -334,6 +578,9 @@ def seo_nav():
            '<b>Пробные тесты по экзаменам и уровням · Емтихан мен деңгей бойынша сынақ тестер</b>']
     for eid, ex, lv, _t in pairs:
         out.append('<a href="/' + landing_url('ru', eid, lv) + '">' + _html.escape(ex.get('name', eid)) + ' ' + lv + '</a>')
+    if info_pages():
+        out.append('<b style="margin-top:1em">Вопросы об экзаменах</b>')
+        for u, t in INFO_LINKS: out.append('<a href="/' + u + '">' + _html.escape(t) + '</a>')
     out.append('<a href="/kk/' + pairs[0][0] + '/' + pairs[0][2].lower() + '/" hreflang="kk">Қазақша</a>')
     out.append('</nav>')
     return ''.join(out)
@@ -476,6 +723,12 @@ for _eid, _ex, _lv, _tests in landing_pairs():
         _dir.mkdir(parents=True, exist_ok=True)
         (_dir / 'index.html').write_text(landing_page(_lang, _eid, _ex, _lv, _tests, _base), encoding='utf-8')
         landing_written.append(_u)
+# страницы-ответы на частые вопросы (только ru, см. info_pages)
+for _u, _title, _desc, _body in info_pages():
+    _dir = docs / _u.rstrip('/')
+    _dir.mkdir(parents=True, exist_ok=True)
+    (_dir / 'index.html').write_text(info_page_html(_u, _title, _desc, _body, _base), encoding='utf-8')
+    landing_written.append(_u)
 
 if _base:
     (docs / 'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /demo/\nSitemap: ' + _base + 'sitemap.xml\n', encoding='utf-8')

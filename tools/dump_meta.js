@@ -22,7 +22,8 @@ const out = {
   levels: Object.fromEntries(Object.entries(KZ.levels).map(([k, v]) =>
     [k, pick(v, ['name', 'name_kk', 'units', 'units_kk', 'cefr', 'cefr_kk', 'focus', 'focus_kk'])])),
   exams: Object.fromEntries(Object.entries(KZ.exams).map(([k, v]) => [k, Object.assign(
-    pick(v, ['id', 'name', 'short', 'kicker', 'tagline', 'tagline_kk', 'verified', 'examLevels', 'totalMinutes']),
+    pick(v, ['id', 'name', 'short', 'kicker', 'tagline', 'tagline_kk', 'verified', 'examLevels', 'totalMinutes',
+             'totalTasks', 'verifiedNote', 'certificateNote', 'certificateNote_kk', 'scoring', 'unverified', 'sources']),
     { sections: (v.sections || []).map((s) => pick(s, ['type', 'num', 'title', 'kk', 'minutes', 'tasks', 'tasks_kk', 'desc', 'desc_kk'])) })])),
 /* Задания для Telegram: четыре набора под три поста в день (чтение утром, грамматика или лексика днём,
      аудирование вечером). Ограничения Telegram: вопрос викторины до 300 знаков, вариант до 100, пояснение до 200,
@@ -59,6 +60,22 @@ const out = {
             out.listening.push(Object.assign(base(t, s, q), { title: s.script.title, audio: 'audio/' + t.id + '.mp3' }));
           }
         }
+      }
+    }
+    return out;
+  })(),
+/* Образцы для страницы «Образцы заданий» (ru/obrazcy-zadaniy/): по одному вопросу на «экзамен × уровень» из первого
+     готового варианта. Берём то, что понятно без текста и аудио: лексико-грамматическое задание ҚАЗТЕСТ и лексику QRT. */
+  samples: (() => {
+    const out = {};
+    const tests = KZ.tests.filter((t) => t.status !== 'draft' && !t.block).sort((a, b) => (a.id < b.id ? -1 : 1));
+    for (const t of tests) {
+      const key = t.exam + '-' + t.level;
+      if (out[key]) continue;
+      for (const s of t.sections || []) {
+        const q = (s.questions || []).find((q) => Array.isArray(q.options) && q.explain && !/мәтін/i.test(q.text || '') &&
+          ((s.type === 'reading' && q.tag) || s.type === 'lexis'));
+        if (q) { out[key] = Object.assign({ test: t.id, section: s.type }, pick(q, ['id', 'text', 'options', 'answer', 'explain'])); break; }
       }
     }
     return out;

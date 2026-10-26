@@ -7,6 +7,10 @@
    если токену больше 20 дней, воркер его продлевает (refresh_access_token, токен должен быть старше суток и живой).
    Лимит API — 100 публикаций в сутки, нам нужно 2. Музыку из библиотеки через API не добавить — публикуем без неё. */
 
+/* Пауза (26.10.2026, решение владельца по аналитике 12–26.10): Reels смотрели ~1,4 с, переходов на сайт ноль;
+   ролики сначала проверяем в TikTok. Пока true, воркер в Instagram ничего не публикует, а запас одобренных
+   считается по Telegram. Токен продолжает продлеваться, чтобы после паузы не подключать заново. */
+export const IG_PAUSED = true;
 export const IG_PREP_UTC = [6, 13];   // контейнер: за час до эфира
 export const IG_PUB_UTC = [7, 14];    // эфир: 12:00 и 19:00 по Алматы
 const GRAPH = 'https://graph.instagram.com/v25.0/';
@@ -39,7 +43,7 @@ export async function saveToken(env, token) {
   return 'Instagram подключён: @' + (d.username || d.user_id) + '. Первый Reels выйдет в ближайшие 12:00 или 19:00 из одобренных роликов.';
 }
 
-export async function igReady(env) { return !!(await auth(env)); }
+export async function igReady(env) { return !IG_PAUSED && !!(await auth(env)); }
 
 /* Ролики, одобренные владельцем и ещё не ушедшие в Instagram (для запаса одобренных в videos.js). */
 export async function igBacklog(env) {
@@ -50,6 +54,7 @@ export async function igBacklog(env) {
 
 /* За час до эфира: контейнер для следующего одобренного ролика. */
 export async function igPrepare(env, queue) {
+  if (IG_PAUSED) return;
   const a = await auth(env); if (!a) return;
   if ((await rows(env, `SELECT n FROM ig_posts WHERE status = 'container'`)).length) return;   // прошлый ещё не вышел
   const next = await rows(env, `SELECT n FROM tg_videos WHERE status IN ('approved', 'published')
@@ -66,6 +71,7 @@ export async function igPrepare(env, queue) {
 
 /* Час эфира: опубликовать готовый контейнер. Не готов — попробуем в следующий эфир, ошибка — сообщить владельцу. */
 export async function igPublish(env) {
+  if (IG_PAUSED) return;
   const a = await auth(env); if (!a) return;
   const c = await rows(env, `SELECT n, container_id FROM ig_posts WHERE status = 'container' ORDER BY n LIMIT 1`);
   if (!c.length) return;
@@ -96,6 +102,7 @@ export async function igRefresh(env) {
 export async function igStatus(env) {
   const a = await auth(env);
   if (!a) return 'Instagram: не подключён (/igtoken <токен>)';
+  if (IG_PAUSED) return 'Instagram: на паузе с 26.10 (IG_PAUSED в ig.js), токен продлевается';
   const by = {};
   for (const r of await rows(env, `SELECT status, COUNT(*) AS c FROM ig_posts GROUP BY status`)) by[r.status] = r.c;
   return 'Instagram @' + a.username + ': опубликовано ' + (by.published || 0) + ', в обработке ' + (by.container || 0) +

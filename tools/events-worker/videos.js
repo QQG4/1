@@ -10,8 +10,11 @@ import { igReady, igBacklog, igStatus } from './ig.js';
    Статусы: preview (ждёт решения) → approved → published; skipped; change. Ролика нет в таблице — ещё не показан. */
 
 export const VIDEO_UTC = 12;     // 17:00 по Алматы — публикация в канал
+/* С 27.10.2026 ролик в канал выходит 3 раза в неделю, а не каждый день: при 7 постах в день охват канала упал
+   с 33 до 8 просмотров на пост (аналитика 26.10). Дни недели по UTC: вторник, четверг, суббота. */
+export const VIDEO_DAYS = [2, 4, 6];
 export const NUDGE_UTC = 15;     // 20:00 по Алматы — напомнить и прислать следующий на одобрение
-const VIDEO_BUFFER = 14;         // запас одобренных на неделю: Instagram берёт 2 в день, Telegram 1 (ig.js)
+const VIDEO_BUFFER = 6;          // запас одобренных на две недели: Telegram берёт 3 в неделю (Instagram на паузе, ig.js)
 const SELF = 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev/';   // отсюда Telegram забирает mp4
 
 async function api(env, method, body) {
@@ -92,6 +95,7 @@ export async function onOwnerText(env, text) {
 /* 17:00 по Алматы: один одобренный ролик в канал. Если одобренных нет — напомнить владельцу. */
 export async function publishVideo(env) {
   if (!env.TG_BOT_TOKEN || !env.TG_CHANNEL) return;
+  if (!VIDEO_DAYS.includes(new Date().getUTCDay())) return;
   const next = await rows(env, `SELECT n, file_id FROM tg_videos WHERE status = 'approved' ORDER BY n LIMIT 1`);
   if (!next.length) {
     if (env.TG_OWNER_CHAT) await api(env, 'sendMessage', { chat_id: env.TG_OWNER_CHAT, text: 'Сегодня ролик в канал не вышел: одобренных нет. Нажмите ✅ под роликом выше.' });

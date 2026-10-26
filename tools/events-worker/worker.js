@@ -92,9 +92,8 @@ export default {
     return new Response(null, { status: 204, headers: cors(origin) });
   },
 
-  /* Расписания в wrangler.toml: 03:17 UTC — чистка старых записей, 04:00 UTC (09:00 по Алматы) — «задание дня» в канал. */
   /* Расписания в wrangler.toml: 03:17 UTC — чистка старых записей; ежечасно — задания дня в канал
-     (09:00, 13:00 и 19:00 по Алматы, то есть 04, 08 и 14 UTC). Часы держим в одном месте — TASKS. */
+     (09:00 и 19:00 по Алматы, то есть 04 и 14 UTC). Часы держим в одном месте — TASKS. */
   async scheduled(event, env) {
     if (event.cron !== HOURLY_CRON) { await igRefresh(env); return purge(env); }   // ночью — и продление токена Instagram
     const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
@@ -114,16 +113,18 @@ export default {
 /* ---------- Telegram ---------- */
 const HOURLY_CRON = '0 * * * *';
 const dayNo = () => Math.floor(Date.now() / 864e5);
-/* Три задания в день. Утром — чтение с текстом, днём — грамматика и лексика через день (грамматических заданий
-   меньше, так набор растягивается), вечером — аудирование с нашим mp3. Ссылка на сайт идёт только в вечернем
-   посте: решение владельца — не больше одного рекламного поста в день. */
+/* Задания в канал (с 27.10.2026, после аналитики 26.10: при 6–7 постах в день охват упал вчетверо).
+   Утром одно задание: через день чтение (текст и викторина) или грамматика/лексика; по пятницам опрос подписчиков,
+   по воскресеньям вопрос недели. Вечером аудирование, ссылка на сайт в подписи к аудио, отдельным постом не идёт.
+   Так в день выходит 3–4 сообщения вместо 7, плюс ролик по вторникам, четвергам и субботам (videos.js). */
 const TASKS = [
-  { utc: 4, kind: 'reading' },
-  { utc: 8, kind: () => {
+  { utc: 4, kind: () => {
       const wd = new Date().getUTCDay();          // 0 — воскресенье, 5 — пятница
       if (wd === 0) return 'weekly';              // разбор самого трудного вопроса недели
       if (wd === 5) return 'ask';                 // опрос подписчиков
-      return dayNo() % 2 ? 'grammar' : 'lexis';
+      const d = dayNo();
+      if (d % 2) return 'reading';
+      return Math.floor(d / 2) % 2 ? 'grammar' : 'lexis';
     } },
   { utc: 14, kind: 'listening' },
 ];
@@ -165,7 +166,8 @@ async function postTask(env, kind) {
         '\n\nСұраққа жауап беріңіз 👇 / Ответьте на вопрос ниже 👇' });
   } else if (kind === 'listening') {
     await tg(env, 'sendAudio', { chat_id: env.TG_CHANNEL, audio: SITE + q.audio, title: q.title || exam + ' ' + q.level,
-      performer: 'Qazaq Trainer', caption: head + '\nТыңдап, сұраққа жауап беріңіз. / Послушайте и ответьте на вопрос.' });
+      performer: 'Qazaq Trainer', caption: head + '\nТыңдап, сұраққа жауап беріңіз. / Послушайте и ответьте на вопрос.' +
+        '\n\nТолық сынақ тест / Полный пробный тест: ' + SITE + 'kk/' + q.exam + '/' + String(q.level).toLowerCase() + '/?utm_source=telegram&utm_medium=quiz' });
   }
 
   const sent = await tg(env, 'sendPoll', {
@@ -183,12 +185,6 @@ async function postTask(env, kind) {
             q.text.slice(0, 300), q.answer, (q.explain || '').slice(0, 300)).run();
   }
 
-  // Ссылка на сайт — один раз в день, в вечернем посте
-  if (kind === 'listening') {
-    await tg(env, 'sendMessage', { chat_id: env.TG_CHANNEL, disable_web_page_preview: false,
-      text: 'Толық сынақ тест (тегін, тіркеусіз): ' + SITE + 'kk/' + q.exam + '/' + String(q.level).toLowerCase() + '/?utm_source=telegram&utm_medium=quiz' +
-        '\nПолный пробный тест — бесплатно, без регистрации.' });
-  }
   await env.DB.prepare(`INSERT INTO events (day, ts, name, exam, level, test, section, qid) VALUES (?,?,?,?,?,?,?,?)`)
     .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', q.exam, q.level, q.test, kind, q.qid).run();
 }

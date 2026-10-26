@@ -12,4 +12,6 @@ export const SESSIONS = [
   { test: '2026-09-28', regFrom: '2026-09-21', regTo: '2026-09-26', source: 'https://testcenter.kz/?custom_news_section=%D0%BA%D0%B0%D0%B7%D1%82%D0%B5%D1%81%D1%82-2&lang=ru' },
   // новость НЦТ от 28.09.2026: «Период приема заявок: с 30 сентября по 7 октября», «Дата тестирования: 9 октября»; 19 городов, 7 121 тг
   { test: '2026-10-09', regFrom: '2026-09-30', regTo: '2026-10-07', source: 'https://testcenter.kz/?custom_news_section=%D0%BA%D0%B0%D0%B7%D1%82%D0%B5%D1%81%D1%82-3&lang=ru' },
+  // новость НЦТ от 19.10.2026: «Период приема заявок: с 19 по 27 октября», «Дата тестирования: 29 октября»; 19 городов, 7 121 тг
+  { test: '2026-10-29', regFrom: '2026-10-19', regTo: '2026-10-27', source: 'https://testcenter.kz/?custom_news_section=%D0%BA%D0%B0%D0%B7%D1%82%D0%B5%D1%81%D1%82-5&lang=ru' },
 ];

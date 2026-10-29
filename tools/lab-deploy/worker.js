@@ -88,6 +88,15 @@ async function stats(url, env) {
   }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
 }
 
+/* Переключатель «Обучение · Новый сайт» (29.10.2026): в лаборатории лежат две сборки — обучалка (корень) и новая
+   версия публичного сайта (/_site, собирает build.py). Выбор хранится в куке qt_view, ссылки /?view=site и /?view=lab.
+   Обучалку не трогаем: кнопку переключателя дописываем в HTML на лету. Аудио, шрифты и статистика — общие. */
+const SHARED = /^\/(audio|fonts|api|stats|_site)(\/|$)/;
+const SWITCH = (view) => '<div id="qt-view-switch" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:2px;' +
+  'padding:3px;border-radius:999px;background:#10171b;box-shadow:0 2px 10px rgba(0,0,0,.25);font:600 13px/1 system-ui,-apple-system,sans-serif">' +
+  [['lab', 'Обучение'], ['site', 'Новый сайт']].map(([v, t]) => '<a href="/?view=' + v + '" style="padding:7px 12px;border-radius:999px;text-decoration:none;' +
+    (v === view ? 'background:#5cc2dc;color:#0a1417' : 'color:#cfe3e8') + '">' + t + '</a>').join('') + '</div>';
+
 export default {
   async fetch(request, env) {
     const user = env.LAB_USER, pass = env.LAB_PASS;
@@ -104,9 +113,25 @@ export default {
     }
     const url = new URL(request.url);
     if (url.pathname === '/api/stats') return stats(url, env);
-    const res = await env.ASSETS.fetch(request);
-    const out = new Response(res.body, res);
+    const pick = url.searchParams.get('view');
+    if (pick === 'site' || pick === 'lab') {
+      return new Response(null, { status: 302, headers: { Location: '/', 'Cache-Control': 'no-store',
+        'Set-Cookie': 'qt_view=' + pick + '; Path=/; Max-Age=2592000; Secure; HttpOnly; SameSite=Lax' } });
+    }
+    const view = /(?:^|;\s*)qt_view=site(?:;|$)/.test(request.headers.get('Cookie') || '') ? 'site' : 'lab';
+    let res;
+    if (view === 'site' && !SHARED.test(url.pathname)) {
+      const inner = new URL(url); inner.pathname = '/_site' + url.pathname;
+      res = await env.ASSETS.fetch(new Request(inner, request));
+    } else res = await env.ASSETS.fetch(request);
+    let out = new Response(res.body, res);
+    const loc = out.headers.get('Location');
+    if (loc && loc.startsWith('/_site/')) out.headers.set('Location', loc.slice(6));   // переадресации сборки сайта без /_site
     out.headers.set('X-Robots-Tag', 'noindex, nofollow');   // лаборатория в поиск не попадает ни при каких условиях
+    if ((out.headers.get('Content-Type') || '').includes('text/html') && !url.pathname.startsWith('/stats')) {
+      out.headers.set('Cache-Control', 'no-store');
+      out = new HTMLRewriter().on('body', { element(el) { el.append(SWITCH(view), { html: true }); } }).transform(out);
+    }
     return out;
   },
 };

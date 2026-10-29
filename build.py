@@ -520,14 +520,161 @@ def page_samples():
     b.append(_src_list(_sources('kaztest', ('примеры',))))
     return 'ru/obrazcy-zadaniy/', title, desc, b
 
+# вторая волна (29.10.2026): уровни QazResmiTest, критерии письма и говорения ҚАЗТЕСТ, план подготовки за месяц
+def _variants(eid, lv): return next((len(t) for (o, _x, l, t) in landing_pairs() if o == eid and l == lv), 0)
+def _blocks(eid): return sorted(t['id'] for t in (META or {}).get('tests', []) if t['exam'] == eid and t.get('block') == 'listening')
+
+def page_qrt_levels():
+    ex = _exam('qrt'); scale = ex.get('scale') or {}
+    if not scale: return None
+    e = _html.escape; lv = [l for l in ex.get('examLevels', []) if l in scale]
+    un = ex.get('unverified') or []
+    title = f'Уровни и баллы QazResmiTest: как узнать свой уровень {lv[0]}–{lv[-1]}'
+    desc = (f'QazResmiTest выдаёт результат уровнем от {lv[0]} до {lv[-1]}, проходные баллы не публикуются. Что означает каждый уровень '
+            'по описанию qrt.kz и как заранее проверить свой уровень на пробных тестах.')
+    b = ['<p class="kicker">QazResmiTest · уровни</p><h1>Уровни и баллы QazResmiTest (Казресмитест)</h1>',
+         f'<p class="lead">QazResmiTest — один тест для всех: результат выдаётся уровнем по шкале от {lv[0]} до {lv[-1]}. '
+         'Сколько баллов нужно на каждый уровень, qrt.kz не публикует, на сайте теста описаны только сами уровни. '
+         'Ниже — эти описания и способ заранее понять свой уровень по пробным тестам.</p>',
+         '<h2>Шесть уровней QazResmiTest</h2><div class="tbl-wrap"><table><thead><tr><th>Уровень</th><th>Что он означает (qrt.kz)</th>'
+         '<th>Пробный тест</th></tr></thead><tbody>' +
+         ''.join(f'<tr id="{l.lower()}"><td><b>{e(l)}</b><br><span style="color:var(--mut)">{e(scale[l]["name"])}</span></td>'
+                 f'<td>{e(scale[l]["desc"])}</td><td>' +
+                 (f'<a href="/{landing_url("ru", "qrt", l)}">{_plural_ru(_variants("qrt", l), "вариант", "варианта", "вариантов")}</a>' if _variants('qrt', l) else '—') +
+                 '</td></tr>' for l in lv) + '</tbody></table></div>']
+    b.append('<h2>Сколько баллов нужно на QazResmiTest</h2><p>' +
+             e(un[1] if len(un) > 1 else 'Проходные баллы не публикуются.') +
+             ' Официальной таблицы порогов, как у ҚАЗТЕСТ, у QazResmiTest нет — см. '
+             '<a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a> для сравнения.</p>')
+    if ex.get('sittingNote'):
+        b.append('<h2>Как сдаётся тест</h2><p>По данным qrt.kz: «' + e(ex['sittingNote']) + '» ' + e(ex.get('tagline', '')) + '</p>')
+    b.append('<h2>Как узнать свой уровень по пробному тесту</h2><ol>'
+             '<li>Выберите уровень, на который рассчитываете, и пройдите мок-тест в режиме «как на экзамене»: таймер раздела не останавливается.</li>'
+             '<li>После аудирования, лексики и чтения тренажёр покажет итог: «Ваш уровень по чтению и аудированию: B1» '
+             'или разделы, в которых не хватило баллов.</li>'
+             '<li>Уровень подтвердился — попробуйте следующий. Не подтвердился — пройдите уровень ниже, разберите ошибки и вернитесь.</li>'
+             '<li>Письмо и интервью проверяются самопроверкой по чек-листу и в итог уровня не входят. В режиме «тренировка» уровень не подтверждается.</li></ol>'
+             '<p>Реальный тест один для всех уровней, а наши мок-тесты различаются сложностью: так проще проверить, держите ли вы '
+             'конкретный уровень, и тренировать именно его.</p>' + _btns('qrt', 'B1', 'Пробный QazResmiTest B1'))
+    b.append('<p class="more"><a href="/ru/qrt/kak-prohodit/">Как проходит QazResmiTest</a> <a href="/ru/kaztest-ili-qrt/">ҚАЗТЕСТ или QazResmiTest</a> '
+             '<a href="/ru/obrazcy-zadaniy/#qrt-b1">Образцы заданий</a></p>')
+    b.append(_src_list(_sources('qrt', ('qrt.kz',))))
+    return 'ru/qrt/urovni/', title, desc, b
+
+def page_kaztest_criteria():
+    c = (META or {}).get('criteria'); ex = _exam('kaztest')
+    if not c: return None
+    if c.get('same') != c.get('of'):
+        print('!! критерии письма/говорения различаются в вариантах ҚАЗТЕСТ (%s из %s совпадают) — проверить данные' % (c.get('same'), c.get('of')))
+    e = _html.escape
+    W, S = c['writing'], c['speaking']
+    pic = next((x for x in W if x['kind'] == 'picture'), None); ess = next((x for x in W if x['kind'] == 'essay'), None)
+    if not (pic and ess and S.get('criteria')): return None
+    sp_max = sum(x['max'] for x in S['criteria'])
+    wsec, ssec = _sec('kaztest', 'writing'), _sec('kaztest', 'speaking')
+    title = 'Критерии оценки ҚАЗТЕСТ: письмо и говорение (жазылым, айтылым)'
+    desc = (f"Как оценивают письмо и говорение на Казтест: описание картинки — {pic['points']} баллов, эссе — {ess['points']}, "
+            f"говорение — {len(S['tasks'])} задания по {sp_max}. Официальные критерии НЦТ и что нужно для высшего балла.")
+    def tbl(crit):
+        return ('<div class="tbl-wrap"><table><thead><tr><th>Критерий</th><th>Макс.</th><th>Что нужно для высшего балла</th></tr></thead><tbody>' +
+                ''.join(f'<tr><td lang="kk"><b>{e(x["name"])}</b></td><td>{x["max"]}</td><td>{e(x.get("top", ""))}</td></tr>' for x in crit) +
+                '</tbody></table></div>')
+    b = ['<p class="kicker">ҚАЗТЕСТ · критерии</p><h1>Критерии оценки письма и говорения ҚАЗТЕСТ</h1>',
+         '<p class="lead">' + e(f"Письмо и говорение ҚАЗТЕСТ оценивают по официальным критериям НЦТ, по 50 баллов за блок. "
+                                f"Описание картинки — {pic['points']} баллов ({len(pic['criteria'])} критерия по {pic['criteria'][0]['max']}), "
+                                f"эссе — {ess['points']} баллов ({len(ess['criteria'])} критерия по {ess['criteria'][0]['max']}), "
+                                f"говорение — {len(S['tasks'])} задания по {sp_max} баллов, {len(S['criteria'])} критериев по {S['criteria'][0]['max']}.") + '</p>',
+         _btns('kaztest', 'B1', 'Проверить себя на пробном ҚАЗТЕСТ'),
+         f'<h2>Письмо (Жазылым): {wsec.get("tasks", "")}, {_min_ru(wsec.get("minutes") or 0)}</h2>',
+         f"<h3 style=\"font-size:1rem;margin:1.4em 0 .3em\">Задание 1. Описание картинки — {pic['points']} баллов</h3>"
+         f"<p>Ориентир — {_min_ru(pic['minutes'])} и от {pic.get('minWords')} слов.</p>" + tbl(pic['criteria']),
+         f"<h3 style=\"font-size:1rem;margin:1.4em 0 .3em\">Задание 2. Эссе — {ess['points']} баллов</h3>"
+         f"<p>{_min_ru(ess['minutes']).capitalize()}, для высшего балла — около {ess.get('minWords')} слов.</p>" + tbl(ess['criteria']),
+         f'<h2>Говорение (Айтылым): {ssec.get("tasks", "")}, {_min_ru(ssec.get("minutes") or 0)}</h2>',
+         '<p>' + e(ssec.get('desc', '')) + ' Оба ответа оцениваются по одним и тем же критериям.</p>' + tbl(S['criteria'])]
+    sc = ex.get('scoring')
+    if sc:
+        bl = {x['title']: x for x in sc['blocks']}
+        if 'Жазылым' in bl:
+            row = ', '.join(f"{l} — {m}" for l, m in zip(sc['levels'], bl['Жазылым']['min']))
+            b.append(f'<h2>Сколько баллов нужно за письмо и говорение</h2><p>Пороги одинаковые для обоих блоков (из 50): {e(row)}. '
+                     'Полная таблица — на странице <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
+    if ex.get('certificateNote') and '. ' in ex['certificateNote']:
+        b.append('<p>' + e(ex['certificateNote'].split('. ', 1)[1]) + '</p>')
+    b.append('<h2>Как потренироваться</h2><p>В пробном тесте оба задания письма и оба задания говорения идут с таймером, ответ '
+             'на говорение записывается с микрофона. После раздела вы оцениваете себя по этим же критериям: так видно, на каком '
+             'критерии теряются баллы.</p>'
+             '<p style="color:var(--mut);font-size:.92rem">Названия критериев — как в документах НЦТ; описания высшего балла — '
+             'наш краткий пересказ официальных критериев. Сверено ' +
+             e((ex.get('verifiedNote') or '').rsplit('Проверено ', 1)[-1].rstrip('.')) + '.</p>')
+    b.append('<p class="more"><a href="/ru/kaztest/kak-prohodit/">Как проходит ҚАЗТЕСТ</a> <a href="/ru/kaztest/podgotovka-za-mesyac/">Подготовка за месяц</a></p>')
+    b.append(_src_list(_sources('kaztest', ('Критерии',))))
+    return 'ru/kaztest/kriterii/', title, desc, b
+
+def page_kaztest_month():
+    ex = _exam('kaztest'); secs = ex.get('sections') or []
+    pairs = [(l, t) for (o, _x, l, t) in landing_pairs() if o == 'kaztest']
+    if not (secs and pairs): return None
+    e = _html.escape
+    nv = max(len(t) for _l, t in pairs); blocks = _blocks('kaztest')
+    L, R, W, S = (_sec('kaztest', t) for t in ('listening', 'reading', 'writing', 'speaking'))
+    crit = (META or {}).get('criteria') or {}
+    pic = next((x for x in crit.get('writing', []) if x['kind'] == 'picture'), {}); ess = next((x for x in crit.get('writing', []) if x['kind'] == 'essay'), {})
+    def lv_links(n):
+        return ' '.join(f'<a href="/#/test/{e(t[n]["id"])}">{e(l)}</a>' for l, t in pairs if len(t) > n)
+    blk = lambda i: (f'<a href="/#/test/{e(blocks[i])}">блок {i + 1}</a>' if i < len(blocks) else '')
+    title = 'Как подготовиться к Казтест за месяц: план по неделям'
+    desc = (f'План подготовки к ҚАЗТЕСТ на 4 недели: диагностика, аудирование и чтение, письмо и говорение, полные прогоны. '
+            f'Бесплатные пробные тесты A1–C1 ({nv} вариантов на уровень)' + (f' и {len(blocks)} блоков аудирования.' if blocks else '.'))
+    b = ['<p class="kicker">ҚАЗТЕСТ · подготовка</p><h1>Как подготовиться к ҚАЗТЕСТ за месяц</h1>',
+         '<p class="lead">Четыре недели: неделя на диагностику, неделя на аудирование и чтение, неделя на письмо и говорение, '
+         'неделя на полные прогоны в режиме экзамена. Всё делается на бесплатных пробных тестах в формате ҚАЗТЕСТ: ' +
+         e(f'{nv} вариантов на каждый уровень от {pairs[0][0]} до {pairs[-1][0]}') + (e(f' и {len(blocks)} блоков аудирования') if blocks else '') + '.</p>',
+         '<h2>Что на экзамене</h2><p>' + e(ex.get('tagline', '')) + ' ' +
+         e(f"Аудирование — {_tasks_short(L)} за {_min_ru(L.get('minutes'))}, чтение — {_tasks_short(R)} за {_min_ru(R.get('minutes'))}, "
+           f"письмо — {_tasks_short(W)} за {_min_ru(W.get('minutes'))}, говорение — {_tasks_short(S)} за {_min_ru(S.get('minutes'))}.") +
+         ' Подробнее — <a href="/ru/kaztest/kak-prohodit/">как проходит ҚАЗТЕСТ</a> и <a href="/ru/kaztest/bally/">сколько баллов нужно</a>.</p>',
+         '<h2>Неделя 1. Узнать свой уровень</h2><ol>'
+         f'<li>Пройдите первый вариант своего уровня целиком, в режиме «как на экзамене»: {lv_links(0)}.</li>'
+         '<li>Посмотрите итог по аудированию и чтению. Если уровень не подтвердился, пройдите первый вариант уровня ниже: '
+         'так станет понятно, от чего отталкиваться.</li>'
+         '<li>Выпишите, в каком блоке потеряно больше всего баллов и на каких вопросах: разбор открывается после каждого раздела.</li>' +
+         (f'<li>Пройдите {blk(0)} аудирования: в нём четыре текста от A1 до C1 и 20 минут, как в настоящем блоке.</li>' if blocks else '') +
+         '</ol>',
+         '<h2>Неделя 2. Аудирование и чтение</h2><ol>' +
+         (f'<li>Через день — один блок аудирования ({blk(1)}, {blk(2)}, {blk(3)} и дальше по порядку). После каждого читайте '
+          'разбор и переслушивайте тексты, где ошиблись.</li>' if len(blocks) > 3 else '') +
+         f'<li>Разделы чтения из вариантов 2 и 3 своего уровня. Вариант 2: {lv_links(1)}. Вариант 3: {lv_links(2)}.</li>'
+         '<li>В блоке чтения 18 из 40 заданий лексико-грамматические. В наших вариантах это окончания, синонимы и антонимы, '
+         'типы предложений: после разбора выпишите формы, на которых ошибаетесь.</li>'
+         '<li>Засекайте время на каждый текст: на экзамене четыре текста и 50 минут на весь блок.</li></ol>',
+         '<h2>Неделя 3. Письмо и говорение</h2><ol>' +
+         (f"<li>Описание картинки: около {_min_ru(pic.get('minutes') or 10)}, от {pic.get('minWords')} слов, {pic.get('points')} баллов.</li>" if pic else '') +
+         (f"<li>Эссе: {_min_ru(ess.get('minutes') or 40)}, для высшего балла около {ess.get('minWords')} слов, {ess.get('points')} баллов. "
+          'Пишите по одному эссе через день из вариантов своего уровня.</li>' if ess else '') +
+         '<li>Говорение: 3 минуты на подготовку и 4 на ответ. Записывайте ответ с микрофона и переслушивайте его.</li>'
+         '<li>Оценивайте себя по <a href="/ru/kaztest/kriterii/">официальным критериям</a>: видно, какой критерий проседает.</li></ol>',
+         '<h2>Неделя 4. Полные прогоны</h2><ol>'
+         f'<li>Два полных варианта в режиме экзамена, все блоки подряд. Вариант 4: {lv_links(3)}. Вариант 5: {lv_links(4)}.</li>'
+         '<li>Если уровень подтверждается уверенно, пройдите один вариант уровня выше: на экзамене тексты идут от A1 до C1.</li>'
+         '<li>За два-три дня до теста новое не берите: повторите ошибки из разборов и выспитесь.</li></ol>',
+         '<h2>Чего пробный тест не заменит</h2><p>' +
+         e((ex.get('unverified') or ['', ''])[1].split(' — это')[0]) + '. Поэтому блоки аудирования с четырьмя текстами и полные прогоны в четвёртую неделю важны.</p>',
+         _btns('kaztest', 'B1', 'Начать с пробного ҚАЗТЕСТ B1')]
+    b.append('<p class="more"><a href="/ru/kaztest/kriterii/">Критерии письма и говорения</a> <a href="/ru/obrazcy-zadaniy/">Образцы заданий</a> '
+             '<a href="/ru/kaztest-ili-qrt/">ҚАЗТЕСТ или QazResmiTest</a></p>')
+    return 'ru/kaztest/podgotovka-za-mesyac/', title, desc, b
+
 # короткие подписи для ссылок на страницы-ответы (посадочные и низ главной)
 INFO_LINKS = [('ru/kaztest/bally/', 'Сколько баллов нужно на ҚАЗТЕСТ'), ('ru/kaztest/kak-prohodit/', 'Как проходит ҚАЗТЕСТ'),
               ('ru/qrt/kak-prohodit/', 'Как проходит QazResmiTest'), ('ru/kaztest-ili-qrt/', 'ҚАЗТЕСТ или QazResmiTest'),
-              ('ru/obrazcy-zadaniy/', 'Образцы заданий по уровням')]
+              ('ru/obrazcy-zadaniy/', 'Образцы заданий по уровням'), ('ru/qrt/urovni/', 'Уровни и баллы QazResmiTest'),
+              ('ru/kaztest/kriterii/', 'Критерии письма и говорения ҚАЗТЕСТ'), ('ru/kaztest/podgotovka-za-mesyac/', 'Подготовка к ҚАЗТЕСТ за месяц')]
 def info_pages():
     """Все страницы-ответы: (адрес, title, description, тело). Пустой список, если нет метаданных."""
     if not META: return []
-    return [p for p in (page_kaztest_scores(), page_kaztest_format(), page_qrt_format(), page_compare(), page_samples()) if p]
+    return [p for p in (page_kaztest_scores(), page_kaztest_format(), page_qrt_format(), page_compare(), page_samples(),
+                                 page_qrt_levels(), page_kaztest_criteria(), page_kaztest_month()) if p]
 
 def info_page_html(u, title, desc, body_parts, base):
     e = _html.escape

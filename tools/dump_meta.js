@@ -23,7 +23,8 @@ const out = {
     [k, pick(v, ['name', 'name_kk', 'units', 'units_kk', 'cefr', 'cefr_kk', 'focus', 'focus_kk'])])),
   exams: Object.fromEntries(Object.entries(KZ.exams).map(([k, v]) => [k, Object.assign(
     pick(v, ['id', 'name', 'short', 'kicker', 'tagline', 'tagline_kk', 'verified', 'examLevels', 'totalMinutes',
-             'totalTasks', 'verifiedNote', 'certificateNote', 'certificateNote_kk', 'scoring', 'unverified', 'sources']),
+             'totalTasks', 'verifiedNote', 'certificateNote', 'certificateNote_kk', 'scoring', 'unverified', 'sources',
+             'sittingNote', 'scale']),
     { sections: (v.sections || []).map((s) => pick(s, ['type', 'num', 'title', 'kk', 'minutes', 'tasks', 'tasks_kk', 'desc', 'desc_kk'])) })])),
 /* Задания для Telegram: четыре набора под три поста в день (чтение утром, грамматика или лексика днём,
      аудирование вечером). Ограничения Telegram: вопрос викторины до 300 знаков, вариант до 100, пояснение до 200,
@@ -79,6 +80,27 @@ const out = {
       }
     }
     return out;
+  })(),
+/* Критерии письма и говорения ҚАЗТЕСТ для страницы ru/kaztest/kriterii/: они официальные (PDF НЦТ) и одинаковы во всех
+     вариантах, поэтому берём первый готовый тест; same — сколько вариантов дают тот же набор критериев (проверка в build.py). */
+  criteria: (() => {
+    const kt = KZ.tests.filter((t) => t.exam === 'kaztest' && t.status !== 'draft' && !t.block).sort((a, b) => (a.id < b.id ? -1 : 1));
+    const take = (t) => {
+      const w = (t.sections || []).find((s) => s.type === 'writing'), sp = (t.sections || []).find((s) => s.type === 'speaking');
+      if (!w || !sp) return null;
+      const crit = (c) => (c || []).map((x) => pick(x, ['name', 'max', 'top']));
+      return {
+        writing: (w.tasks || []).map((x) => Object.assign(pick(x, ['kind', 'points', 'minutes', 'minWords']), { criteria: crit(x.criteria) })),
+        speaking: Object.assign(pick(sp, ['prepMinutes', 'answerMinutes']), { criteria: crit(sp.criteria),
+          tasks: (sp.tasks || []).map((x) => pick(x, ['kind', 'points', 'minutes'])) }),
+      };
+    };
+    const all = kt.map((t) => Object.assign({ from: t.id }, take(t))).filter((c) => c.writing);
+    if (!all.length) return null;
+    const names = (c) => JSON.stringify([c.writing.map((x) => x.criteria.map((y) => y.name + y.max)), c.speaking.criteria.map((y) => y.name + y.max)]);
+    // описание высшего балла в вариантах местами сокращено — показываем самое полное
+    const size = (c) => JSON.stringify(c).length, best = all.reduce((a, c) => (size(c) > size(a) ? c : a));
+    return Object.assign(best, { same: all.filter((c) => names(c) === names(best)).length, of: all.length });
   })(),
   tests: KZ.tests
     .filter((t) => t.status !== 'draft' && (t.sections || []).length)

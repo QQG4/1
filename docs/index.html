@@ -356,6 +356,7 @@ figure.picture figcaption{font-size:0.7812rem;color:var(--ink-faint);padding:8px
 .hub-st .variants.v-grid{display:grid;grid-template-columns:repeat(5,auto);justify-content:end}
 .hub-st .variants.v-grid.v-lv{grid-template-columns:repeat(3,auto)}
 .hub-st .vchip{min-width:26px;height:24px}
+.hub-st .vchip-lv{min-width:38px}   /* «26–30» и «A1» одной ширины, сетка ровная */
 
 /* жалоба на вопрос в разборе */
 .report{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
@@ -10533,16 +10534,23 @@ window.KZ = window.KZ || {};
     var bl = blocksFor(eid); if (!bl.length) return '';
     var full = eid === 'kaztest';
     var chips;
-    if (full) chips = '<span class="variants v-grid">' + bl.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (i + 1) + '</span>'; }).join('') + '</span>';
-    else {
+    /* ҚАЗТЕСТ: 30 номеров сеткой выглядели тяжело рядом с соседними строками (29.10.2026) — показываем пятёрки «1–5» … «26–30»
+       сеткой 3×2, как уровни QazResmiTest. Кнопка ведёт на первый непройденный блок пятёрки, цвет — сколько пройдено. */
+    var group = function (label, ts) {
+      var done = ts.filter(function (x) { var r = sp(x.id, 'listening'); return r && r.status === 'done'; });
+      var next = ts.filter(function (x) { return done.indexOf(x) < 0; })[0] || ts[0];
+      var cls = done.length === ts.length ? 'ok' : done.length ? 'warn' : 'muted';
+      return '<span class="vchip vchip-lv ' + cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + next.id + '" title="' + label + ' · ' + T('пройдено') + ' ' + done.length + ' ' + T('из') + ' ' + ts.length + '">' + label + '</span>';
+    };
+    if (full) {
+      var packs = [];
+      for (var k = 0; k < bl.length; k += 5) packs.push(group((k + 1) + '–' + Math.min(k + 5, bl.length), bl.slice(k, k + 5)));
+      chips = '<span class="variants v-grid v-lv">' + packs.join('') + '</span>';
+    } else {
       /* QazResmiTest: по моку на уровень было бы 36 кнопок — показываем уровни (11.10.2026). Кнопка ведёт на первый
          непройденный мок уровня, цвет — сколько пройдено: ничего / часть / все. */
       chips = '<span class="variants v-grid v-lv">' + LEVEL_ORDER5.map(function (lv) {
-        var ts = bl.filter(function (x) { return x.level === lv; }); if (!ts.length) return '';
-        var done = ts.filter(function (x) { var r = sp(x.id, 'listening'); return r && r.status === 'done'; });
-        var next = ts.filter(function (x) { return done.indexOf(x) < 0; })[0] || ts[0];
-        var cls = done.length === ts.length ? 'ok' : done.length ? 'warn' : 'muted';
-        return '<span class="vchip vchip-lv ' + cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + next.id + '" title="' + lv + ' · ' + T('пройдено') + ' ' + done.length + ' ' + T('из') + ' ' + ts.length + '">' + lv + '</span>';
+        var ts = bl.filter(function (x) { return x.level === lv; }); return ts.length ? group(lv, ts) : '';
       }).join('') + '</span>';
     }
     return '<a class="level-row" href="#/exam/' + eid + '"><span class="lvl lvl-au">' + T('Ауд.') + '</span><span><div class="nm hub-nm"><span>' + T('Блоки аудирования') + ' <span class="muted small">· ' + bl.length + '</span></span></div><div class="dsc">' +

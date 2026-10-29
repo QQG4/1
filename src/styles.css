@@ -356,6 +356,7 @@ figure.picture figcaption{font-size:0.7812rem;color:var(--ink-faint);padding:8px
 .hub-st .variants.v-grid{display:grid;grid-template-columns:repeat(5,auto);justify-content:end}
 .hub-st .variants.v-grid.v-lv{grid-template-columns:repeat(3,auto)}
 .hub-st .vchip{min-width:26px;height:24px}
+.hub-st .vchip-lv{min-width:38px}   /* «26–30» и «A1» одной ширины, сетка ровная */
 
 /* жалоба на вопрос в разборе */
 .report{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}

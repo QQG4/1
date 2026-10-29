@@ -761,6 +761,12 @@ assert '</script' not in _tests_js.lower(), 'в данных тестов ест
 (lab / 'stats').mkdir(exist_ok=True)
 (lab / 'stats' / 'index.html').write_text(read(src / 'stats' / 'index.html').replace('/*TESTS*/', _tests_js), encoding='utf-8')
 
+# новая версия публичного сайта внутри лаборатории — на оценку владельцу до выкладки (29.10.2026): переключатель
+# «Обучение · Новый сайт» добавляет воркер лаборатории (tools/lab-deploy/worker.js), сама обучалка не меняется.
+# Аудио и шрифты у сборок одинаковые, поэтому берутся из лаборатории, а не копируются второй раз.
+shutil.rmtree(lab / '_site', ignore_errors=True)
+shutil.copytree(docs, lab / '_site', ignore=lambda d, names: [n for n in names if d == str(docs) and n in ('audio', 'fonts', 'CNAME', '_headers')])
+
 kb = lambda p: p.stat().st_size // 1024
 print('built: docs/index.html (%d KB, сайт — только мок-тесты), lab-site/index.html (%d KB, лаборатория: +курс%s), dist/index.html (%d KB), dist/artifact.html'
       % (kb(docs / 'index.html'), kb(lab / 'index.html'), ' +платное' if paid_data else '', kb(root / 'dist' / 'index.html')))

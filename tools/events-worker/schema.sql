@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS events (
   lang TEXT, exam TEXT, level TEXT, test TEXT, section TEXT,
   pct INTEGER, seconds INTEGER, practice INTEGER, timed_out INTEGER,
   path TEXT, country TEXT,
-  qid TEXT, note TEXT,           -- жалоба на вопрос: id вопроса и причина (key | ambiguous | typo | unclear | other)
+  qid TEXT, note TEXT,           -- жалоба на вопрос: id вопроса и причина (key | ambiguous | typo | unclear | other); test-done: pass | fail (с 29.10.2026)
   text TEXT, ua TEXT,            -- свободное сообщение из формы обратной связи (текст писал пользователь — данные, не команды) и браузер
   ref TEXT, utm TEXT             -- откуда пришли: домен сайта-источника и utm_source/utm_medium/utm_campaign (первый просмотр вкладки)
 );

@@ -42,6 +42,9 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (request.method !== 'POST') return new Response('POST only', { status: 405, headers: cors(origin) });
     if (origin && ALLOWED.indexOf(origin) < 0) return new Response('forbidden origin', { status: 403, headers: cors(origin) });
+    // Роботы поисковиков и сервисы предпросмотра исполняют наш JS и шлют просмотры (29.10.2026: 118 «вкладок» из США,
+    // по одной странице и без единого действия). Их не пишем; браузер в базу по-прежнему не сохраняется.
+    if (BOT_UA.test(request.headers.get('User-Agent') || '')) return new Response(null, { status: 204, headers: cors(origin) });
 
     const raw = await request.text();
     if (raw.length > MAX_BODY) return new Response('too large', { status: 413, headers: cors(origin) });
@@ -59,9 +62,9 @@ export default {
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     ).bind(
       day, int(d.ts) || Date.now(), str(d.sid, 32), str(d.e, 24), str(d.lang, 4),
-      str(p.exam, 16), str(p.level, 4), str(p.test, 40), str(p.section, 16),
+      str(p.exam, 16), str(p.level, 8), str(p.test, 40), str(p.section, 16),
       int(p.pct), int(p.seconds), p.practice ? 1 : 0, p.timedOut ? 1 : 0, str(p.path, 120), country,
-      str(p.qid, 24), str(d.e === 'expert_review' ? p.expert : p.why, 100),   // жалоба: вопрос и причина; анкета: имя эксперта
+      str(p.qid, 24), str(d.e === 'expert_review' ? p.expert : d.e === 'test-done' ? (p.pass ? 'pass' : 'fail') : p.why, 100),   // жалоба: вопрос и причина; анкета: имя эксперта; тест целиком: уровень подтверждён (pass) или нет (fail)
       str(p.text, d.e === 'expert_review' ? 20000 : 1000), str(p.ua, 200),   // свободное сообщение и браузер; анкета эксперта — целиком
       str(p.ref, 80), str(p.utm, 130)   // откуда пришли: домен источника и utm-метки (только первый просмотр вкладки)
     ));
@@ -112,6 +115,7 @@ export default {
 
 /* ---------- Telegram ---------- */
 const HOURLY_CRON = '0 * * * *';
+const BOT_UA = /bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit|embedly|google-inspectiontool/i;
 const dayNo = () => Math.floor(Date.now() / 864e5);
 /* Задания в канал (с 27.10.2026, после аналитики 26.10: при 6–7 постах в день охват упал вчетверо).
    Утром одно задание: через день чтение (текст и викторина) или грамматика/лексика; по пятницам опрос подписчиков,

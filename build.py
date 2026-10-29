@@ -547,7 +547,9 @@ def landing_script(lang, eid=None, lv=None, path=None):
     """Две вещи. (1) Просмотр посадочной страницы уходит в статистику событием pageview с путём lp/<lang>/<exam>/<level>:
        иначе заходы из поиска не видны вовсе, пока человек не нажмёт кнопку. (2) Ссылки внутрь приложения получают
        utm-метки и ?ref=<домен источника>: при переходе /ru/... → /#/test/... document.referrer становится нашим
-       собственным доменом, и без этого все заходы из поиска и из Telegram записывались бы как прямые."""
+       собственным доменом, и без этого все заходы из поиска и из Telegram записывались бы как прямые.
+       Номер вкладки — тот же `kz-trainer:sid` в sessionStorage, что у приложения (29.10.2026): иначе человек,
+       перешедший с посадочной в тест, считался двумя посетителями, а переход «посадочная → тест» не был виден."""
     ev = site_cfg.get('events') or ''
     return ('<script>(function(){var sp=new URLSearchParams(location.search),q=new URLSearchParams(),ref="";'
             'try{ref=document.referrer?new URL(document.referrer).hostname:""}catch(e){}'
@@ -558,7 +560,7 @@ def landing_script(lang, eid=None, lv=None, path=None):
             + ('var u=' + json.dumps(ev) + ';if(u&&navigator.sendBeacon){var p={path:' + json.dumps(path or 'lp/' + lang + '/' + eid + '/' + lv.lower()) + '};'
                'if(ref)p.ref=ref.replace(/^www\\./,"").slice(0,80);var m=["utm_source","utm_medium","utm_campaign"].map(function(k){return(sp.get(k)||"").slice(0,40)});'
                'if(m.join(""))p.utm=m.join("/");'
-               'var sid=Math.random().toString(36).slice(2,12),send=function(n,pp){try{navigator.sendBeacon(u,new Blob([JSON.stringify({e:n,sid:sid,lang:' + json.dumps(lang) + ',ts:Date.now(),p:pp})],{type:"text/plain;charset=UTF-8"}))}catch(e){}};'
+               'var sid;try{sid=sessionStorage.getItem("kz-trainer:sid");if(!sid){sid=Date.now().toString(36)+Math.random().toString(36).slice(2,10);sessionStorage.setItem("kz-trainer:sid",sid)}}catch(e){sid=Math.random().toString(36).slice(2,12)}var send=function(n,pp){try{navigator.sendBeacon(u,new Blob([JSON.stringify({e:n,sid:sid,lang:' + json.dumps(lang) + ',ts:Date.now(),p:pp})],{type:"text/plain;charset=UTF-8"}))}catch(e){}};'
                'send("pageview",p);document.addEventListener("click",function(ev){var a=ev.target.closest&&ev.target.closest("a[data-remind]");if(a)send("remind",{where:a.getAttribute("data-remind"),path:p.path})})}'
                if ev else '')
             + '})();</script>')

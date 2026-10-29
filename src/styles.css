@@ -419,3 +419,9 @@ table.prog .sc{display:block;font-size:0.75rem;color:var(--ink-faint);white-spac
 .code-in{font:inherit;font-size:0.875rem;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:14rem;max-width:100%}
 .code-out{font-size:1.05rem;letter-spacing:.12em}
 .io-details>summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:0.9375rem;margin-bottom:12px}
+/* «Что дальше» после раздела и на странице теста, вопрос «Насколько трудно?» (29.10.2026) */
+.nsteps .nstep{display:flex;gap:10px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0 0;margin-top:10px;border-top:1px solid var(--border)}
+.nsteps .nstep:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.nsteps .nstep p{margin:0;flex:1 1 16rem}
+.nsteps .nstep .btn{flex:0 0 auto}
+.diff{margin:-8px 0 18px}

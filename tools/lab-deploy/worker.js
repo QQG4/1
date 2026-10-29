@@ -4,7 +4,32 @@
      2) пароль ниже — работает, даже если в Access что-то перенастроили или сломали.
    Пароль в коде не лежит: логин и пароль берутся из секретов воркера LAB_USER / LAB_PASS
    (`npx wrangler secret put LAB_PASS -c tools/lab-deploy/wrangler.jsonc`).
-   Если секретов нет, воркер не пускает никого — открытой лаборатория не останется ни при каком стечении обстоятельств. */
+   Если секретов нет, воркер не пускает никого — открытой лаборатория не останется ни при каком стечении обстоятельств.
+   С 29.10.2026 (просьба владельца): кто уже вошёл через Access, пароль не вводит. Access кладёт в запрос подписанный
+   токен (Cf-Access-Jwt-Assertion); воркер проверяет подпись ключами нашей команды Access, издателя, срок и почту
+   из LAB_EMAILS. Подделать токен нельзя, а если Access снимут, токена не будет и снова спросят пароль. */
+
+const ACCESS_TEAM = 'https://square-flower-0289.cloudflareaccess.com';
+const b64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+
+async function accessOk(request, env) {
+  const jwt = request.headers.get('Cf-Access-Jwt-Assertion') || '';
+  const parts = jwt.split('.');
+  if (parts.length !== 3) return false;
+  try {
+    const head = JSON.parse(new TextDecoder().decode(b64u(parts[0])));
+    const body = JSON.parse(new TextDecoder().decode(b64u(parts[1])));
+    if (body.iss !== ACCESS_TEAM || !body.exp || body.exp * 1000 < Date.now()) return false;
+    const emails = String(env.LAB_EMAILS || '').toLowerCase().split(',').map((x) => x.trim()).filter(Boolean);
+    if (!emails.length || emails.indexOf(String(body.email || '').toLowerCase()) < 0) return false;
+    if (env.LAB_ACCESS_AUD && [].concat(body.aud).indexOf(env.LAB_ACCESS_AUD) < 0) return false;
+    const certs = await (await fetch(ACCESS_TEAM + '/cdn-cgi/access/certs', { cf: { cacheTtl: 3600 } })).json();
+    const jwk = (certs.keys || []).find((k) => k.kid === head.kid);
+    if (!jwk) return false;
+    const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+    return await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64u(parts[2]), new TextEncoder().encode(parts[0] + '.' + parts[1]));
+  } catch (e) { return false; }
+}
 
 function equal(a, b) {            // сравнение без утечки времени
   if (a.length !== b.length) return false;
@@ -67,13 +92,15 @@ export default {
   async fetch(request, env) {
     const user = env.LAB_USER, pass = env.LAB_PASS;
     if (!user || !pass) return DENY('Лаборатория закрыта: пароль не настроен.');
-    const header = request.headers.get('Authorization') || '';
-    if (!header.startsWith('Basic ')) return DENY('Лаборатория Qazaq Trainer — нужен вход.');
-    let decoded = '';
-    try { decoded = atob(header.slice(6)); } catch (e) { decoded = ''; }
-    const i = decoded.indexOf(':');
-    if (i <= 0 || !equal(decoded.slice(0, i), user) || !equal(decoded.slice(i + 1), pass)) {
-      return DENY('Неверный логин или пароль.');
+    if (!(await accessOk(request, env))) {   // вошёл через Access с разрешённой почтой — без пароля
+      const header = request.headers.get('Authorization') || '';
+      if (!header.startsWith('Basic ')) return DENY('Лаборатория Qazaq Trainer — нужен вход.');
+      let decoded = '';
+      try { decoded = atob(header.slice(6)); } catch (e) { decoded = ''; }
+      const i = decoded.indexOf(':');
+      if (i <= 0 || !equal(decoded.slice(0, i), user) || !equal(decoded.slice(i + 1), pass)) {
+        return DENY('Неверный логин или пароль.');
+      }
     }
     const url = new URL(request.url);
     if (url.pathname === '/api/stats') return stats(url, env);

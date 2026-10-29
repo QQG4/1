@@ -141,6 +141,13 @@
       out.tests[id] = o;
     });
     if (s.course && typeof s.course === 'object' && !Array.isArray(s.course)) out.course = s.course;
+    /* результат экспресс-теста (src/express.js): только уровень, числа и ступени известных экзаменов */
+    if (s.express && typeof s.express === 'object') Object.keys(KZ.exams).forEach(function (eid) {
+      var r = s.express[eid], L = KZ.exams[eid].examLevels || KZ.levelOrder; if (!r || typeof r !== 'object' || (r.level !== '' && L.indexOf(r.level) < 0)) return;
+      var row = function (x) { return Array.isArray(x) && L.indexOf(x[0]) >= 0 ? [x[0], +x[1] || 0, +x[2] || 0] : null; };
+      out.express = out.express || {};
+      out.express[eid] = { level: r.level, at: +r.at || 0, ok: +r.ok || 0, n: +r.n || 0, seconds: +r.seconds || 0, steps: (Array.isArray(r.steps) ? r.steps : []).map(row).filter(Boolean).slice(0, 8), listen: row(r.listen) };
+    });
     out.history = Array.isArray(s.history) ? s.history.filter(function (x) { return x && findTest(x.t) && KZ.sectionTypes[x.s] && +x.tot > 0; })
       .map(function (x) { return { t: String(x.t), s: String(x.s), sc: +x.sc || 0, tot: +x.tot, at: +x.at || 0, pr: !!x.pr }; }).slice(-HIST_MAX) : seedHistory(out);
     return out;
@@ -577,6 +584,7 @@
       '<div class="kicker">' + T('Qazaq trainer · тренажёр') + '</div>' +
       '<h1>' + T('Подготовка к государственным экзаменам по казахскому языку') + '</h1>' +
       '<p class="lede">' + T('Два экзамена, уровни от A1 до C2, варианты мок-теста на каждый уровень. Результаты по разделам сохраняются в этом браузере; для переноса на другое устройство есть экспорт.') + '</p>' +
+      (KZ.expressCard ? KZ.expressCard('hub') : '') +   // экспресс-тест «Узнать уровень за 10 минут» — первой карточкой (src/express.js)
       courseCards() +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Варианты мок-теста на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
@@ -656,7 +664,7 @@
     return topbar([{ label: T('Хаб'), href: '#/' }, { label: ex.short }]) +
       '<div class="kicker">' + esc(ex.kicker) + '</div><h1>' + esc(ex.name) + '</h1><p class="lede">' + esc(LK(ex, 'tagline')) + '</p>' +
       '<div class="notice ' + (ex.verified ? 'good' : '') + '"><b class="t">' + (ex.verified ? T('Подтверждено') : T('Не подтверждено')) + '</b><p>' + esc(LK(ex, 'verifiedNote')) + '</p></div>' +
-      blocksCallout(ex) +
+      (KZ.expressCard ? KZ.expressCard('exam', ex.id) : '') + blocksCallout(ex) +
       '<section><h2>' + T('Структура теста') + '</h2><p class="sub">' + (ex.verified ? T('По официальному описанию.') : T('Рабочая гипотеза по вторичным источникам — звёздочкой помечены цифры, требующие сверки.')) + '</p>' +
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(LK(ex, 'mockNote')) + '</p>' : '') + '</section>' +
@@ -1431,20 +1439,22 @@
       g.textAlign = 'center'; g.textBaseline = 'alphabetic';
       g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '500 40px "JetBrains Mono", monospace';
       g.fillText('QAZAQ TRAINER', W / 2, 260);
-      var head = d('exam') + ' ' + d('level'), fs = 150;
+      var head = d('head') || d('exam') + ' ' + d('level'), fs = 150;
       do { g.font = '700 ' + fs + 'px Fraunces, Georgia, serif'; fs -= 6; } while (g.measureText(head).width > W - 200 && fs > 80);
       g.fillStyle = '#ffffff'; g.fillText(head, W / 2, 560);
       g.font = '600 64px "Source Sans 3", system-ui, sans-serif'; g.fillStyle = 'rgba(255,255,255,0.85)';
       g.fillText(d('label'), W / 2, 680);
       g.fillStyle = '#ffffff'; g.font = '700 300px Fraunces, Georgia, serif';
-      g.fillText(score + '/' + total, W / 2, 1080);
-      var bx = 170, bw = W - 340, by = 1180;
-      g.fillStyle = 'rgba(255,255,255,0.18)'; roundRect(g, bx, by, bw, 36, 18); g.fill();
-      g.fillStyle = '#e0b563'; roundRect(g, bx, by, Math.max(36, bw * pct / 100), 36, 18); g.fill();
-      g.fillStyle = '#ffffff'; g.font = '600 64px "Source Sans 3", system-ui, sans-serif';
-      g.fillText(pct + ' %', W / 2, 1320);
+      g.fillText(d('big') || score + '/' + total, W / 2, 1080);   // экспресс-тест: вместо счёта крупно уровень, без полосы процента
+      if (!d('big')) {
+        var bx = 170, bw = W - 340, by = 1180;
+        g.fillStyle = 'rgba(255,255,255,0.18)'; roundRect(g, bx, by, bw, 36, 18); g.fill();
+        g.fillStyle = '#e0b563'; roundRect(g, bx, by, Math.max(36, bw * pct / 100), 36, 18); g.fill();
+        g.fillStyle = '#ffffff'; g.font = '600 64px "Source Sans 3", system-ui, sans-serif';
+        g.fillText(pct + ' %', W / 2, 1320);
+      }
       g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '600 52px "Source Sans 3", system-ui, sans-serif';
-      g.fillText(kk ? 'Сынақ тест' : 'Пробный тест', W / 2, 1640);
+      g.fillText(d('foot') || (kk ? 'Сынақ тест' : 'Пробный тест'), W / 2, 1640);
       g.fillStyle = '#ffffff'; g.font = '600 64px "Source Sans 3", system-ui, sans-serif';
       g.fillText('qazaqtrainer.com', W / 2, 1730);
       c.toBlob(function (blob) {
@@ -1810,6 +1820,7 @@
     }
   });
 
-  KZ.util = { esc: esc, topbar: topbar, renderQuestions: renderQuestions, state: function () { return state; }, save: saveState, mmss: mmss };
+  KZ.util = { esc: esc, topbar: topbar, renderQuestions: renderQuestions, state: function () { return state; }, save: saveState, mmss: mmss,
+    testsFor: testsFor, readyOnly: readyOnly, firstOpen: firstOpen };
   route();
 })();

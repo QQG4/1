@@ -15,7 +15,7 @@ const ALLOWED = [                      // откуда принимаем соб
   'https://qazaq-trainer.k-k-g-inter.workers.dev',  // площадка Cloudflare, пока домен не привязан
   'https://qqg4.github.io',           // старый адрес, пока живы ссылки на него
 ];
-const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share', 'sync', 'difficulty'];   // difficulty — «Насколько трудно?» после раздела: easy | ok | hard в note (29.10.2026)
+const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share', 'sync', 'difficulty', 'express-start', 'express-done'];   // express-* — экспресс-тест: найденный уровень в level, ступени в note (29.10.2026); difficulty — «Насколько трудно?» после раздела: easy | ok | hard в note (29.10.2026)
 const MAX_BODY = 64 * 1024;   // анкета эксперта бывает длинной
 
 function cors(origin) {

@@ -1160,9 +1160,9 @@
   "chars": 970
  },
  "kaztest-listen-14-p3": {
-  "title": "Мектеп психологымен сұхбат",
+  "title": "Мектеп психологімен сұхбат",
   "voices": "Aigul + Daulet",
-  "bytes": 1089792,
+  "bytes": 1089216,
   "seconds": 91,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1304

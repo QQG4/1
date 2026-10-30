@@ -15,7 +15,7 @@ const ALLOWED = [                      // откуда принимаем соб
   'https://qazaq-trainer.k-k-g-inter.workers.dev',  // площадка Cloudflare, пока домен не привязан
   'https://qqg4.github.io',           // старый адрес, пока живы ссылки на него
 ];
-const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share', 'sync'];
+const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share', 'sync', 'difficulty', 'express-start', 'express-done'];   // express-* — экспресс-тест: найденный уровень в level, ступени в note (29.10.2026); difficulty — «Насколько трудно?» после раздела: easy | ok | hard в note (29.10.2026)
 const MAX_BODY = 64 * 1024;   // анкета эксперта бывает длинной
 
 function cors(origin) {
@@ -64,7 +64,7 @@ export default {
       day, int(d.ts) || Date.now(), str(d.sid, 32), str(d.e, 24), str(d.lang, 4),
       str(p.exam, 16), str(p.level, 8), str(p.test, 40), str(p.section, 16),
       int(p.pct), int(p.seconds), p.practice ? 1 : 0, p.timedOut ? 1 : 0, str(p.path, 120), country,
-      str(p.qid, 24), str(d.e === 'expert_review' ? p.expert : d.e === 'test-done' ? (p.pass ? 'pass' : 'fail') : p.why, 100),   // жалоба: вопрос и причина; анкета: имя эксперта; тест целиком: уровень подтверждён (pass) или нет (fail)
+      str(p.qid, 24), str(d.e === 'expert_review' ? p.expert : d.e === 'test-done' ? (p.pass ? 'pass' : 'fail') : p.why, 100),   // жалоба: вопрос и причина; «Насколько трудно?»: easy | ok | hard; анкета: имя эксперта; тест целиком: уровень подтверждён (pass) или нет (fail)
       str(p.text, d.e === 'expert_review' ? 20000 : 1000), str(p.ua, 200),   // свободное сообщение и браузер; анкета эксперта — целиком
       str(p.ref, 80), str(p.utm, 130)   // откуда пришли: домен источника и utm-метки (только первый просмотр вкладки)
     ));

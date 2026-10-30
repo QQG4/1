@@ -91,14 +91,16 @@ L10N = {
            'home': 'Все экзамены и уровни', 'mins': 'мин',
            'note': 'Формат заданий — рабочая реконструкция по опубликованной структуре теста, а не копия реального интерфейса. '
                    'Письмо и говорение здесь оцениваются самопроверкой по критериям.',
-           'vocab': 'Объём лексики', 'exam_page': 'Пробный тест'},
+           'vocab': 'Объём лексики', 'exam_page': 'Пробный тест', 'cta_first': 'Начать с варианта 1',
+           'express': 'Не знаете свой уровень? Экспресс-тест за 10 минут подскажет, с какого начать →'},
     'kk': {'lang': 'kk', 'kicker_more': 'Басқа деңгейлер', 'what': 'Бұл деңгейде не тексеріледі', 'structure': 'Тест құрылымы',
            'variants': 'Сынақ тест нұсқалары', 'sec': 'Бөлім', 'tasks': 'Тапсырма', 'min': 'Минут', 'total': 'Тестке барлығы',
            'cta': 'Сынақ тестті бастау', 'free': 'Тегін, тіркелусіз, нәтиже тексеруден кейін бірден.',
            'home': 'Барлық емтихан мен деңгей', 'mins': 'мин',
            'note': 'Тапсырмалардың пішімі — тестің жарияланған құрылымы бойынша жасалған жұмыс реконструкциясы, нақты '
                    'интерфейстің көшірмесі емес. Жазылым мен айтылым мұнда критерийлер бойынша өзін-өзі тексерумен бағаланады.',
-           'vocab': 'Лексика көлемі', 'exam_page': 'Сынақ тест'},
+           'vocab': 'Лексика көлемі', 'exam_page': 'Сынақ тест', 'cta_first': '1-нұсқадан бастау',
+           'express': 'Деңгейіңізді білмейсіз бе? 10 минуттық экспресс-тест қай деңгейден бастау керегін көрсетеді →'},
 }
 def _lk(o, field, lang):
     """Поле на нужном языке: для kk берём field_kk, и только если оно есть."""
@@ -199,8 +201,11 @@ def landing_page(lang, eid, ex, lv, tests, base):
     h.append('<p class="kicker">' + e(ex.get('kicker') or ex_name) + ' · ' + e(lv) + '</p>')
     h.append('<h1>' + e(h1) + '</h1>')
     if _lk(ex, 'tagline', lang): h.append('<p class="lead">' + e(_lk(ex, 'tagline', lang)) + '</p>')
-    h.append('<p><a class="cta" href="' + start + '">' + e(T['cta']) + '</a></p>')
+    # вариантов несколько, а проходили почти только первый (статистика 29.10.2026): кнопка прямо говорит, что это вариант 1
+    h.append('<p><a class="cta" href="' + start + '">' + e(T['cta_first'] if n > 1 else T['cta']) + '</a></p>')
     h.append('<p class="lead">' + e(T['free']) + '</p>')
+    # экспресс-тест (29.10.2026): кто не знает своего уровня, сначала узнаёт его за 10 минут
+    h.append('<p><a href="/#/express/' + eid + '">' + e(T['express']) + '</a></p>')
 
     h.append('<h2>' + e(T['what']) + ' ' + e(lv) + '</h2>')
     bits = []
@@ -223,11 +228,24 @@ def landing_page(lang, eid, ex, lv, tests, base):
             h.append('<p class="lead">' + e(T['total']) + ': ' + e(str(ex['totalMinutes'])) + ' ' + e(T['mins']) + '.</p>')
 
     h.append('<h2>' + e(vheading) + '</h2><ol>')
-    for x in tests:
-        nm = _lk(x, 'title', lang) or x['id']
+    for i, x in enumerate(tests, 1):
+        nm = f'{i}-нұсқа' if lang == 'kk' else f'Вариант {i}'
         sm = _lk(x, 'summary', lang)
         h.append('<li><a href="/#/test/' + e(x['id']) + '">' + e(nm) + '</a>' + (' — ' + e(sm) if sm else '') + '</li>')
     h.append('</ol>')
+    # блоки аудирования ҚАЗТЕСТ и записи QazResmiTest этого уровня: выложены 10–11.10.2026, но их почти не находили
+    bl = [x for x in META['tests'] if x['exam'] == eid and x.get('block') and (eid == 'kaztest' or x['level'] == lv)]
+    if bl:
+        nb = len(bl)
+        if eid == 'kaztest':
+            txt = (f'Отдельно — {_plural_ru(nb, "блок", "блока", "блоков")} аудирования, как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут.'
+                   if lang == 'ru' else f'Бөлек — {nb} тыңдалым блогы, емтихандағыдай: A1–A2-ден C1-ге дейін төрт мәтін, 20 тапсырма, 20 минут.')
+            href = '/#/exam/kaztest'
+        else:
+            txt = (f'Отдельно — {_plural_ru(nb, "запись", "записи", "записей")} аудирования уровня {lv}: одна запись, 5 заданий, 10 минут.'
+                   if lang == 'ru' else f'Бөлек — {lv} деңгейінде {nb} тыңдалым жазбасы: бір жазба, 5 тапсырма, 10 минут.')
+            href = '/#/test/' + sorted(bl, key=lambda x: x['id'])[0]['id']
+        h.append('<p>' + e(txt) + ' <a href="' + href + '">' + ('Тыңдалымға өту →' if lang == 'kk' else 'Перейти к аудированию →') + '</a></p>')
 
     # Канал в Telegram: сюда приходят из поиска, и это первое место, где человек может «остаться» с нами.
     # Клик уходит событием remind с where=landing (как ссылка в подвале приложения).
@@ -367,6 +385,8 @@ def page_kaztest_scores():
     b = ['<p class="kicker">ҚАЗТЕСТ · баллы</p><h1>Сколько баллов нужно на ҚАЗТЕСТ (Казтест)</h1>',
          f'<p class="lead">Уровень присваивается по проценту, набранному в каждом блоке: {e(thr)}. '
          f'Например, для {lv[b1]} нужно не меньше {e(_score_row(sc, b1))}.</p>',
+         '<p>Не знаете, на какой уровень идти? <a href="/#/express/kaztest">Экспресс-тест за 10 минут</a> подскажет примерный уровень, '
+         'а дальше можно пройти полный пробный тест этого уровня.</p>',
          '<h2>Минимальные баллы по блокам</h2><div class="tbl-wrap"><table><thead><tr><th>Блок</th><th>Макс.</th>' +
          ''.join(f'<th>{e(l)}</th>' for l in lv) + '</tr></thead><tbody>' +
          ''.join(f'<tr><td lang="kk"><b>{e(bl["title"])}</b></td><td>{bl["max"]}</td>' + ''.join(f'<td>{m}</td>' for m in bl['min']) + '</tr>'
@@ -589,6 +609,7 @@ def seo_nav():
 
 
 app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
+app += '\n' + read(src / 'express.js')   # экспресс-тест «Узнать уровень за 10 минут» (29.10.2026), во всех сборках
 def body(mode):
     # публичный сайт — только тесты; лаборатория и локальная сборка — плюс курс и платный материал
     extra = [] if mode == 'site' else course_data + (paid_data if mode == 'lab' else [])

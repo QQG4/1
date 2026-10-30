@@ -122,10 +122,10 @@
  "kaztest-c1-02": {
   "title": "Төртінші мәтін — Ахмет Байтұрсынұлы: ұлт ұстазы",
   "voices": "Aigul",
-  "bytes": 1231488,
-  "seconds": 103,
+  "bytes": 1260864,
+  "seconds": 105,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1598
+  "chars": 1600
  },
  "qrt-a1-02": {
   "title": "Сәуленің отбасы",
@@ -242,10 +242,10 @@
  "kaztest-a2-05": {
   "title": "Бірінші диалог — Қонақүйде",
   "voices": "Aigul + Daulet",
-  "bytes": 706464,
-  "seconds": 59,
+  "bytes": 696960,
+  "seconds": 58,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 654
+  "chars": 651
  },
  "qrt-a2-03": {
   "title": "Жаңа қалаға көштім",
@@ -1184,20 +1184,20 @@
   "chars": 639
  },
  "kaztest-listen-15-p2": {
-  "title": "Мерекелік дастархан дайындау",
+  "title": "Мерекелік дастарқан дайындау",
   "voices": "Aigul + Daulet",
-  "bytes": 844416,
+  "bytes": 844704,
   "seconds": 70,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 897
+  "chars": 896
  },
  "kaztest-listen-15-p3": {
   "title": "Велосипедші-саяхатшымен сұхбат",
   "voices": "Aigul + Daulet",
-  "bytes": 1178208,
+  "bytes": 1179936,
   "seconds": 98,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1348
+  "chars": 1347
  },
  "kaztest-listen-15-p4": {
   "title": "Ертегінің бала тәрбиесіндегі рөлі",
@@ -1226,7 +1226,7 @@
  "kaztest-listen-18-p2": {
   "title": "Дұрыс тамақтану: дәрігер кеңесі",
   "voices": "Aigul + Daulet",
-  "bytes": 911520,
+  "bytes": 912096,
   "seconds": 76,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 981
@@ -1402,7 +1402,7 @@
  "qrt-listen-b2-09": {
   "title": "Қалдықтарды сұрыптау",
   "voices": "Aigul",
-  "bytes": 955296,
+  "bytes": 954720,
   "seconds": 80,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1240
@@ -1466,7 +1466,7 @@
  "kaztest-listen-21-p2": {
   "title": "Мектеп формасын сатып алу",
   "voices": "Aigul + Daulet",
-  "bytes": 827136,
+  "bytes": 826560,
   "seconds": 69,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 874
@@ -1608,9 +1608,9 @@
   "chars": 1250
  },
  "kaztest-listen-25-p4": {
-  "title": "Шай мәдениеті: қазақ дастарханы",
+  "title": "Шай мәдениеті: қазақ дастарқаны",
   "voices": "Daulet",
-  "bytes": 1273824,
+  "bytes": 1269504,
   "seconds": 106,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1650
@@ -1626,26 +1626,26 @@
  "kaztest-listen-26-p2": {
   "title": "Семинарға тіркелу",
   "voices": "Aigul + Daulet",
-  "bytes": 862848,
+  "bytes": 863136,
   "seconds": 72,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 941
+  "chars": 942
  },
  "kaztest-listen-26-p3": {
   "title": "Экскурсоводпен сұхбат",
   "voices": "Aigul + Daulet",
-  "bytes": 1067040,
+  "bytes": 1069632,
   "seconds": 89,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1298
+  "chars": 1303
  },
  "kaztest-listen-26-p4": {
   "title": "Команда қалай құрылады?",
   "voices": "Daulet",
-  "bytes": 1216512,
+  "bytes": 1216800,
   "seconds": 101,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1662
+  "chars": 1661
  },
  "kaztest-listen-27-p1": {
   "title": "Кешкі асқа азық-түлік алу",
@@ -1722,7 +1722,7 @@
  "kaztest-listen-29-p2": {
   "title": "Жаңа жылға дайындық",
   "voices": "Aigul + Daulet",
-  "bytes": 765504,
+  "bytes": 764928,
   "seconds": 64,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 841
@@ -1762,15 +1762,15 @@
  "kaztest-listen-30-p3": {
   "title": "Шебермен сұхбат: киіз басу",
   "voices": "Aigul + Daulet",
-  "bytes": 1029024,
+  "bytes": 1027584,
   "seconds": 86,
   "format": "audio-24khz-96kbitrate-mono-mp3",
-  "chars": 1222
+  "chars": 1220
  },
  "kaztest-listen-30-p4": {
   "title": "Ұлттық тағам және денсаулық",
   "voices": "Daulet",
-  "bytes": 1196064,
+  "bytes": 1195200,
   "seconds": 100,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1583

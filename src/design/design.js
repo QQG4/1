@@ -227,7 +227,7 @@
       var punch = el('p', 'dz-punch'); punch.textContent = isKk() ? 'Тегін. Тіркеусіз.' : 'Бесплатно. Без регистрации.';
       if (h1) after(h1, punch);
       if (lede) after(punch, more([lede]));
-    } else if (lede && !lede.classList.contains('hintx') && textLen(lede) > 60) after($('h1', head), more([lede]));
+    } else if (route !== 'sources' && lede && !lede.classList.contains('hintx') && textLen(lede) > 60) after($('h1', head), more([lede]));   // на странице литературы фраза об авторах всегда на виду
   }
   /* блоки аудирования не стоят в одном списке с уровнями: своя гармошка под экзаменами, строка на экзамен */
   function calmHubBlocks() {

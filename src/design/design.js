@@ -240,6 +240,7 @@
       var name = $('.name', r.closest('.exam-card-wrap')), nm = $('.nm', r);
       if (name && nm) nm.textContent = name.textContent;
       $('.lvl', r).remove(); r.classList.add('dz-au-row');
+      var chip = $('.vchip', r); if (chip) r.setAttribute('href', chip.getAttribute('data-href'));   // на странице экзамена списка блоков больше нет
       list.appendChild(r);
     });
     sec.appendChild(title); sec.appendChild(list);
@@ -270,6 +271,7 @@
        Источники и дата сверки остаются в подробностях; строка «рабочая реконструкция» — в подвале и на посадочных */
     $$(':scope > .notice:not(.info)', app).forEach(function (x) { x.remove(); });
     secs = secs.filter(function (x) {
+      if (x.id === 'blocks') { x.remove(); return false; }   // блоки аудирования на странице экзамена не показываем, вход — с главной и из «Что дальше» (решение владельца 30.10.2026)
       if ($('.notice', x) && !$('.levels, .stages, table', x)) { x.remove(); return false; }
       var st = $('.stages', x), sb = st && $(':scope > .sub', x); if (sb) sb.remove();
       return true;
@@ -426,6 +428,7 @@
     m.insertBefore(top, hero);
     if (D === 'd1' && /^\/(ru|kk)\/(kaztest|qrt)\/[a-z]\d\/$/.test(location.pathname)) calmLanding(m, hero);
     if (D === 'd1') $$('h2', m).forEach(function (h) { if (/официально не уточнено/.test(h.textContent)) { var nx = h.nextElementSibling; if (nx) nx.remove(); h.remove(); } });
+    if (D === 'd1') $$('a[href$="#/exam/kaztest"]', m).forEach(function (a) { if (/аудирован|тыңдал/i.test(a.textContent)) a.setAttribute('href', a.getAttribute('href').replace(/#\/exam\/kaztest$/, '#/test/kaztest-listen-01')); });
     if (D === 'd1') rename(m);
     if (D === 'd1') attachToggles(m);
   }

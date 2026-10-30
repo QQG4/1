@@ -926,6 +926,14 @@ def _dress(p):
     else:
         h = h.replace('<body><main>', '<body>' + _DZ_LINKS + '<main>', 1)
         for x, y in _DZ_WORDS: h = h.replace(x, y)
+        # название экзамена в видимом тексте: мало текста — Qazaq Resmi Test, много — QRT. <title>, описание и разметка поиска не меняются: QazResmiTest и Казресмитест там ищут
+        _head, _sep, _body = h.partition('<body>')
+        _parts = re.split(r'(<script\b.*?</script>)', _body, flags=re.S)
+        def _ex(m):
+            t = m.group(1)
+            if 'QazResmiTest' not in t: return m.group(0)
+            return '>' + t.replace('QazResmiTest', 'Qazaq Resmi Test' if len(t) <= 60 else 'QRT') + '<'
+        h = _head + _sep + ''.join(x if x.startswith('<script') else re.sub(r'>([^<]+)<', _ex, x) for x in _parts)
     i = h.rindex('</body>'); h = h[:i] + '<script src="/design/design.js"></script>' + h[i:]
     p.write_text(h, encoding='utf-8')
 for _p in [docs / 'index.html', docs / '404.html'] + [pathlib.Path(x) for pat in ('ru', 'kk') for x in glob.glob(str(docs / pat / '**' / 'index.html'), recursive=True)]:

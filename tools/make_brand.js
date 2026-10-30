@@ -13,7 +13,7 @@ const icon = (s) => page(`<div style="position:absolute;inset:0;display:flex;ali
 const og = page(`<div style="position:absolute;right:-30px;top:40px;width:560px;height:560px">${mark(TONE)}</div>
  <div style="position:absolute;left:80px;top:96px;right:80px;font-family:Geologica">
  <div style="font-weight:800;font-size:112px;line-height:1.1;letter-spacing:.012em">Qazaq Trainer</div>
- <div style="font-weight:700;font-size:50px;line-height:1.2;margin-top:34px;letter-spacing:.012em">Пробные ҚАЗТЕСТ и QazResmiTest</div>
+ <div style="font-weight:700;font-size:44px;line-height:1.2;margin-top:34px;letter-spacing:.012em">Пробные ҚАЗТЕСТ и Qazaq Resmi Test</div>
  <div style="font-weight:800;font-size:40px;color:${SUN};margin-top:22px">Бесплатно. Без регистрации.</div></div>
  <div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:${SUN}"></div>`, 1200, 630);
 (async () => {

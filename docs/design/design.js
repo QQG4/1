@@ -33,6 +33,7 @@
   var moreN = 0, opened = {};
   var RENAME_RU = [[/Мок-тесты/g, 'Пробные тесты'], [/мок-тесты/g, 'пробные тесты'], [/Мок-тестов/g, 'Пробных тестов'], [/мок-тестов/g, 'пробных тестов'],
     [/Мок-теста/g, 'Пробного теста'], [/мок-теста/g, 'пробного теста'], [/Мок-тест/g, 'Пробный тест'], [/мок-тест/g, 'пробный тест']];
+  var EXAM_SHORT = 60;
   var RENAME_KK = [[/Мок-тест/g, 'Сынама тест'], [/мок-тест/g, 'сынама тест']];
   var app = document.getElementById('app');
   if (!app) { page(); return; }
@@ -334,6 +335,13 @@
     function fix(v) { rules.forEach(function (r) { v = v.replace(r[0], r[1]); }); return v; }
     var w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), n;
     while ((n = w.nextNode())) if (/[Мм]ок-тест/.test(n.nodeValue)) n.nodeValue = fix(n.nodeValue);
+    /* название экзамена (решение владельца 31.10.2026): где текста мало — Qazaq Resmi Test, где много — QRT */
+    function exam(v) { return v.length <= EXAM_SHORT ? v.replace(/QazResmiTest/g, 'Qazaq Resmi Test').replace(/^QRT(?=$| )/, 'Qazaq Resmi Test') : v.replace(/QazResmiTest/g, 'QRT'); }
+    w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+    while ((n = w.nextNode())) if (/QazResmiTest|^QRT(?=$| )/.test(n.nodeValue)) n.nodeValue = exam(n.nodeValue);
+    $$('[data-head*="QazResmiTest"], [data-exam*="QazResmiTest"], [data-share-text*="QazResmiTest"]', box).forEach(function (x) {
+      ['data-head', 'data-exam', 'data-share-text'].forEach(function (k) { var v = x.getAttribute(k); if (v) x.setAttribute(k, v.replace(/QazResmiTest/g, 'Qazaq Resmi Test')); });
+    });
     if (!isKk()) {   // «хаб» — наше внутреннее слово, посетителю понятнее «главная»
       w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
       while ((n = w.nextNode())) { if (n.nodeValue === 'Хаб') n.nodeValue = 'Главная'; else if (n.nodeValue === 'На хаб') n.nodeValue = 'На главную'; }

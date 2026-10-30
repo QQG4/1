@@ -255,6 +255,7 @@
       var sb = $(':scope > .sub', s); if (sb) sb.remove();   // «Мок-тесты по уровням»: заголовок и кнопки понятны сами, решение владельца 30.10.2026
     });
     calmHubBlocks();
+    $$('.exam-card .badge.ok, .exam-card .badge.warn', app).forEach(function (x) { x.remove(); });
     $$('.exam-card-wrap').forEach(function (w) {
       var a = $('a.exam-card', w), id = a && (a.getAttribute('href') || '').split('/').pop(), x = id && KZ.exams[id], tag = a && $('.tag', a);
       if (!x || !tag) return;
@@ -265,6 +266,14 @@
   /* страница экзамена: выбор уровня сверху и одной строкой на уровень, остальное — гармошкой */
   function calmExam() {
     var head = $(':scope > .dz-head', app), secs = $$(':scope > section', app);
+    /* решение владельца 30.10.2026: на сайте нигде нет «подтверждено / не подтверждено» — ни плашки, ни подписи, ни списка неопубликованного.
+       Источники и дата сверки остаются в подробностях; строка «рабочая реконструкция» — в подвале и на посадочных */
+    $$(':scope > .notice:not(.info)', app).forEach(function (x) { x.remove(); });
+    secs = secs.filter(function (x) {
+      if ($('.notice', x) && !$('.levels, .stages, table', x)) { x.remove(); return false; }
+      var st = $('.stages', x), sb = st && $(':scope > .sub', x); if (sb) sb.remove();
+      return true;
+    });
     var callout = $('[data-act=scroll]', app); if (callout && callout.closest('.notice')) callout.closest('.notice').remove();   // блоки аудирования — в своей гармошке ниже, отдельной плашкой не выделяем
     var mock = secs.filter(function (s) { return !s.id && $('.levels', s); })[0];
     if (mock) {
@@ -301,7 +310,7 @@
     var ps = Array.prototype.slice.call(f.childNodes), first = $(':scope > p', f), hide = [];
     ps.forEach(function (n) {
       if (n === first) return;
-      if (n.nodeType === 3 && n.nodeValue.trim()) hide.push(n);
+      if (n.nodeType === 3 && n.nodeValue.trim()) { n.nodeValue = n.nodeValue.trim().split(/\.\s+/)[0] + '.'; hide.push(n); }   // вторая фраза была про подтверждённые факты
       if (n.nodeType === 1 && n.tagName === 'P' && n !== $$(':scope > p', f)[1]) hide.push(n);
     });
     var m = more(hide); if (m) f.appendChild(m);
@@ -416,6 +425,7 @@
     var top = el('div', 'dz-top', '<a class="dz-brand" href="/">' + mark('dz-mark') + '<span>Qazaq Trainer</span></a>');
     m.insertBefore(top, hero);
     if (D === 'd1' && /^\/(ru|kk)\/(kaztest|qrt)\/[a-z]\d\/$/.test(location.pathname)) calmLanding(m, hero);
+    if (D === 'd1') $$('h2', m).forEach(function (h) { if (/официально не уточнено/.test(h.textContent)) { var nx = h.nextElementSibling; if (nx) nx.remove(); h.remove(); } });
     if (D === 'd1') rename(m);
     if (D === 'd1') attachToggles(m);
   }

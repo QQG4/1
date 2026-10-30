@@ -69,7 +69,8 @@ def kk_fields(v):
     for i, c in enumerate(v.get('cards', [])):
         add('карточка %d' % (i + 1), c.get('kk')); add('карточка %d, голос' % (i + 1), c.get('say'))
     q = v.get('q') or {}
-    add('вопрос', q.get('kk'), wrong=v.get('q_wrong')); add('вопрос, голос', q.get('say'))   # q_wrong: «найди ошибку»; add('ответ, голос', v.get('say_answer'))
+    add('вопрос', q.get('kk'), wrong=v.get('q_wrong')); add('вопрос, голос', q.get('say'))   # q_wrong: «найди ошибку»
+    add('ответ, голос', v.get('say_answer'))   # до 29.10.2026 стояло в комментарии выше и не проверялось
     if v.get('options_lang') == 'kk':
         for i, o in enumerate(v.get('options', [])):
             t = o['t'] if isinstance(o, dict) else o

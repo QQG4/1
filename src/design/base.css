@@ -1,0 +1,110 @@
+/* Общая основа вариантов дизайна (только лаборатория, подключает tools/lab-deploy/worker.js поверх src/styles.css).
+   Здесь то, от чего отказываются оба варианта: моноширинные подписи капсом с чёрточкой, засечки, курсив в текстах,
+   узкая колонка на всю страницу. Цвета и форма — в d1.css и d2.css. */
+:root[data-design]{--mono:var(--sans);--serif:var(--head)}
+html[data-font=dys][data-design]{--sans:'Atkinson Hyperlegible',Verdana,Arial,sans-serif;--head:'Atkinson Hyperlegible',Verdana,sans-serif}
+html[data-design] body{overflow-x:clip;font-feature-settings:"tnum" 0;-webkit-font-smoothing:antialiased}
+
+/* подписи: обычный регистр, без моноширинного и разрядки */
+.kicker,.badge,.notice b.t,.timerbar .lbl,.passage-title,.setlabel,.crit-head,.tip-tag,table.scoring th,table.prog th,.stages-total,.crumbs{letter-spacing:0;text-transform:none}
+.kicker::before{display:none}
+.kicker{font-size:.9375rem;font-weight:700;margin-bottom:10px}
+.script,.wcard .ex{font-style:normal;font-family:var(--sans)}
+.stage-time,.stage-tasks,.tclock,.clock,.score-big,.crit-val,.wc,table.scoring,table.prog,.tile-big{font-variant-numeric:tabular-nums}
+
+/* ширина: страницы просторнее, тексты и списки разделов — по своей мере */
+.wrap{max-width:1160px;padding:0 24px 110px}
+html[data-route=exam] .wrap,html[data-route=test] .wrap,html[data-route=express] .wrap,html[data-route=section] .wrap,html[data-route=progress] .wrap,html[data-route=sources] .wrap{max-width:920px}
+html[data-route=section]:has(.dz-split) .wrap{max-width:1240px}
+.lede{max-width:62ch}
+
+/* строки уровней на главной: номера вариантов в ряд под описанием, а не столбиком: строка становится вдвое ниже */
+.exam-card-wrap .level-row{grid-template-columns:auto minmax(0,1fr);align-items:start}
+.exam-card-wrap .level-row .hub-st{grid-column:2;text-align:left;margin-top:-6px}
+.exam-card-wrap .hub-st .variants,.exam-card-wrap .hub-st .variants.v-grid{display:flex;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;gap:6px}
+
+/* сквозная полоса во всю ширину окна */
+.topbar,.dz-hero,.dz-head{position:relative}
+.topbar{margin-bottom:0;padding:12px 0;border-bottom:0;align-items:center}
+.topbar nav{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;min-width:0}
+.dz-brand{display:inline-flex;align-items:center;gap:8px;font-family:var(--head);font-weight:800;font-size:1.0625rem;line-height:1;text-decoration:none;white-space:nowrap}
+.dz-mark{width:24px;height:24px;flex:none}
+.dz-horn{display:none}
+.dz-track{display:none}
+.dz-ico{display:none}
+.dz-bar{display:none}
+.dz-head{padding:28px 0 24px}
+.dz-head .lede{margin-bottom:0}
+html[data-phase=run] .dz-head,html[data-phase=review] .dz-head{padding-bottom:18px}
+
+/* полоса таймера и ответов */
+.timerbar{flex-wrap:wrap;margin:0 0 22px;gap:8px 12px}
+.dz-progress{flex:1 0 100%;display:flex;align-items:center;gap:3px;min-width:0}
+.dz-progress>i{flex:1 1 0;height:8px;min-width:0}
+.dz-progress-sum{flex:none;margin-left:8px;font-size:.875rem;font-weight:700;font-variant-numeric:tabular-nums}
+.timerbar.dz-xbar{display:flex}
+
+/* чтение: текст и вопросы рядом на широком экране */
+.dz-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.dz-split>.block{margin:0}
+.dz-split>.block:first-child{position:sticky;top:96px;max-height:calc(100vh - 112px);overflow:auto}
+@media (max-width:900px){
+  .dz-split{display:block}
+  .dz-split>.block{margin-bottom:18px}
+  .dz-split>.block:first-child{position:static;max-height:none;overflow:visible}
+}
+
+/* экран результата */
+.score-card{position:relative}
+.diff{margin:0 0 18px;gap:10px 14px;align-items:center}
+.diff .small{font-size:1rem;font-weight:700;color:var(--ink)}
+.diff .cb{min-height:44px;padding:0 18px;font-size:.9375rem;font-family:var(--sans)}
+.nsteps .nstep p{font-size:.9688rem}
+
+/* телефон */
+@media (max-width:560px){
+  .wrap,html[data-route=exam] .wrap,html[data-route=test] .wrap,html[data-route=express] .wrap,html[data-route=section] .wrap{padding:0 16px 120px}
+  .level-row{grid-template-columns:auto minmax(0,1fr)}
+  .level-row .hub-st{grid-column:2}
+  .hub-st .variants{flex-direction:row;flex-wrap:wrap}
+  .hub-st .variants.v-grid{justify-content:start}
+  .level-row .st{text-align:left}
+  .uipanel .lbl{min-width:0;flex:1 0 100%}
+  .topbar>.row{flex-wrap:wrap}
+  .crit-btns .cb{min-width:38px}
+  .fb{bottom:64px}
+}
+
+/* посадочные страницы: общая разметка main из build.py */
+body>main{max-width:none;padding:0}
+body>main>*:not(.dz-hero):not(.dz-top){max-width:46rem;margin-left:auto;margin-right:auto;padding-left:16px;padding-right:16px}
+body>main .dz-top{padding:12px max(16px,calc(50vw - 23rem))}
+body>main .dz-hero{padding:32px max(16px,calc(50vw - 23rem)) 40px;margin-bottom:8px;overflow:hidden}
+body>main .dz-hero>*{position:relative}
+body>main .dz-hero>.dz-horn{position:absolute}
+body>main footer{padding-bottom:90px}
+body>main .tbl-wrap{-webkit-overflow-scrolling:touch}
+body>main h3{font-family:var(--sans)}
+
+/* первый вопрос блока без черты сверху */
+[data-design] .q:first-child,[data-design] .setlabel + .q{border-top:0;padding-top:0}
+[data-design] .q:first-child{margin-top:0}
+[data-design] .setlabel + .q{margin-top:14px}
+[data-design] h1,[data-design] h2{overflow-wrap:break-word}
+[data-design] body>main .dz-top,[data-design] body>main .dz-hero{padding-left:max(16px,calc(50vw - 23rem + 16px));padding-right:max(16px,calc(50vw - 23rem + 16px))}
+
+/* телефон: шапка компактнее — на внутренних страницах от названия остаётся знак, номера вопросов и таймер на первом экране */
+@media (max-width:560px){
+  [data-design] .topbar{gap:8px 10px;padding-top:10px;padding-bottom:10px}
+  [data-design]:not([data-route=hub]) .topbar .dz-brand span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  [data-design] .topbar nav{flex:1 1 100%;flex-wrap:nowrap;gap:10px}
+  [data-design] .crumbs{font-size:.75rem;gap:5px}
+  [data-design] .dz-head{padding-top:18px;padding-bottom:16px}
+  [data-design][data-phase=run] .dz-head .lede{display:none}
+  [data-design] .fb{bottom:50px}
+  [data-design] .fb-tab{font-size:.75rem!important;min-height:30px!important;padding:5px 10px!important}
+}
+
+/* длинная подпись экзамена при крупном тексте переносится, кнопка отзыва на телефоне не растёт с настройкой размера */
+.exam-card .badge{white-space:normal}
+@media (max-width:560px){[data-design] .fb-tab{font-size:12px!important}}

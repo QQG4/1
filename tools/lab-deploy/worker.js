@@ -91,10 +91,15 @@ async function stats(url, env) {
 /* Переключатель «Обучение · Новый сайт» (29.10.2026): в лаборатории лежат две сборки — обучалка (корень) и новая
    версия публичного сайта (/_site, собирает build.py). Выбор хранится в куке qt_view, ссылки /?view=site и /?view=lab.
    Обучалку не трогаем: кнопку переключателя дописываем в HTML на лету. Аудио, шрифты и статистика — общие. */
-const SHARED = /^\/(audio|fonts|api|stats|_site)(\/|$)/;
+const SHARED = /^\/(audio|fonts|api|stats|_site|_design)(\/|$)/;
+/* «Дизайн 1» и «Дизайн 2» (30.10.2026): та же сборка /_site, что и «Новый сайт», плюс слой стилей из /_design (src/design, только лаборатория).
+   Ссылки на стили ставятся сразу за стилями страницы: у приложения они лежат в начале <body>, у посадочных в <head>.
+   Страницы privacy и review со своей вёрсткой остаются как есть. */
+const VIEWS = [['lab', 'Обучение'], ['site', 'Новый сайт'], ['d1', 'Дизайн 1'], ['d2', 'Дизайн 2']];
+const DESIGN_LINKS = (d) => ['fonts/fonts.css', 'base.css', d + '.css'].map((f) => '<link rel="stylesheet" href="/_design/' + f + '">').join('');
 const SWITCH = (view) => '<div id="qt-view-switch" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:2px;' +
-  'padding:3px;border-radius:999px;background:#10171b;box-shadow:0 2px 10px rgba(0,0,0,.25);font:600 13px/1 system-ui,-apple-system,sans-serif">' +
-  [['lab', 'Обучение'], ['site', 'Новый сайт']].map(([v, t]) => '<a href="/?view=' + v + '" style="padding:7px 12px;border-radius:999px;text-decoration:none;' +
+  'padding:3px;border-radius:999px;background:#10171b;box-shadow:0 2px 10px rgba(0,0,0,.25);font:600 13px/1 system-ui,-apple-system,sans-serif;white-space:nowrap">' +
+  VIEWS.map(([v, t]) => '<a href="/?view=' + v + '" style="padding:7px 10px;border-radius:999px;text-decoration:none;' +
     (v === view ? 'background:#5cc2dc;color:#0a1417' : 'color:#cfe3e8') + '">' + t + '</a>').join('') + '</div>';
 
 export default {
@@ -114,14 +119,16 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/api/stats') return stats(url, env);
     const pick = url.searchParams.get('view');
-    if (pick === 'site' || pick === 'lab') {
+    if (VIEWS.some(([v]) => v === pick)) {
       return new Response(null, { status: 302, headers: { Location: '/', 'Cache-Control': 'no-store',
         'Set-Cookie': 'qt_view=' + pick + '; Path=/; Max-Age=2592000; Secure; HttpOnly; SameSite=Lax' } });
     }
-    const view = /(?:^|;\s*)qt_view=site(?:;|$)/.test(request.headers.get('Cookie') || '') ? 'site' : 'lab';
+    const view = ((request.headers.get('Cookie') || '').match(/(?:^|;\s*)qt_view=(site|d1|d2)(?:;|$)/) || [])[1] || 'lab';
     let res;
-    if (view === 'site' && !SHARED.test(url.pathname)) {
-      const inner = new URL(url); inner.pathname = '/_site' + url.pathname;
+    if (view !== 'lab' && !SHARED.test(url.pathname)) {
+      const inner = new URL(url);
+      // Дизайн 1: короткая страница о данных вместо полной (полная в сборке _site не меняется)
+      inner.pathname = view === 'd1' && /^\/privacy\/?$/.test(url.pathname) ? '/_design/privacy/' : '/_site' + url.pathname;
       res = await env.ASSETS.fetch(new Request(inner, request));
     } else res = await env.ASSETS.fetch(request);
     let out = new Response(res.body, res);
@@ -130,7 +137,14 @@ export default {
     out.headers.set('X-Robots-Tag', 'noindex, nofollow');   // лаборатория в поиск не попадает ни при каких условиях
     if ((out.headers.get('Content-Type') || '').includes('text/html') && !url.pathname.startsWith('/stats')) {
       out.headers.set('Cache-Control', 'no-store');
-      out = new HTMLRewriter().on('body', { element(el) { el.append(SWITCH(view), { html: true }); } }).transform(out);
+      let rw = new HTMLRewriter().on('body', { element(el) { el.append(SWITCH(view), { html: true }); } });
+      if ((view === 'd1' || view === 'd2') && !/^\/(privacy|review)(\/|$)/.test(url.pathname)) {
+        const before = { element(el) { el.before(DESIGN_LINKS(view), { html: true }); } };
+        rw = rw.on('html', { element(el) { el.setAttribute('data-design', view); } })
+          .on('div.wrap', before).on('body > main', before)
+          .on('body', { element(el) { el.append('<script src="/_design/design.js"></script>', { html: true }); } });
+      }
+      out = rw.transform(out);
     }
     return out;
   },

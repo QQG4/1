@@ -298,6 +298,11 @@
 - Шрифты сайта и лаборатории — свои (`src/fonts/`, скачаны из Google Fonts, OFL): build.py заменяет `@import` Google на
   `fonts/fonts.css` в режимах site/lab; автономный dist по-прежнему грузит Google Fonts. Сторонних запросов на сайте нет,
   кроме приёмника статистики. С localhost события не отправляются.
+- **Варианты дизайна в лаборатории** (30.10.2026, на решение владельца): «Дизайн 1» и «Дизайн 2» в переключателе лаборатории — сборка `_site` плюс слой
+  `src/design/` (base.css, d1.css, d2.css, design.js, fonts/). build.py копирует его только в `lab-site/_design`, подключает `tools/lab-deploy/worker.js`
+  (`data-design` на `<html>`), в `docs/` ничего не попадает. Страницы privacy и review остаются в прежнем виде. Если вариант утвердят: перенести токены и правила
+  в src/styles.css и LANDING_CSS, шрифты в src/fonts, правки из design.js в app.js и build.py, картинку `shareImage` и og.png перекрасить.
+  Решения владельца для переноса: «пробный тест» вместо «мок-тест»; нет пометок «подтверждено / не подтверждено», раздела «Что официально не опубликовано» и «Что официально не уточнено» (данные `verified`, `verifiedNote`, `unverified` остаются в exams.js, строка «рабочая реконструкция» остаётся); короткая страница о данных `src/design/privacy/`.
 - Статистика: `lab.qazaqtrainer.com/stats/` (`src/stats/index.html`, build.py вставляет файлы тестов для текстов вопросов) ←
   `/api/stats` в `tools/lab-deploy/worker.js` (D1 подключена к воркеру лаборатории). Тексты посетителей — только через textContent.
   Локальная проверка: `wrangler d1 export --remote` → `d1 execute --local`, затем конфигурация `lab-dev` (wrangler dev с временным паролем).

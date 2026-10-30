@@ -934,6 +934,10 @@ assert '</script' not in _tests_js.lower(), 'в данных тестов ест
 # Аудио и шрифты у сборок одинаковые, поэтому берутся из лаборатории, а не копируются второй раз.
 shutil.rmtree(lab / '_site', ignore_errors=True)
 shutil.copytree(docs, lab / '_site', ignore=lambda d, names: [n for n in names if d == str(docs) and n in ('audio', 'fonts', 'CNAME', '_headers')])
+# варианты дизайна (30.10.2026, «Дизайн 1» и «Дизайн 2» в том же переключателе): слой стилей, шрифты и design.js только в лаборатории,
+# в docs/ не попадают; подключает их воркер лаборатории поверх сборки _site
+shutil.rmtree(lab / '_design', ignore_errors=True)
+if (src / 'design').exists(): shutil.copytree(src / 'design', lab / '_design')
 
 kb = lambda p: p.stat().st_size // 1024
 print('built: docs/index.html (%d KB, сайт — только мок-тесты), lab-site/index.html (%d KB, лаборатория: +курс%s), dist/index.html (%d KB), dist/artifact.html'

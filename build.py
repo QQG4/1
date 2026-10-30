@@ -838,7 +838,7 @@ if META and META.get('quiz'):
 def _tests_count_ru():
     """«27 мок-тестов» для анкеты эксперта: число файлов в src/data/tests, чтобы подпись не устаревала при добавлении вариантов."""
     n = len(glob.glob(str(src / 'data' / 'tests' / '*.js'))); d, h = n % 10, n % 100
-    return f"{n} " + ('мок-тест' if d == 1 and h != 11 else 'мок-теста' if 2 <= d <= 4 and not 12 <= h <= 14 else 'мок-тестов')
+    return f"{n} " + ('пробный тест' if d == 1 and h != 11 else 'пробных теста' if 2 <= d <= 4 and not 12 <= h <= 14 else 'пробных тестов')
 (docs / 'review').mkdir(exist_ok=True)
 (docs / 'review' / 'index.html').write_text(_re_fonts(read(src / 'review' / 'index.html')).replace('__EVENTS_URL__', site_cfg.get('events', '')).replace('__SUPPORT_EMAIL__', site_cfg.get('email', '')).replace('__TESTS_COUNT__', _tests_count_ru()), encoding='utf-8')  # анкета эксперта <siteUrl>review/; адрес приёмника подставляется из site.js
 _base = (site_cfg.get('url') or '').strip()
@@ -912,6 +912,25 @@ put_fonts(docs / 'fonts')
 (docs / 'privacy').mkdir(exist_ok=True)
 shutil.copyfile(src / 'privacy' / 'index.html', docs / 'privacy' / 'index.html')
 
+# ---- дизайн сайта (утверждён владельцем 31.10.2026): слой src/design поверх styles.css и LANDING_CSS ----
+# Стили стоят сразу за стилями страницы, design.js достраивает шапку, свёрнутые подробности и порядок блоков после отрисовки.
+# На статических страницах «мок-тест» заменяется при сборке, в приложении — в design.js (строки данных и словаря прежние).
+_dz = docs / 'design'; shutil.rmtree(_dz, ignore_errors=True); shutil.copytree(src / 'design', _dz)
+_DZ_LINKS = ''.join('<link rel="stylesheet" href="/design/' + f + '">' for f in ('fonts/fonts.css', 'base.css', 'd1.css'))
+_DZ_WORDS = (('Мок-тесты', 'Пробные тесты'), ('мок-тесты', 'пробные тесты'), ('Мок-тестов', 'Пробных тестов'), ('мок-тестов', 'пробных тестов'),
+             ('Мок-теста', 'Пробного теста'), ('мок-теста', 'пробного теста'), ('Мок-тест', 'Пробный тест'), ('мок-тест', 'пробный тест'))
+def _dress(p):
+    h = p.read_text(encoding='utf-8')
+    h = h.replace('<html lang=', '<html data-design="d1" lang=', 1).replace('content="#0e6e86"', 'content="#34497a"')
+    if '<div class="wrap">' in h: h = h.replace('<div class="wrap">', _DZ_LINKS + '<div class="wrap">', 1)
+    else:
+        h = h.replace('<body><main>', '<body>' + _DZ_LINKS + '<main>', 1)
+        for x, y in _DZ_WORDS: h = h.replace(x, y)
+    i = h.rindex('</body>'); h = h[:i] + '<script src="/design/design.js"></script>' + h[i:]
+    p.write_text(h, encoding='utf-8')
+for _p in [docs / 'index.html', docs / '404.html'] + [pathlib.Path(x) for pat in ('ru', 'kk') for x in glob.glob(str(docs / pat / '**' / 'index.html'), recursive=True)]:
+    _dress(_p)
+
 # ---- лаборатория (рабочая копия приватного репозитория) ----
 lab = root / 'lab-site'; lab.mkdir(exist_ok=True)
 (lab / 'index.html').write_text(full('lab'), encoding='utf-8')
@@ -934,10 +953,6 @@ assert '</script' not in _tests_js.lower(), 'в данных тестов ест
 # Аудио и шрифты у сборок одинаковые, поэтому берутся из лаборатории, а не копируются второй раз.
 shutil.rmtree(lab / '_site', ignore_errors=True)
 shutil.copytree(docs, lab / '_site', ignore=lambda d, names: [n for n in names if d == str(docs) and n in ('audio', 'fonts', 'CNAME', '_headers')])
-# варианты дизайна (30.10.2026, «Дизайн 1» и «Дизайн 2» в том же переключателе): слой стилей, шрифты и design.js только в лаборатории,
-# в docs/ не попадают; подключает их воркер лаборатории поверх сборки _site
-shutil.rmtree(lab / '_design', ignore_errors=True)
-if (src / 'design').exists(): shutil.copytree(src / 'design', lab / '_design')
 
 kb = lambda p: p.stat().st_size // 1024
 print('built: docs/index.html (%d KB, сайт — только мок-тесты), lab-site/index.html (%d KB, лаборатория: +курс%s), dist/index.html (%d KB), dist/artifact.html'

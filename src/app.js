@@ -1431,31 +1431,31 @@
     var c = document.createElement('canvas'); c.width = W; c.height = H;
     var g = c.getContext('2d');
     var ready = document.fonts && document.fonts.load
-      ? Promise.all(['700 150px Fraunces', '600 64px "Source Sans 3"', '500 40px "JetBrains Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }))
+      ? Promise.all(['800 150px Geologica', '600 64px "Golos Text"', '500 40px "Golos Text"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }))
       : Promise.resolve();
     ready.then(function () {
-      g.fillStyle = '#0e6e86'; g.fillRect(0, 0, W, H);
+      g.fillStyle = '#34497a'; g.fillRect(0, 0, W, H);
       g.fillStyle = 'rgba(255,255,255,0.06)'; g.beginPath(); g.arc(W + 60, 260, 520, 0, 2 * Math.PI); g.fill();
       g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-      g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '500 40px "JetBrains Mono", monospace';
+      g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '500 40px "Golos Text", system-ui, sans-serif';
       g.fillText('QAZAQ TRAINER', W / 2, 260);
       var head = d('head') || d('exam') + ' ' + d('level'), fs = 150;
-      do { g.font = '700 ' + fs + 'px Fraunces, Georgia, serif'; fs -= 6; } while (g.measureText(head).width > W - 200 && fs > 80);
+      do { g.font = '800 ' + fs + 'px Geologica, system-ui, sans-serif'; fs -= 6; } while (g.measureText(head).width > W - 200 && fs > 80);
       g.fillStyle = '#ffffff'; g.fillText(head, W / 2, 560);
-      g.font = '600 64px "Source Sans 3", system-ui, sans-serif'; g.fillStyle = 'rgba(255,255,255,0.85)';
+      g.font = '600 64px "Golos Text", system-ui, sans-serif'; g.fillStyle = 'rgba(255,255,255,0.85)';
       g.fillText(d('label'), W / 2, 680);
-      g.fillStyle = '#ffffff'; g.font = '700 300px Fraunces, Georgia, serif';
+      g.fillStyle = '#ffffff'; g.font = '800 300px Geologica, system-ui, sans-serif';
       g.fillText(d('big') || score + '/' + total, W / 2, 1080);   // экспресс-тест: вместо счёта крупно уровень, без полосы процента
       if (!d('big')) {
         var bx = 170, bw = W - 340, by = 1180;
         g.fillStyle = 'rgba(255,255,255,0.18)'; roundRect(g, bx, by, bw, 36, 18); g.fill();
-        g.fillStyle = '#e0b563'; roundRect(g, bx, by, Math.max(36, bw * pct / 100), 36, 18); g.fill();
-        g.fillStyle = '#ffffff'; g.font = '600 64px "Source Sans 3", system-ui, sans-serif';
+        g.fillStyle = '#f0d48a'; roundRect(g, bx, by, Math.max(36, bw * pct / 100), 36, 18); g.fill();
+        g.fillStyle = '#ffffff'; g.font = '600 64px "Golos Text", system-ui, sans-serif';
         g.fillText(pct + ' %', W / 2, 1320);
       }
-      g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '600 52px "Source Sans 3", system-ui, sans-serif';
+      g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '600 52px "Golos Text", system-ui, sans-serif';
       g.fillText(d('foot') || (kk ? 'Сынақ тест' : 'Пробный тест'), W / 2, 1640);
-      g.fillStyle = '#ffffff'; g.font = '600 64px "Source Sans 3", system-ui, sans-serif';
+      g.fillStyle = '#ffffff'; g.font = '600 64px "Golos Text", system-ui, sans-serif';
       g.fillText('qazaqtrainer.com', W / 2, 1730);
       c.toBlob(function (blob) {
         if (!blob) return;

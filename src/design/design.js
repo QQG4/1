@@ -165,8 +165,8 @@
     d.addEventListener('toggle', function () { opened[k] = d.open; });
     return d;
   }
-  /* «Толығырақ» — новое слово в казахском интерфейсе, ждёт носителя: tools/kk-review-redesign-2026-10-30.md */
-  function more(nodes) { nodes = nodes.filter(Boolean); return nodes.length ? fold('dz-more', isKk() ? 'Толығырақ' : 'Подробнее', nodes) : null; }
+  /* на экране только стрелка (решение владельца 30.10.2026), слово — для экранного диктора. «Толығырақ» ждёт носителя: tools/kk-review-redesign-2026-10-30.md */
+  function more(nodes) { nodes = nodes.filter(Boolean); return nodes.length ? fold('dz-more', '<span class="sr">' + (isKk() ? 'Толығырақ' : 'Подробнее') + '</span>', nodes) : null; }
   function after(ref, node) { if (node) ref.parentNode.insertBefore(node, ref.nextSibling); }
   function textLen(n) { return (n.textContent || '').trim().length; }
   function accordion(sec) {

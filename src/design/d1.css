@@ -386,20 +386,40 @@
 [data-design=d1] .dz-au-row .hub-st{margin:0;grid-column:auto}
 [data-design=d1] .dz-au-row .variants.v-grid{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 
-/* не флаг: жёлтое — не полоса во всю ширину под синей, а плита внутри синего с орнаментом по нижнему краю */
-[data-design=d1] .dz-hero{padding-bottom:48px}
-[data-design=d1] .dz-express{margin:32px 0 0;padding:26px 28px 66px;position:relative;z-index:1;background-color:var(--sun);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-8 0 116 100' fill='none' stroke='%23dfc077' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6'/%3E%3Cpath d='M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6'/%3E%3Cpath d='M50 74c7 2 16 1 20-6 3-6-3-11-8-8'/%3E%3Cpath d='M50 74c-7 2-16 1-20-6-3-6 3-11 8-8'/%3E%3Cpath d='M36 92h28'/%3E%3C/svg%3E");background-repeat:repeat-x;background-position:left bottom 10px;background-size:42px 36px}
-/* под заголовком страницы вместо жёлтой линии — полоска орнамента */
-[data-design=d1] .dz-head,[data-design=d1] body>main .dz-hero{border-bottom:0;padding-bottom:50px}
-[data-design=d1] .dz-head::after,[data-design=d1] body>main .dz-hero::after{content:"";position:absolute;left:0;right:0;bottom:8px;height:22px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-8 0 116 100' fill='none' stroke='%23f0d48a' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6'/%3E%3Cpath d='M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6'/%3E%3Cpath d='M50 74c7 2 16 1 20-6 3-6-3-11-8-8'/%3E%3Cpath d='M50 74c-7 2-16 1-20-6-3-6 3-11 8-8'/%3E%3Cpath d='M36 92h28'/%3E%3C/svg%3E") repeat-x left center/26px 22px}
-[data-design=d1][data-phase=run] .dz-head{padding-bottom:6px}
-[data-design=d1][data-phase=run] .dz-head::after{display:none}
 @media (max-width:560px){
-  [data-design=d1] .dz-hero{padding-bottom:36px}
-  [data-design=d1] .dz-express{margin-top:24px;padding:20px 16px 56px;background-size:36px 31px}
   [data-design=d1] .btn.gear{width:40px;height:34px;min-height:34px}
   [data-design=d1] .dz-gear{width:20px;height:20px}
   [data-design=d1] .level-row.dz-au-row{grid-template-columns:minmax(0,1fr)}
   [data-design=d1] .dz-au-row .variants.v-grid{justify-content:flex-start}
   [data-design=d1] .dz-au-row .hub-st{margin-top:-4px}
+}
+
+/* ---- орнамент едва заметным узором (правка владельца 30.10.2026) ---- */
+/* синяя и жёлтая плиты покрыты узором из знака со сдвигом рядов, тон в тон; вместе с плитой вернулась жёлтая полоса на всю ширину */
+:root[data-design=d1]{--orn-navy:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%233a5085' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath transform='translate%2810 10%29 scale%28.8%29' d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28'/%3E%3Cpath transform='translate%28110 110%29 scale%28.8%29' d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28'/%3E%3C/svg%3E");--orn-sun:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%23ebce83' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath transform='translate%2810 10%29 scale%28.8%29' d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28'/%3E%3Cpath transform='translate%28110 110%29 scale%28.8%29' d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28'/%3E%3C/svg%3E");--orn-side:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -14 112 128' fill='none' stroke='rgba%2835%2C45%2C69%2C.09%29' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28'/%3E%3C/svg%3E")}
+@media (prefers-color-scheme:dark){:root[data-design=d1]:not([data-theme="light"]){--orn-side:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -14 112 128' fill='none' stroke='rgba%28255%2C255%2C255%2C.08%29' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28'/%3E%3C/svg%3E")}}
+:root[data-design=d1][data-theme="dark"]{--orn-side:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -14 112 128' fill='none' stroke='rgba%28255%2C255%2C255%2C.08%29' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28'/%3E%3C/svg%3E")}
+[data-design=d1] .topbar,[data-design=d1] .dz-top,[data-design=d1] .dz-hero,[data-design=d1] .dz-head,[data-design=d1] body>main .dz-hero,[data-design=d1] .exam-card-wrap .exam-card{background-image:var(--orn-navy);background-size:120px 120px}
+[data-design=d1] .dz-express,[data-design=d1] .exam-card-wrap:nth-child(2) .exam-card{background-image:var(--orn-sun);background-size:120px 120px}
+/* по левому краю сайта — столбик из того же знака, виден только на широком экране, где есть свободное поле */
+[data-design=d1] body::before{content:"";position:fixed;left:8px;top:0;bottom:0;width:30px;z-index:1;pointer-events:none;background:var(--orn-side) repeat-y center top/30px 34px}
+@media (max-width:1100px){[data-design=d1] body::before{display:none}}
+@media print{[data-design=d1] body::before{display:none}}
+@media (max-width:560px){
+  [data-design=d1] .topbar,[data-design=d1] .dz-top,[data-design=d1] .dz-hero,[data-design=d1] .dz-head,[data-design=d1] body>main .dz-hero,[data-design=d1] .exam-card-wrap .exam-card,[data-design=d1] .dz-express,[data-design=d1] .exam-card-wrap:nth-child(2) .exam-card{background-size:92px 92px}
+}
+
+/* кнопка раскрытия — только стрелка */
+[data-design=d1] .dz-more>summary{min-width:44px;min-height:40px;text-decoration:none}
+[data-design=d1] .dz-more>summary .dz-chev{width:26px;height:26px}
+[data-design=d1] .seo-nav .dz-more>summary{text-decoration:underline}
+[data-design=d1] .seo-nav .dz-more>summary .dz-chev{width:16px;height:16px}
+/* заголовок первого экрана собран: слова ближе, длинное название не рвётся, шрифт подстраивается под ширину */
+[data-design=d1] h1,[data-design=d1] h2,[data-design=d1] h3,[data-design=d1] .dz-hero h1,[data-design=d1] body>main .dz-hero h1,[data-design=d1] .exam-card .name,[data-design=d1] .dz-punch,[data-design=d1] .dz-acc-title,[data-design=d1] .stage-name,[data-design=d1] .dz-brand,[data-design=d1] .q-text,[data-design=d1] .level-row .nm{word-spacing:.02em}
+[data-design=d1] .dz-hero h1{text-wrap:balance}
+[data-design=d1][lang=kk] .dz-hero h1{font-size:clamp(1.75rem,5.4vw,4.25rem);max-width:none}
+@media (max-width:560px){
+  [data-design=d1] .dz-hero h1{font-size:clamp(1.625rem,8.6vw,2.375rem);max-width:none}
+  [data-design=d1][lang=kk] .dz-hero h1{font-size:clamp(1.375rem,6.7vw,2rem)}
+  [data-design=d1] .dz-more>summary{min-height:44px}
 }

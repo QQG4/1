@@ -1637,12 +1637,14 @@
   }
 
   function viewSources() {
-    var tiers = { 1: T('Ключевые пособия — рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники') };
+    var tiers = { 1: T('Ключевые пособия — рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники'), 4: T('Методология оценивания и тестирования') };
     var groups = {};
     (KZ.sources || []).forEach(function (x) { (groups[x.tier || 9] = groups[x.tier || 9] || []).push(x); });
     var html = Object.keys(groups).sort().map(function (tk) {
-      return '<section><h2>' + esc(tiers[tk] || T('Прочее')) + '</h2><ol class="prompt-list">' + groups[tk].map(function (x) {
-        return '<li><span><b lang="kk">' + esc(LK(x, 'title')) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(T(x.kind)) : '') + (x.level ? ' · ' + esc(x.level) : '') + '</span></span></li>';
+      return '<section><h2>' + esc(tiers[tk] || T('Прочее')) + '</h2><ol class="prompt-list">' + groups[tk].map(function (x, i, list) {
+        var title = esc(LK(x, 'title')), why = LK(x, 'why');
+        if (why && list[i + 1] && LK(list[i + 1], 'why') === why) why = '';   // общая подпись нескольких работ — один раз, под последней
+        return '<li><span><b lang="' + esc(x.lang || 'kk') + '">' + (x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + title + '</a>' : title) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(T(x.kind)) : '') + (x.level ? ' · ' + esc(x.level) : '') + (x.source ? ' · <span lang="' + esc(x.lang || 'kk') + '">' + esc(x.source) + '</span>' : '') + '</span>' + (why ? '<br><span class="small">' + esc(why) + '</span>' : '') + '</span></li>';
       }).join('') + '</ol></section>';
     }).join('');
     var official = KZ.examOrder.map(function (eid) { var ex = KZ.exams[eid]; return '<h3>' + esc(ex.name) + '</h3><ul class="srclist">' + ex.sources.map(function (x) { return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(LK(x, 'title')) + '</a></li>'; }).join('') + '</ul>'; }).join('');

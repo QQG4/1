@@ -35,7 +35,7 @@ paid_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'paid' / '*.js
 srcs = root.parent / 'база' / 'sources.json'
 if srcs.exists():
     S = json.loads(srcs.read_text(encoding='utf-8'))['sources']
-    keep = [{k: s.get(k) for k in ('id', 'tier', 'level', 'kind', 'author', 'year', 'title', 'source', 'url', 'lang', 'why', 'why_kk') if s.get(k) is not None} for s in S]
+    keep = [{k: s.get(k) for k in ('id', 'tier', 'level', 'kind', 'author', 'year', 'title', 'source') if s.get(k) is not None} for s in S if s.get('site', True)]   # site: false — в базе, но не на странице литературы
     data.append('KZ.sources = ' + json.dumps(keep, ensure_ascii=False) + ';')
 
 # аудио: манифест общий, src — файл (сайт) или data-URI (артефакт/локальный файл)

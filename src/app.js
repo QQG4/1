@@ -1637,20 +1637,18 @@
   }
 
   function viewSources() {
-    var tiers = { 1: T('Ключевые пособия — рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники'), 4: T('Методология оценивания и тестирования') };
+    var tiers = { 1: T('Ключевые пособия — рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники') };
     var groups = {};
     (KZ.sources || []).forEach(function (x) { (groups[x.tier || 9] = groups[x.tier || 9] || []).push(x); });
     var html = Object.keys(groups).sort().map(function (tk) {
-      return '<section><h2>' + esc(tiers[tk] || T('Прочее')) + '</h2><ol class="prompt-list">' + groups[tk].map(function (x, i, list) {
-        var title = esc(LK(x, 'title')), why = LK(x, 'why');
-        if (why && list[i + 1] && LK(list[i + 1], 'why') === why) why = '';   // общая подпись нескольких работ — один раз, под последней
-        return '<li><span><b lang="' + esc(x.lang || 'kk') + '">' + (x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + title + '</a>' : title) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(T(x.kind)) : '') + (x.level ? ' · ' + esc(x.level) : '') + (x.source ? ' · <span lang="' + esc(x.lang || 'kk') + '">' + esc(x.source) + '</span>' : '') + '</span>' + (why ? '<br><span class="small">' + esc(why) + '</span>' : '') + '</span></li>';
+      return '<section><h2>' + esc(tiers[tk] || T('Прочее')) + '</h2><ol class="prompt-list">' + groups[tk].map(function (x) {
+        return '<li><span><b lang="kk">' + esc(LK(x, 'title')) + '</b><br><span class="small muted">' + esc(x.author || '') + (x.year ? ', ' + x.year : '') + (x.kind ? ' · ' + esc(T(x.kind)) : '') + (x.level ? ' · ' + esc(x.level) : '') + (x.source ? ' · ' + esc(x.source) : '') + '</span></span></li>';
       }).join('') + '</ol></section>';
     }).join('');
     var official = KZ.examOrder.map(function (eid) { var ex = KZ.exams[eid]; return '<h3>' + esc(ex.name) + '</h3><ul class="srclist">' + ex.sources.map(function (x) { return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(LK(x, 'title')) + '</a></li>'; }).join('') + '</ul>'; }).join('');
     return topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Источники') }]) +
-      '<div class="kicker">' + T('Литература и источники') + '</div><h1>' + T('Литература, на которую мы опирались') + '</h1>' +
-      '<p class="lede">' + T('Пособия и словари, которые мы изучали и которыми вдохновлялись, строя собственную методологию тренажёра. Все задания созданы нашими специалистами. Особое внимание мы уделяем авторам из первого раздела и рекомендуем их пособия для самостоятельной работы.') + '</p>' +
+      '<div class="kicker">' + T('Литература и источники') + '</div><h1>' + T('Рекомендуем почитать') + '</h1>' +
+      '<p class="lede">' + T('Пособия и словари для самостоятельной подготовки. Авторы не участвовали в создании тренажёра.') + '</p>' +
       html + '<section><h2>' + T('Официальные документы экзаменов') + '</h2>' + official + '</section>';
   }
   function checklistOf(sec) { return (KZ.lang === 'kk' && sec.checklist_kk) || sec.checklist; }

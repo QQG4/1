@@ -153,7 +153,7 @@ def page_head(lang, title, desc, url, alts=()):
          '<title>' + e(title) + '</title>',
          '<meta name="description" content="' + e(desc) + '">',
          '<meta name="theme-color" content="#0e6e86">',
-         '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">']
+         '<link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon-192.png" type="image/png" sizes="192x192"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">']
     if url:
         base = url[:url.index('/', 8) + 1]
         h.append('<link rel="canonical" href="' + e(url) + '">')
@@ -790,7 +790,9 @@ def head(mode, extra_head=''):
          '<meta name="description" content="' + DESCS[mode] + '">'
          '<meta name="theme-color" content="#0e6e86">')
     if mode in ('site', 'lab'):
-        h += ('<link rel="icon" href="favicon.svg" type="image/svg+xml">'
+        h += ('<link rel="icon" href="favicon.ico" sizes="48x48">'
+              '<link rel="icon" href="favicon-192.png" type="image/png" sizes="192x192">'
+              '<link rel="icon" href="favicon.svg" type="image/svg+xml">'
               '<link rel="apple-touch-icon" href="apple-touch-icon.png">')
         if mode == 'lab': h += '<meta name="robots" content="noindex,nofollow">'   # лаборатория в поиск не попадает ни при каких условиях
         if mode == 'site':   # подтверждение прав в Search Console / Вебмастере — только на публичной главной
@@ -805,7 +807,12 @@ def head(mode, extra_head=''):
                   '<meta property="og:url" content="' + page + '">'
                   '<meta property="og:image" content="' + base + 'og.png">'
                   '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">'
-                  '<meta name="twitter:card" content="summary_large_image">')
+                  '<meta name="twitter:card" content="summary_large_image">'
+                  # название и логотип сайта для выдачи поисковиков
+                  '<script type="application/ld+json">' + json.dumps({'@context': 'https://schema.org', '@graph': [
+                      {'@type': 'WebSite', '@id': base + '#site', 'url': base, 'name': SITE_NAME, 'inLanguage': ['ru', 'kk']},
+                      {'@type': 'Organization', '@id': base + '#org', 'url': base, 'name': SITE_NAME, 'logo': base + 'favicon-192.png',
+                       'sameAs': ['https://t.me/qazaqtrainer', 'https://www.instagram.com/qazaq.trainer/']}]}, ensure_ascii=False) + '</script>')
     h += '<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
     return h + extra_head
 
@@ -945,7 +952,7 @@ lab = root / 'lab-site'; lab.mkdir(exist_ok=True)
 (lab / 'robots.txt').write_text('User-agent: *\nDisallow: /\n', encoding='utf-8')
 # lab-site — рабочая копия приватного репозитория: без этого файла wrangler выкладывает на Cloudflare и папку .git (найдено 16.09.2026)
 (lab / '.assetsignore').write_text('.git\n.gitignore\n.assetsignore\n', encoding='utf-8')
-for ico in ('favicon.svg', 'apple-touch-icon.png'):
+for ico in ('favicon.svg', 'favicon.ico', 'favicon-48.png', 'favicon-192.png', 'apple-touch-icon.png'):
     if (docs / ico).exists(): shutil.copyfile(docs / ico, lab / ico)
 put_audio(lab / 'audio')
 put_fonts(lab / 'fonts')

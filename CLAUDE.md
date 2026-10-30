@@ -126,7 +126,7 @@
   og/twitter-теги для превью ссылки (og:image — абсолютный `<siteUrl>og.png`, иначе Telegram картинку не покажет), иконки,
   у демо `robots: noindex` (дублирует тесты сайта). Адрес везде берётся из `siteUrl` — при смене домена править только `site.js`.
   Картинку превью и иконки рисует `node tools/make_brand.js` (headless Chrome, шрифты сайта) → `docs/og.png`, `docs/favicon.svg`,
-  `docs/apple-touch-icon.png` и аватар Telegram-канала `docs/telegram-avatar.png` (512×512, всё важное в центре: Telegram
+  `docs/favicon.ico`, `favicon-48.png`, `favicon-192.png` (значок для выдачи поисковиков, с 31.10.2026), `docs/apple-touch-icon.png` и аватар Telegram-канала `docs/telegram-avatar.png` (512×512, всё важное в центре: Telegram
   обрезает в круг); перезапускать только при смене названия или подписи. `docs/robots.txt` и `docs/sitemap.xml` пишет build.py.
 - Статистика (`KZ.track(name, props)` и `trackPage(path)` в app.js): работает только в публичной сборке (`build === 'site'`),
   чтобы лаборатория и локальные прогоны не пачкали цифры. Два необязательных приёмника: `KZ.site.eventsUrl` (свой

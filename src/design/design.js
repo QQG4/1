@@ -166,7 +166,28 @@
     return d;
   }
   /* на экране только стрелка (решение владельца 30.10.2026), слово — для экранного диктора. «Толығырақ» ждёт носителя: tools/kk-review-redesign-2026-10-30.md */
-  function more(nodes) { nodes = nodes.filter(Boolean); return nodes.length ? fold('dz-more', '<span class="sr">' + (isKk() ? 'Толығырақ' : 'Подробнее') + '</span>', nodes) : null; }
+  function more(nodes) {
+    nodes = nodes.filter(Boolean); if (!nodes.length) return null;
+    var box = el('div', 'dz-more'), body = el('div', 'dz-more-body'); move(body, nodes); body.hidden = true;
+    box.appendChild(body); return box;
+  }
+  /* стрелка стоит сразу справа от текста, который раскрывает; сам текст раскрывается под ним. Вызывается, когда блоки уже на месте */
+  function attachToggles(area) {
+    $$('div.dz-more', area).forEach(function (box) {
+      if (box.getAttribute('data-ready')) return;
+      box.setAttribute('data-ready', '1');
+      var body = $(':scope > .dz-more-body', box), k = location.pathname + location.hash + '|' + (moreN++);
+      var b = el('button', 'dz-toggle', '<span class="sr">' + (isKk() ? 'Толығырақ' : 'Подробнее') + '</span>' + CHEV);
+      b.type = 'button';
+      function show(on) { body.hidden = !on; b.setAttribute('aria-expanded', String(on)); b.classList.toggle('open', on); }
+      b.addEventListener('click', function () { opened[k] = body.hidden; show(body.hidden); });
+      show(!!opened[k]);
+      var prev = box.previousElementSibling, note = box.parentNode.classList.contains('notice') ? $(':scope > b.t', box.parentNode) : null;
+      var target = note && (!prev || $('.btn', prev) || prev === note) ? note : prev;
+      if (target) target.appendChild(b);
+      else box.parentNode.insertBefore(b, box);   // только текст без обёртки: «Источники:» в подвале
+    });
+  }
   function after(ref, node) { if (node) ref.parentNode.insertBefore(node, ref.nextSibling); }
   function textLen(n) { return (n.textContent || '').trim().length; }
   function accordion(sec) {
@@ -194,7 +215,7 @@
     var steps = $$('.nstep', n); if (!steps.length) return;
     var btns = el('div', 'dz-next-btns'), notes = [];
     steps.forEach(function (s) { var b = $('.btn', s), p = $('p', s); if (b) { b.classList.remove('small'); btns.appendChild(b); } if (p) notes.push(p); s.remove(); });
-    n.appendChild(btns); n.appendChild(more(notes));
+    n.appendChild(more(notes)); n.appendChild(btns);
   }
   function calmHead(route) {
     var head = $(':scope > .dz-head, :scope > .dz-hero', app); if (!head) return;
@@ -227,7 +248,7 @@
   }
   function calmHub() {
     var ex = $('.dz-express', app);
-    if (ex) { var sub = $('.sub', ex); if (sub) { var m = more([sub]); ex.appendChild(m); } }
+    if (ex) { var sub = $('.sub', ex); if (sub) { var m = more([sub]), eh = $('h2', ex); if (eh) after(eh, m); else ex.appendChild(m); } }
     $$(':scope > section', app).forEach(function (s) {
       var k = $(':scope > .kicker', s); if (k) k.remove();
       if ($('.ladder', s)) return accordion(s);
@@ -325,6 +346,7 @@
     gear();
     privacyLinks();
     rename(app);
+    attachToggles(app);
   }
 
   function enhance() {
@@ -395,5 +417,6 @@
     m.insertBefore(top, hero);
     if (D === 'd1' && /^\/(ru|kk)\/(kaztest|qrt)\/[a-z]\d\/$/.test(location.pathname)) calmLanding(m, hero);
     if (D === 'd1') rename(m);
+    if (D === 'd1') attachToggles(m);
   }
 })();

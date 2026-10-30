@@ -27,7 +27,7 @@
   function move(into, nodes) { nodes.forEach(function (n) { if (n) into.appendChild(n); }); }
 
   var theme = $('meta[name="theme-color"]');
-  if (theme) theme.setAttribute('content', D === 'd1' ? '#0a2472' : '#17c964');
+  if (theme) theme.setAttribute('content', D === 'd1' ? '#34497a' : '#17c964');
 
   var CHEV = '<svg class="dz-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>';
   var moreN = 0, opened = {};
@@ -211,8 +211,7 @@
     $$(':scope > section', app).forEach(function (s) {
       var k = $(':scope > .kicker', s); if (k) k.remove();
       if ($('.ladder', s)) return accordion(s);
-      var sb = $(':scope > .sub', s), h = $(':scope > h2', s);
-      if (sb && h) after(h, more([sb]));
+      var sb = $(':scope > .sub', s); if (sb) sb.remove();   // «Мок-тесты по уровням»: заголовок и кнопки понятны сами, решение владельца 30.10.2026
     });
     $$('.exam-card-wrap').forEach(function (w) {
       var a = $('a.exam-card', w), id = a && (a.getAttribute('href') || '').split('/').pop(), x = id && KZ.exams[id], tag = a && $('.tag', a);

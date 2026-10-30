@@ -34,7 +34,7 @@
   var RENAME_RU = [[/Мок-тесты/g, 'Пробные тесты'], [/мок-тесты/g, 'пробные тесты'], [/Мок-тестов/g, 'Пробных тестов'], [/мок-тестов/g, 'пробных тестов'],
     [/Мок-теста/g, 'Пробного теста'], [/мок-теста/g, 'пробного теста'], [/Мок-тест/g, 'Пробный тест'], [/мок-тест/g, 'пробный тест']];
   var EXAM_SHORT = 60;
-  var RENAME_KK = [[/Мок-тест/g, 'Сынама тест'], [/мок-тест/g, 'сынама тест']];
+  var RENAME_KK = [[/Мок-тест/g, 'Сынақ тест'], [/мок-тест/g, 'сынақ тест']];
   var app = document.getElementById('app');
   if (!app) { page(); return; }
 
@@ -223,7 +223,7 @@
     var lede = $(':scope > .lede', head);
     if (route === 'hub') {
       var h1 = $('h1', head), k = $('.kicker', head);
-      if (h1) h1.textContent = isKk() ? 'ҚАЗТЕСТ пен QazResmiTest бойынша сынама тесттер' : 'Пробные ҚАЗТЕСТ и QazResmiTest';
+      if (h1) h1.textContent = isKk() ? 'ҚАЗТЕСТ пен QazResmiTest бойынша сынақ тесттер' : 'Пробные ҚАЗТЕСТ и QazResmiTest';
       if (k) k.remove();
       var punch = el('p', 'dz-punch'); punch.textContent = isKk() ? 'Тегін. Тіркеусіз.' : 'Бесплатно. Без регистрации.';
       if (h1) after(h1, punch);

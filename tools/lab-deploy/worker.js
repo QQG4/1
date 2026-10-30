@@ -126,7 +126,9 @@ export default {
     const view = ((request.headers.get('Cookie') || '').match(/(?:^|;\s*)qt_view=(site|d1|d2)(?:;|$)/) || [])[1] || 'lab';
     let res;
     if (view !== 'lab' && !SHARED.test(url.pathname)) {
-      const inner = new URL(url); inner.pathname = '/_site' + url.pathname;
+      const inner = new URL(url);
+      // Дизайн 1: короткая страница о данных вместо полной (полная в сборке _site не меняется)
+      inner.pathname = view === 'd1' && /^\/privacy\/?$/.test(url.pathname) ? '/_design/privacy/' : '/_site' + url.pathname;
       res = await env.ASSETS.fetch(new Request(inner, request));
     } else res = await env.ASSETS.fetch(request);
     let out = new Response(res.body, res);

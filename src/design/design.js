@@ -31,6 +31,9 @@
 
   var CHEV = '<svg class="dz-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>';
   var moreN = 0, opened = {};
+  var RENAME_RU = [[/Мок-тесты/g, 'Пробные тесты'], [/мок-тесты/g, 'пробные тесты'], [/Мок-тестов/g, 'Пробных тестов'], [/мок-тестов/g, 'пробных тестов'],
+    [/Мок-теста/g, 'Пробного теста'], [/мок-теста/g, 'пробного теста'], [/Мок-тест/g, 'Пробный тест'], [/мок-тест/g, 'пробный тест']];
+  var RENAME_KK = [[/Мок-тест/g, 'Сынама тест'], [/мок-тест/g, 'сынама тест']];
   var app = document.getElementById('app');
   if (!app) { page(); return; }
 
@@ -198,12 +201,29 @@
     var lede = $(':scope > .lede', head);
     if (route === 'hub') {
       var h1 = $('h1', head), k = $('.kicker', head);
-      if (!isKk() && h1) h1.textContent = 'Пробные ҚАЗТЕСТ и QazResmiTest';
+      if (h1) h1.textContent = isKk() ? 'ҚАЗТЕСТ пен QazResmiTest бойынша сынама тесттер' : 'Пробные ҚАЗТЕСТ и QazResmiTest';
       if (k) k.remove();
-      var punch = el('p', 'dz-punch'); punch.textContent = isKk() ? 'Тегін, тіркеусіз.' : 'Бесплатно. Без регистрации.';
+      var punch = el('p', 'dz-punch'); punch.textContent = isKk() ? 'Тегін. Тіркеусіз.' : 'Бесплатно. Без регистрации.';
       if (h1) after(h1, punch);
       if (lede) after(punch, more([lede]));
     } else if (lede && !lede.classList.contains('hintx') && textLen(lede) > 60) after($('h1', head), more([lede]));
+  }
+  /* блоки аудирования не стоят в одном списке с уровнями: своя гармошка под экзаменами, строка на экзамен */
+  function calmHubBlocks() {
+    var rows = $$('.exam-card-wrap .level-row').filter(function (r) { return $('.lvl-au', r); }); if (!rows.length) return;
+    var exams = $('.exam-card-wrap').closest('section'), sec = document.createElement('section');
+    var title = el('h2', '');
+    title.textContent = ($('.hub-nm span', rows[0]).firstChild.nodeValue || '').trim();
+    var list = el('div', 'levels');
+    rows.forEach(function (r) {
+      var name = $('.name', r.closest('.exam-card-wrap')), nm = $('.nm', r);
+      if (name && nm) nm.textContent = name.textContent;
+      $('.lvl', r).remove(); r.classList.add('dz-au-row');
+      list.appendChild(r);
+    });
+    sec.appendChild(title); sec.appendChild(list);
+    after(exams, sec);
+    accordion(sec);
   }
   function calmHub() {
     var ex = $('.dz-express', app);
@@ -213,6 +233,7 @@
       if ($('.ladder', s)) return accordion(s);
       var sb = $(':scope > .sub', s); if (sb) sb.remove();   // «Мок-тесты по уровням»: заголовок и кнопки понятны сами, решение владельца 30.10.2026
     });
+    calmHubBlocks();
     $$('.exam-card-wrap').forEach(function (w) {
       var a = $('a.exam-card', w), id = a && (a.getAttribute('href') || '').split('/').pop(), x = id && KZ.exams[id], tag = a && $('.tag', a);
       if (!x || !tag) return;
@@ -223,6 +244,7 @@
   /* страница экзамена: выбор уровня сверху и одной строкой на уровень, остальное — гармошкой */
   function calmExam() {
     var head = $(':scope > .dz-head', app), secs = $$(':scope > section', app);
+    var callout = $('[data-act=scroll]', app); if (callout && callout.closest('.notice')) callout.closest('.notice').remove();   // блоки аудирования — в своей гармошке ниже, отдельной плашкой не выделяем
     var mock = secs.filter(function (s) { return !s.id && $('.levels', s); })[0];
     if (mock) {
       var list = $('.levels', mock), rows = $$('.level-row', list), groups = {}, order = [];
@@ -268,11 +290,28 @@
     nav.setAttribute('data-calm', '1');
     var kids = Array.prototype.slice.call(nav.children).filter(function (c) { return c.tagName !== 'STYLE'; });
     nav.appendChild(fold('dz-more', isKk() ? 'Барлық емтихан мен деңгей' : 'Все экзамены и уровни', kids));
+    rename(nav);
   }
   document.addEventListener('click', function (e) {   // «Все блоки ↓» ведёт в свёрнутую гармошку
     var b = e.target.closest && e.target.closest('[data-act=scroll]'); if (!b) return;
     var to = document.getElementById(b.getAttribute('data-to')); if (to && to.tagName === 'DETAILS') to.open = true;
   }, true);
+  /* «Мок-тест» путает: в Дизайне 1 везде «пробный тест». В данных и словаре строки прежние, при выкладке заменить там */
+  function rename(box) {
+    var rules = isKk() ? RENAME_KK : RENAME_RU;
+    function fix(v) { rules.forEach(function (r) { v = v.replace(r[0], r[1]); }); return v; }
+    var w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), n;
+    while ((n = w.nextNode())) if (/[Мм]ок-тест/.test(n.nodeValue)) n.nodeValue = fix(n.nodeValue);
+    $$('[title*="ок-тест"]', box).forEach(function (x) { x.title = fix(x.title); });
+  }
+  var GEAR = '<svg class="dz-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>';
+  function gear() {
+    $$('.btn.gear', app).forEach(function (b) {
+      Array.prototype.slice.call(b.childNodes).forEach(function (n) { if (n.nodeType === 3) n.remove(); });
+      b.insertAdjacentHTML('afterbegin', GEAR);
+    });
+  }
+  function privacyLinks() { $$('a[href$="/privacy/"]', app).forEach(function (a) { a.setAttribute('href', '/privacy/'); }); }
   function calm(route, p) {
     moreN = 0;
     calmHead(route);
@@ -283,6 +322,9 @@
     $$('.notice', app).forEach(calmNotice);
     $$('.nsteps', app).forEach(calmNext);
     calmFooter();
+    gear();
+    privacyLinks();
+    rename(app);
   }
 
   function enhance() {
@@ -352,5 +394,6 @@
     var top = el('div', 'dz-top', '<a class="dz-brand" href="/">' + mark('dz-mark') + '<span>Qazaq Trainer</span></a>');
     m.insertBefore(top, hero);
     if (D === 'd1' && /^\/(ru|kk)\/(kaztest|qrt)\/[a-z]\d\/$/.test(location.pathname)) calmLanding(m, hero);
+    if (D === 'd1') rename(m);
   }
 })();

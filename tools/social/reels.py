@@ -40,6 +40,16 @@ RU_TYPES = ('tip', 'story')
 # русские голоса в той же пропорции, что Daulet и Aigul: мужской в двух роликах из трёх
 RU_VOICE = {ms.DAULET: 'ru-RU-DmitryNeural', ms.AIGUL: 'ru-RU-SvetlanaNeural'}
 KK_LETTERS = set('әғқңөұүһіӘҒҚҢӨҰҮҺІ')
+MOTION = '--motion' in sys.argv
+FX3D = '--3d' in sys.argv   # объёмный отсчёт, знак и кубиковые сцены из Blender, проба 31.10.2026
+# Кубиковые сцены вместо смайликов в «Истории» (решение владельца 31.10.2026): vox_scenes.py в проекте НАУАН, клипы в соцсети/_3d.
+# Герой-мужчина; у историй про героиню сцены пока не подставляем. Смайлика нет в таблице — остаётся смайлик.
+EMOJI_SCENE = {'🎓': 'qt_read', '❌': 'qt_read', '📖': 'qt_read', '📚': 'qt_read', '🧩': 'qt_puzzled', '❓': 'qt_puzzled', '🤔': 'qt_puzzled',
+               '🔍': 'qt_search', '🙈': 'qt_type', '📝': 'qt_type', '🏃': 'qt_rush', '💨': 'qt_rush', '👂': 'qt_listen', '🎧': 'qt_listen', '🎯': 'qt_win'}
+def step_scene(v, st):
+    if st.get('scene'): return st['scene']
+    if not FX3D or re.search(r'\b(она|её|ей)\b', v['hook']['ru'] + ' ' + st['say'], re.I): return None
+    return EMOJI_SCENE.get(st.get('emoji') or v.get('emoji'))
 # На стыке языков голос спотыкается (замечание владельца 10.10.2026: «КАЗТЕСТ или КазРесми Тест», «к Болашаку» резали
 # слух). Правило: в голосе только слова языка этого голоса, названия на чужом языке — только на экране (поле text).
 # Список пополнять, когда голос споткнётся на новом слове.
@@ -132,27 +142,28 @@ def tts(text, voice, mute):
         return path, ms.duration(path)
     # Несколько предложений озвучиваем по отдельности и склеиваем с паузой SENT_GAP: Azure держит на точке ~1 с,
     # а точная пауза в SSML ужимает её только до ~0,5 с (замер 11.10.2026). Интонация конца сохраняется:
-    # каждое предложение синтезируется целиком, со своей точкой или вопросом. asetnsamples после склейки: без него
-    # кодировщик mp3 иногда падал («inadequate AVFrame plane padding»)
+    # каждое предложение синтезируется целиком, со своей точкой или вопросом.
+    # С 31.10.2026 кэш в WAV без потерь: от Azure PCM, никакого повторного MP3 (двойное кодирование и задержка кодера).
     parts = [x for x in re.split(r'(?<=[.?!…])\s+', text.strip()) if x]
-    path = TTS_CACHE / (hashlib.sha1(('v4|%s|%s|%s|%s' % (RATE, SENT_GAP, voice, text)).encode()).hexdigest()[:16] + '.mp3')
+    path = TTS_CACHE / (hashlib.sha1(('v5|%s|%s|%s|%s' % (RATE, SENT_GAP, voice, text)).encode()).hexdigest()[:16] + '.wav')
     if path.exists(): return path, ms.duration(path)
     if len(parts) > 1:
         files = [tts(x, voice, mute)[0] for x in parts]
-        gap = TTS_CACHE / ('gap-%d.mp3' % int(SENT_GAP * 1000))
+        gap = TTS_CACHE / ('gap-%d.wav' % int(SENT_GAP * 1000))
         if not gap.exists():
-            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', str(SENT_GAP), '-b:a', '96k', str(gap)], check=True)
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', str(SENT_GAP), '-c:a', 'pcm_s16le', str(gap)], check=True)
         seq = [f for x in files for f in (x, gap)][:-1]
         inputs = sum((['-i', str(f)] for f in seq), [])
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error'] + inputs + ['-filter_complex', ''.join('[%d:a]' % i for i in range(len(seq))) +
-                        'concat=n=%d:v=0:a=1,asetnsamples=n=1152:p=0[a]' % len(seq), '-map', '[a]', '-b:a', '96k', str(path)], check=True)
+                        'concat=n=%d:v=0:a=1[a]' % len(seq), '-map', '[a]', '-c:a', 'pcm_s16le', str(path)], check=True)
         return path, ms.duration(path)
-    raw = path.with_suffix('.raw.mp3'); ms.tts(text, voice, raw, rate=RATE)
+    raw = path.with_suffix('.raw.wav'); ms.tts(text, voice, raw, rate=RATE, fmt='riff-24khz-16bit-mono-pcm')
     # Azure оставляет ~0,5 с тишины по краям: на карточках из одного слова это треть кадра, темп проседал.
-    # Порог -60 дБ и запас 0,05 с: при -50 дБ без запаса срезались тихие хвосты слов (замечание владельца 11.10.2026)
-    one = 'silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.05'
-    trim = ','.join([one, 'areverse', one, 'areverse'])
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(raw), '-af', trim, '-b:a', '96k', str(path)], check=True)
+    # Порог -55 дБ, запас 0,03 с спереди и 0,08 с сзади: хвосты слов целы (замечание владельца 11.10.2026)
+    head = 'silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.03:window=0.005'
+    tail = 'silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.08:window=0.005'
+    trim = ','.join([head, 'areverse', tail, 'areverse'])
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(raw), '-af', trim, '-c:a', 'pcm_s16le', str(path)], check=True)
     raw.unlink()
     return path, ms.duration(path)
 
@@ -172,7 +183,7 @@ def fit(d, text, name, size, width):
     return ms.font(name, size)
 
 HEAD_TOP = 280
-def header(d, text, size=64, fill=ms.GOLD):
+def header(d, text, size=64, fill=ms.SUN):
     """Тема ролика строкой под плашкой, на всех кадрах (26.10.2026). Заставки-крючка больше нет: с 0,0 с на экране
     материал, а тема видна и тем, кто пролистал первые секунды. Не больше двух строк. Возвращает нижний край."""
     text = ' '.join(ms.nodash(text).split())
@@ -197,16 +208,16 @@ def draw_marked(d, text, f, cy, mark):
     x = (W - d.textlength(text, font=f)) / 2
     hl = marked(text, mark)
     for i, ch in enumerate(text):
-        d.text((x, cy), ch, font=f, fill=ms.GOLD if i in hl else ms.WHITE, anchor='lm')
+        d.text((x, cy), ch, font=f, fill=ms.SUN if i in hl else ms.WHITE, anchor='lm')
         x += d.textlength(ch, font=f)
 
 def frame_card(v, c, idx, n, path):
     im, d = ms.base({'badge': BADGE['cards']})
-    d.text((W - 80, 205), '%d/%d' % (idx, n), font=ms.font('Arial Bold.ttf', 40), fill='#d8ecf1', anchor='rm')
+    d.text((W - 80, 205), '%d/%d' % (idx, n), font=ms.font('Arial Bold.ttf', 40), fill=ms.PALE, anchor='rm')
     parts = []   # (высота, рисовалка)
     if c.get('big'):
         fb = fit(d, c['big'], 'Arial Bold.ttf', 300, W - 160)
-        parts.append((330, lambda y, fb=fb: d.text((W / 2, y + 165), c['big'], font=fb, fill=ms.GOLD if c.get('mark') else ms.WHITE, anchor='mm')))
+        parts.append((330, lambda y, fb=fb: d.text((W / 2, y + 165), c['big'], font=fb, fill=ms.SUN if c.get('mark') else ms.WHITE, anchor='mm')))
     if c.get('emoji'):
         e = emoji(c['emoji'], 230 if c.get('big') else 300)
         parts.append((e.size[1] + 40, lambda y, e=e: im.paste(e, (int((W - e.size[0]) / 2), int(y + 20)), e)))
@@ -220,8 +231,8 @@ def frame_card(v, c, idx, n, path):
     if c.get('ru'):
         fr = ms.font('Arial.ttf', 64)
         h = len(ms.wrap(d, c['ru'], fr, W - 160)) * 80
-        parts.append((h + 20, lambda y: ms.text_block(d, c['ru'], fr, 80, y + 20, W - 160, '#d8ecf1', center=True)))
-    top = header(d, topic(v), 54, '#d8ecf1') + 20 if topic(v) else 300
+        parts.append((h + 20, lambda y: ms.text_block(d, c['ru'], fr, 80, y + 20, W - 160, ms.PALE, center=True)))
+    top = header(d, topic(v), 54, ms.PALE) + 20 if topic(v) else 300
     total = sum(h for h, _ in parts)
     y = top + (BOTTOM - top - total) / 2
     for h, draw in parts: draw(y); y += h
@@ -232,7 +243,7 @@ def frame_poll(v, path):
     im, d = ms.base({'badge': BADGE['poll']})
     q = v['q']
     y = ms.text_block(d, q['kk'], ms.font('Arial Bold.ttf', 80), 80, 360, W - 160, ms.WHITE, center=True)
-    y = ms.text_block(d, q['ru'], ms.font('Arial.ttf', 50), 80, y + 20, W - 160, '#d8ecf1', center=True) + 60
+    y = ms.text_block(d, q['ru'], ms.font('Arial.ttf', 50), 80, y + 20, W - 160, ms.PALE, center=True) + 60
     for o in v['poll']:
         hgt = 150
         d.rounded_rectangle([110, y, W - 110, y + hgt], 30, fill=ms.WHITE)
@@ -242,32 +253,39 @@ def frame_poll(v, path):
         d.text((x, y + 48), o['kk'], font=ms.font('Arial Bold.ttf', 56), fill=ms.INK, anchor='lm')
         d.text((x, y + 108), o['ru'], font=ms.font('Arial.ttf', 40), fill=ms.MUTED, anchor='lm')
         y += hgt + 30
-    y = ms.text_block(d, v.get('ask', 'Пиши ответ в комментариях'), ms.font('Arial Bold.ttf', 52), 80, y + 40, W - 160, ms.GOLD, center=True)
+    y = ms.text_block(d, v.get('ask', 'Пиши ответ в комментариях'), ms.font('Arial Bold.ttf', 52), 80, y + 40, W - 160, ms.SUN, center=True)
     im.save(path)
     return y
 
 def frame_cta(v, path):
     c = CTA[v['cta']]
     im, d = ms.base({'badge': BADGE[v['type']]})
-    d.ellipse([W / 2 - 120, 480, W / 2 + 120, 720], fill=ms.WHITE)
-    d.text((W / 2, 600), 'Q', font=ms.font('Georgia Bold.ttf', 170), fill=ms.TEAL, anchor='mm')
+    if not FX3D: m = ms.mark('sun', 280); im.paste(m, (int((W - 280) / 2), 460), m)   # при --3d знак накладывается клипом
     big, small = (c['ru'], c['kk']) if v['type'] in RU_TYPES else (c['kk'], c['ru'])   # крупно — язык голоса
     y = ms.text_block(d, big, ms.font('Arial Bold.ttf', 70), 80, 820, W - 160, ms.WHITE, center=True)
-    y = ms.text_block(d, small, ms.font('Arial.ttf', 46), 80, y + 25, W - 160, '#d8ecf1', center=True)
-    y = ms.text_block(d, c['url'], fit(d, c['url'], 'Arial Bold.ttf', 84, W - 160), 80, y + 70, W - 160, ms.GOLD, center=True)
+    y = ms.text_block(d, small, ms.font('Arial.ttf', 46), 80, y + 25, W - 160, ms.PALE, center=True)
+    y = ms.text_block(d, c['url'], fit(d, c['url'], 'Arial Bold.ttf', 84, W - 160), 80, y + 70, W - 160, ms.SUN, center=True)
     im.save(path)
     return y
 
 SUB_TOP = 1420   # субтитры «Разбора» и «Истории» — в нижней части кадра, над подписью сайта
 
-def draw_words(d, text, f, y, line_h, width, fill, shown, anchor='lm'):
+def draw_words(d, text, f, y, line_h, width, fill, shown, anchor='lm', marker=None):
     """Текст по центру строками; видны только первые shown слов (None — все). Раскладка строится по всему тексту,
-    поэтому строки не прыгают, пока слова проявляются. y — центр первой строки (lm) или её верх (la)."""
+    поэтому строки не прыгают, пока слова проявляются. y — центр первой строки (lm) или её верх (la).
+    marker=(фон, цвет текста) при --motion: произносимое сейчас слово на цветной подложке (приём «ключевое слово цветом»
+    из монтажа НАУАН; слово выбирает голос, разметки в сценарии не нужно)."""
     k = 0
     for line in ms.wrap(d, text, f, width):
         x = (W - d.textlength(line, font=f)) / 2
         for w in line.split(' '):
-            if shown is None or k < shown: d.text((x, y), w, font=f, fill=fill, anchor=anchor)
+            if shown is None or k < shown:
+                col = fill
+                if MOTION and marker and shown is not None and k == shown - 1:
+                    tw = d.textlength(w, font=f); h = f.size * 0.66
+                    if marker[0]: d.rounded_rectangle([x - 12, y - h - 4, x + tw + 12, y + h + 4], 14, fill=marker[0])
+                    col = marker[1]
+                d.text((x, y), w, font=f, fill=col, anchor=anchor)
             x += d.textlength(w + ' ', font=f); k += 1
         y += line_h
     return y
@@ -279,7 +297,7 @@ def subtitle(d, text, y0=SUB_TOP, shown=None):
     h = len(ms.wrap(d, text, f, W - 220)) * 70 + 50
     y0 = min(y0, BOTTOM - 10 - h)   # длинный субтитр поднимается и ложится на низ скриншота, но не на подпись сайта
     d.rounded_rectangle([60, y0, W - 60, y0 + h], 30, fill=ms.WHITE)
-    draw_words(d, text, f, y0 + 60, 70, W - 220, ms.INK, shown)
+    draw_words(d, text, f, y0 + 60, 70, W - 220, ms.INK, shown, marker=(ms.SUN, ms.INK))
     return y0 + h
 
 def scheme(im, d, card, y0, y1):
@@ -287,16 +305,16 @@ def scheme(im, d, card, y0, y1):
     карточка по центру между y0 и y1 (растянутая на весь кадр выглядела пустой). Возвращает нижний край."""
     ft, fl, fb = ms.font('Arial Bold.ttf', 70), ms.font('Arial.ttf', 60), ms.font('Arial Bold.ttf', 60)
     probe = ImageDraw.Draw(Image.new('RGB', (1, 1)))
-    title_h = ms.text_block(probe, card['title'], ft, 0, 0, W - 260, ms.TEAL)
+    title_h = ms.text_block(probe, card['title'], ft, 0, 0, W - 260, ms.NAVY)
     rows = [ms.wrap(probe, line, fb if card.get('hl') == i else fl, W - 340) for i, line in enumerate(card.get('lines', []))]
     h = 60 + title_h + 20 + sum(len(r) * 76 + 40 for r in rows) + 40
     top = y0 + max(0, (y1 - y0 - h) / 2)
     d.rounded_rectangle([80, top, W - 80, top + h], 40, fill=ms.WHITE)
-    y = ms.text_block(d, card['title'], ft, 130, top + 60, W - 260, ms.TEAL) + 20
+    y = ms.text_block(d, card['title'], ft, 130, top + 60, W - 260, ms.NAVY) + 20
     for i, r in enumerate(rows):
         hl = card.get('hl') == i
         rh = len(r) * 76 + 24
-        if hl: d.rounded_rectangle([110, y, W - 110, y + rh], 24, fill=ms.GOLD)
+        if hl: d.rounded_rectangle([110, y, W - 110, y + rh], 24, fill=ms.SUN)
         yy = y + 12
         for line in r: d.text((160, yy + 38), line, font=fb if hl else fl, fill=ms.INK, anchor='lm'); yy += 76
         y += rh + 16
@@ -320,7 +338,7 @@ def base_tip(v, st, shots_dir):
         bottom = scheme(im, d, st['card'], top + 20, SUB_TOP - 60)
     else: bottom = top
     if st.get('kk'):   # казахское слово крупно над субтитром
-        d.text((W / 2, SUB_TOP - 90), st['kk'], font=fit(d, st['kk'], 'Arial Bold.ttf', 110, W - 160), fill=ms.GOLD, anchor='mm')
+        d.text((W / 2, SUB_TOP - 90), st['kk'], font=fit(d, st['kk'], 'Arial Bold.ttf', 110, W - 160), fill=ms.SUN, anchor='mm')
     return im, bottom
 
 def draw_tip(im, st, shown):
@@ -329,18 +347,19 @@ def draw_tip(im, st, shown):
 
 def base_story(v, st, last):
     im, d = ms.base({'badge': BADGE['story']})
-    d.text((W - 80, 205), 'типичная ситуация', font=ms.font('Arial.ttf', 38), fill='#d8ecf1', anchor='rm')   # правило банка
+    d.text((W - 80, 205), 'типичная ситуация', font=ms.font('Arial.ttf', 38), fill=ms.PALE, anchor='rm')   # правило банка
     top = header(d, topic(v))
-    e = emoji(st.get('emoji') or v.get('emoji') or '💬', 260 if top < 420 else 220)
-    im.paste(e, (int((W - e.size[0]) / 2), int(max(470, top + 40))), e)
+    if not step_scene(v, st):   # кубиковая сцена из Blender поверх кадра вместо эмодзи
+        e = emoji(st.get('emoji') or v.get('emoji') or '💬', 260 if top < 420 else 220)
+        im.paste(e, (int((W - e.size[0]) / 2), int(max(470, top + 40))), e)
     if last:   # вывод: золотая плашка по размеру всего текста
         n = len(ms.wrap(d, ' '.join(ms.nodash(st.get('text') or st['say']).split()), ms.font('Arial Bold.ttf', 76), W - 180))
-        d.rounded_rectangle([60, 840, W - 60, 840 + n * 96 + 70], 36, fill=ms.GOLD)
+        d.rounded_rectangle([60, 840, W - 60, 840 + n * 96 + 70], 36, fill=ms.SUN)
     return im
 
 def draw_story(im, st, last, shown):
     text = ' '.join(ms.nodash(st.get('text') or st['say']).split())
-    return draw_words(ImageDraw.Draw(im), text, ms.font('Arial Bold.ttf', 76), 900, 96, W - 180, ms.INK if last else ms.WHITE, shown) + 40
+    return draw_words(ImageDraw.Draw(im), text, ms.font('Arial Bold.ttf', 76), 900, 96, W - 180, ms.INK if last else ms.WHITE, shown, marker=(ms.NAVY, ms.WHITE) if last else (ms.SUN, ms.INK)) + 40
 
 # ---------- слова во времени ----------
 ALIGN_PY = pathlib.Path.home() / 'transcribe-env' / 'venv' / 'bin' / 'python'
@@ -391,14 +410,33 @@ def reveal(base, draw, starts, dur, tmp, name, seg, audio, key, lead=LEAD):
         seg(p, max(marks[k] - marks[k - 1], 1 / 30), audio if k == 1 else None, key=key and k == n)
     return bottom
 
+# ---------- лёгкий монтаж (--motion, проба 31.10.2026, по умолчанию выключен) ----------
+ZOOM = 0.035       # плавный наезд на весь ролик: 1,000 → 1,035, без рывков (суперсэмплинг 2×)
+def sfx(name):
+    """Свои звуки без чужих прав: тик отсчёта и короткий звук на ответ, тихие, синтез ffmpeg, файлы в brand/."""
+    p = ms.HERE / 'brand' / (name + '.wav')
+    if not p.exists():
+        lav = {'tick': 'sine=f=1200:d=0.04,afade=t=out:st=0.005:d=0.035,volume=-30dB',
+               'chime': 'sine=f=784:d=0.5,afade=t=out:st=0.02:d=0.48,volume=-20dB[a];'
+                        'sine=f=1175:d=0.5,afade=t=out:st=0.02:d=0.42,volume=-24dB,adelay=70|70[b];[a][b]amix=inputs=2:normalize=0:duration=longest[o]'}[name]
+        if name == 'chime':
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-filter_complex', lav, '-map', '[o]', '-ar', '24000', '-ac', '1', '-c:a', 'pcm_s16le', str(p)], check=True)
+        else:
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', lav, '-ar', '24000', '-ac', '1', '-c:a', 'pcm_s16le', str(p)], check=True)
+    return p
+
 # ---------- сборка ----------
 # Фоновая музыка (решение владельца 14.10.2026): казахские мотивы, тихо, голос всегда слышно. Трек и лицензия —
 # соцсети/музыка/ИСТОЧНИКИ.txt. Ролики 1–14 очереди одобрены без музыки и не пересобираются.
 MUSIC = ms.ROOT.parent / 'соцсети' / 'музыка' / 'atlas-kazakhstan.mp3'
-MUSIC_GAIN = -18      # дБ: в паузах музыка примерно на 13 дБ тише голоса
+MUSIC_GAIN = -22      # дБ: та же пропорция к голосу, что была при -18 и усилении +9 (31.10.2026 голос +5)
+VOICE_GAIN = 5        # ровное усиление голоса. Было +9 с alimiter: ограничитель на первом пике давил голос на 3–5 дБ и
+                      # медленно отпускал, первые 0,2 с фразы проседали и «лагали» (замер 31.10.2026). Теперь он только страховка
+LIMITER = 'alimiter=limit=0.95:attack=2:release=200:level=false'
+AUDIO_OUT = 'aresample=44100,aformat=channel_layouts=stereo'   # 24 кГц моно Instagram пережимал до ~27 кбит/с
 MUSIC_STARTS = [0, 20, 40, 60, 80, 100]   # с какой секунды трека начинать — по ролику, чтобы подряд не звучали одинаково
 
-def assemble(segs, mp4, music_start=None):
+def assemble(segs, mp4, music_start=None, overlays=()):
     """segs: [(png, длительность, mp3 или None)]; голос стартует вместе со своим кадром (+LEAD, у первого кадра сразу).
     music_start — секунда трека, с которой идёт фон; None — без музыки. Под речью музыка приглушается сильнее
     (sidechaincompress по голосу), в начале плавно нарастает, в конце затухает."""
@@ -408,10 +446,18 @@ def assemble(segs, mp4, music_start=None):
         if mp3: ain.append(mp3); delays.append(int((t + (LEAD if t else 0)) * 1000))
         t += dur
     n = len(segs)
-    graph = ''.join('[%d:v]' % i for i in range(n)) + 'concat=n=%d:v=1:a=0[v];' % n
+    graph = ''.join('[%d:v]' % i for i in range(n)) + 'concat=n=%d:v=1:a=0' % n
+    if MOTION:
+        graph += ",scale=2160:3840:flags=lanczos,zoompan=z='1+%s*on/%d':d=1:x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':s=1080x1920:fps=30" % (ZOOM, int(t * 30))
+    graph += '[v0];'
+    # 3D-клипы Blender: (имя, с какой секунды, x, y, ширина); индексы входов идут после картинок, голоса и музыки
+    ov_in, last = [], 'v0'
+    for j, ov in enumerate(overlays):
+        name = ov[0]
+        ov_in += ['-i', str(ms.ROOT.parent / 'соцсети' / '_3d' / (name + '.mov'))]
     graph += ''.join('[%d:a]adelay=%d|%d[a%d];' % (n + i, ms_, ms_, i) for i, ms_ in enumerate(delays))
     # громкость как в make_short: ровное усиление и ограничитель, без loudnorm (решение владельца 10.10.2026)
-    vox = ''.join('[a%d]' % i for i in range(len(ain))) + 'amix=inputs=%d:normalize=0,volume=9dB,apad' % len(ain)
+    vox = ''.join('[a%d]' % i for i in range(len(ain))) + 'amix=inputs=%d:normalize=0,volume=%ddB,apad' % (len(ain), VOICE_GAIN)
     extra = []
     use_music = music_start is not None and MUSIC.exists()
     if use_music:
@@ -421,13 +467,21 @@ def assemble(segs, mp4, music_start=None):
         graph += ('[%d:a]aformat=sample_rates=24000:channel_layouts=mono,volume=%ddB,afade=t=in:d=0.8,'
                   'afade=t=out:st=%.2f:d=1.5[mu];' % (m, MUSIC_GAIN, max(t - 1.5, 0)))
         graph += '[mu][sc]sidechaincompress=threshold=0.02:ratio=6:attack=20:release=400[mud];'
-        graph += '[vx][mud]amix=inputs=2:normalize=0:duration=first,alimiter=limit=0.89:level=false[aud]'
+        graph += '[vx][mud]amix=inputs=2:normalize=0:duration=first,%s,%s[aud]' % (LIMITER, AUDIO_OUT)
     else:
-        graph += vox + ',alimiter=limit=0.89:level=false[aud]'
+        graph += vox + ',%s,%s[aud]' % (LIMITER, AUDIO_OUT)
+    first = n + len(ain) + (1 if use_music else 0)
+    for j, ov in enumerate(overlays):
+        name, at, x, y, w = ov[:5]
+        en = ":enable='lt(t,%.3f)'" % ov[5] if len(ov) > 5 else ''
+        graph += ';[%d:v]scale=%d:-1:flags=lanczos,format=yuva420p,setpts=PTS+%.3f/TB[o%d];[%s][o%d]overlay=%d:%d:eof_action=%s:format=auto%s[n%d]' % (
+            first + j, w, at, j, last, j, x, y, 'pass' if name == 'count' else 'repeat', en, j)
+        last = 'n%d' % j
+    graph += ';[%s]null[v]' % last
     # потоки фильтров ограничены отдельно от кодировщика: иначе склейка кадров занимала 3+ ядра и грела ноутбук
-    cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-filter_complex_threads', '1', '-threads', '1'] + vin + sum((['-i', str(a)] for a in ain), []) + extra + [
+    cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-filter_complex_threads', '1', '-threads', '1'] + vin + sum((['-i', str(a)] for a in ain), []) + extra + ov_in + [
         '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % t, '-r', '30', '-c:v', 'libx264', '-threads', '2',   # 2 потока: меньше греется
-        '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '20', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(mp4)]
+        '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '20', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(mp4)]
     subprocess.run(cmd, check=True)
     return t
 
@@ -435,7 +489,7 @@ def build(v, out, mute):
     voice = v.get('voice') or ms.voice_for(v['id'], '')
     if v['type'] in RU_TYPES: voice = RU_VOICE[voice]
     tmp = pathlib.Path(tempfile.mkdtemp(prefix='reel-'))
-    segs, bottoms, keys = [], [], []   # keys — кадры для обзорного листа
+    segs, bottoms, keys, overlays = [], [], [], []   # overlays — 3D-клипы поверх кадров; keys — кадры для обзорного листа
     def seg(png, dur, mp3=None, key=False):
         segs.append((png, dur, mp3))
         if key: keys.append(png)
@@ -467,13 +521,18 @@ def build(v, out, mute):
         a, dur = tts(v['q']['say'], voice, mute)
         bottoms.append(('вопрос', fq(meta, q, tmp / 'q.png')))
         seg(tmp / 'q.png', max(3.0, dur + 0.7), a, key=True)
+        if FX3D:   # клип 640 px, центр там же, где был плоский кружок отсчёта
+            cy = max(bottoms[-1][1] + 240, 1350)
+            overlays.append(('count', sum(x[1] for x in segs), (W - 560) // 2, min(cy - 280, 1770 - 570), 560))
         for c in range(ms.COUNTDOWN, 0, -1):
-            bottoms.append(('отсчёт', fq(meta, q, tmp / ('n%d.png' % c), count=c)))
-            seg(tmp / ('n%d.png' % c), 1.0)
+            bottoms.append(('отсчёт', fq(meta, q, tmp / ('n%d.png' % c), count=None if FX3D else c)))
+            seg(tmp / ('n%d.png' % c), 1.0, sfx('tick') if MOTION else None)
         note = (v['note'], '') if v.get('note') else None
         bottoms.append(('ответ', fq(meta, q, tmp / 'ans.png', reveal=True, explain=note)))
         a, dur = tts(v['say_answer'], voice, mute)
-        seg(tmp / 'ans.png', max(3.0, dur + 1.2), a, key=True)
+        if MOTION:   # звук ответа в момент открытия, голос вступает за ним
+            seg(tmp / 'ans.png', 0.45, sfx('chime')); seg(tmp / 'ans.png', max(2.6, dur + 1.2) , a, key=True)
+        else: seg(tmp / 'ans.png', max(3.0, dur + 1.2), a, key=True)
     elif v['type'] == 'poll':
         bottoms.append(('опрос', frame_poll(v, tmp / 'poll.png')))
         a, dur = tts(v['q']['say'], voice, mute)
@@ -492,13 +551,16 @@ def build(v, out, mute):
                 b = reveal(base, lambda im, k, st=st: draw_tip(im, st, k), starts, d_step, tmp, 's%02d' % i, seg, a, key, lead)
                 b = BOTTOM + 1 if top > SUB_TOP - 40 else b   # схема залезла на субтитр — ошибка вёрстки
             else:
+                sc = step_scene(v, st); t0 = sum(x[1] for x in segs)   # сцена на свой шаг: от его начала до конца (клип 4 с, дальше стоп-кадр)
                 b = reveal(base_story(v, st, last), lambda im, k, st=st, last=last: draw_story(im, st, last, k), starts, d_step, tmp, 's%02d' % i, seg, a, key, lead)
+                if sc: overlays.append((sc, t0, (W - 490) // 2, 448, 490, sum(x[1] for x in segs)))
             bottoms.append(('шаг %d' % (i + 1), b))
     bottoms.append(('призыв', frame_cta(v, tmp / 'cta.png')))
+    if FX3D: overlays.append(('mark', sum(x[1] for x in segs), (W - 420) // 2, 400, 420))
     seg(tmp / 'cta.png', d_cta, cta_a, key=True)
 
     mp4 = out / (v['id'] + '.mp4')
-    total = assemble(segs, mp4, None if '--no-music' in sys.argv else MUSIC_STARTS[sum(map(ord, v['id'])) % len(MUSIC_STARTS)])
+    total = assemble(segs, mp4, None if '--no-music' in sys.argv else MUSIC_STARTS[sum(map(ord, v['id'])) % len(MUSIC_STARTS)], overlays)
     problems = ['%s: текст заходит на подпись внизу (до %d px)' % (w, b) for w, b in bottoms if b > BOTTOM]
     lo, hi = DUR[v['type']]
     if not lo <= total <= hi: problems.append('длина %.1f с вне %d–%d с' % (total, lo, hi))

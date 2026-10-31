@@ -414,9 +414,11 @@
 [data-design=d1] h1,[data-design=d1] h2,[data-design=d1] h3,[data-design=d1] .dz-hero h1,[data-design=d1] body>main .dz-hero h1,[data-design=d1] .exam-card .name,[data-design=d1] .dz-punch,[data-design=d1] .dz-acc-title,[data-design=d1] .stage-name,[data-design=d1] .dz-brand,[data-design=d1] .q-text,[data-design=d1] .level-row .nm{word-spacing:.02em}
 [data-design=d1] .dz-hero h1{text-wrap:balance}
 [data-design=d1][lang=kk] .dz-hero h1{font-size:clamp(1.75rem,5.4vw,4.25rem);max-width:none}
+[data-design=d1] .dz-hero.dz-hub h1{font-size:clamp(1.75rem,5.4vw,4.25rem);max-width:none}
 @media (max-width:560px){
   [data-design=d1] .dz-hero h1{font-size:clamp(1.625rem,8.6vw,2.375rem);max-width:none}
   [data-design=d1][lang=kk] .dz-hero h1{font-size:clamp(1.375rem,6.7vw,2rem)}
+  [data-design=d1] .dz-hero.dz-hub h1{font-size:clamp(1.375rem,6.7vw,2rem)}
   [data-design=d1] .dz-more>summary{min-height:44px}
 }
 /* слово на кнопке раскрытия скрыто и на посадочных, где нет стилей приложения */

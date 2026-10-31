@@ -222,8 +222,9 @@
     var head = $(':scope > .dz-head, :scope > .dz-hero', app); if (!head) return;
     var lede = $(':scope > .lede', head);
     if (route === 'hub') {
+      head.classList.add('dz-hub');
       var h1 = $('h1', head), k = $('.kicker', head);
-      if (h1) h1.textContent = isKk() ? 'ҚАЗТЕСТ пен QazResmiTest бойынша сынақ тесттер' : 'Пробные ҚАЗТЕСТ и QazResmiTest';
+      if (h1) h1.textContent = isKk() ? 'ҚАЗТЕСТ пен QazResmiTest бойынша сынақ\u00a0тесттер' : 'Пробные ҚАЗТЕСТ и QazResmiTest';
       if (k) k.remove();
       var punch = el('p', 'dz-punch'); punch.textContent = isKk() ? 'Тегін. Тіркеусіз.' : 'Бесплатно. Без регистрации.';
       if (h1) after(h1, punch);

@@ -14,6 +14,7 @@ export const VIDEO_UTC = 12;     // 17:00 по Алматы — публикац
    с 33 до 8 просмотров на пост (аналитика 26.10). Дни недели по UTC: вторник, четверг, суббота. */
 export const VIDEO_DAYS = [2, 4, 6];
 export const NUDGE_UTC = 15;     // 20:00 по Алматы — напомнить и прислать следующий на одобрение
+const VIDEO_LAST = 38;           // до какого номера очередь собрана в новом виде сайта (31.10.2026); после пересборки поднять
 const VIDEO_BUFFER = 6;          // запас одобренных на две недели: Telegram берёт 3 в неделю (Instagram на паузе, ig.js)
 const SELF = 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev/';   // отсюда Telegram забирает mp4
 
@@ -42,7 +43,8 @@ export async function previewNext(env, force) {
   if (c >= VIDEO_BUFFER && !force) return;
   const seen = new Set((await rows(env, `SELECT n FROM tg_videos WHERE status <> 'queued'`)).map((r) => r.n));
   const q = await queue(env);
-  const item = q.find((x) => !seen.has(x.n));
+  const item = q.find((x) => !seen.has(x.n) && x.n <= VIDEO_LAST);
+  if (!item && q.some((x) => x.n > VIDEO_LAST && !seen.has(x.n))) return;   // дальше ролики старого вида: не спрашиваем, пока не пересобраны
   if (!item) return api(env, 'sendMessage', { chat_id: env.TG_OWNER_CHAT, text: 'Все ролики очереди просмотрены. Новые появятся после следующей сборки.' });
   const msg = await api(env, 'sendVideo', {
     chat_id: env.TG_OWNER_CHAT, video: SELF + item.file, width: 1080, height: 1920, supports_streaming: true,

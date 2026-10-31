@@ -27,8 +27,10 @@ def main():
         data = json.loads(week.read_text())
         for v in data['videos']:
             mp4 = week.parent / (v['id'] + '.mp4')
-            new = ROOT / 'tiktok-полигон' / (v['id'] + '.mp4')   # новый формат (26.10.2026) важнее старой сборки недели
-            if new.exists(): mp4 = new
+            # новые сборки важнее старой сборки недели: новый вид сайта (31.10.2026), затем формат без заставки (26.10.2026)
+            for folder in ('новый-вид', 'tiktok-полигон'):
+                new = ROOT / folder / (v['id'] + '.mp4')
+                if new.exists(): mp4 = new; break
             if mp4.exists(): items.append((v, mp4))
     items.sort(key=lambda x: x[0]['id'])   # 1012-1-… < 1012-2-… < … < 1101-…: день, затем слот
     (OUT / 'v').mkdir(parents=True, exist_ok=True)

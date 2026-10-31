@@ -15,12 +15,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 W, H = 1080, 1920
-TEAL, TEAL_DARK, WHITE, INK, MUTED = '#0e6e86', '#0a5568', '#ffffff', '#1e2a30', '#5c6b70'
-GOOD, GOOD_SOFT, GOLD, FADE = '#2f7d4f', '#e4f1e8', '#e9c46a', '#cfdfe3'
-F = '/System/Library/Fonts/Supplemental/'
-def font(name, size): return ImageFont.truetype(F + name, size)
+# Вид сайта с 31.10.2026: матовый синий и мягкий жёлтый, Geologica и Golos Text (TTF из шрифтов сайта: make_fonts.py),
+# фон с едва заметным қошқар мүйіз и знак (make_brand_assets.js). Правильный ответ — жёлтым, как акцент на сайте.
+NAVY, TONE, SUN, WHITE, INK, MUTED = '#34497a', '#40578d', '#f0d48a', '#fcfcfd', '#232d45', '#4b566d'
+PALE, FADE, SUN_SOFT = '#dfe4ef', '#c4cbd9', '#f6edd2'
+HERE = pathlib.Path(__file__).parent
+FONTS = {'Arial Bold.ttf': 'Geologica-800.ttf', 'Arial.ttf': 'GolosText-400.ttf', 'Semi': 'GolosText-600.ttf'}
+_bg = None
+def font(name, size): return ImageFont.truetype(str(HERE / 'fonts' / FONTS[name]), size)
+def mark(color='sun', size=240): return Image.open(HERE / 'brand' / ('mark-%s.png' % color)).convert('RGBA').resize((size, size), Image.LANCZOS)
 
-EXAM = {'kaztest': 'ҚАЗТЕСТ', 'qrt': 'QazResmiTest'}
+EXAM = {'kaztest': 'ҚАЗТЕСТ', 'qrt': 'Qazaq Resmi Test'}
 SECTION = {'lexis': ('Лексика', 'Лексика'), 'reading': ('Оқылым', 'Чтение'), 'listening': ('Тыңдалым', 'Аудирование')}
 # Крючок на первые секунды: честное обещание, без выдуманной статистики. Ключ — признак вопроса.
 HOOKS = {
@@ -63,7 +68,7 @@ def azure_env():
     for line in pathlib.Path(os.path.expanduser('~/.config/qazaq-trainer/azure.env')).read_text().splitlines():
         if '=' in line and not line.startswith('#'): k, v = line.split('=', 1); env[k.strip()] = v.strip()
     return env
-def tts(text, voice, path, rate='-5%', sentence_pause=None):
+def tts(text, voice, path, rate='-5%', sentence_pause=None, fmt='audio-24khz-96kbitrate-mono-mp3'):
     env = azure_env()
     body = text.replace('&', 'және').replace('<', '').replace('>', '')
     # sentence_pause: точная пауза на границе предложений вместо стандартной (~0,5 с у Azure). reels.py ставит
@@ -75,7 +80,7 @@ def tts(text, voice, path, rate='-5%', sentence_pause=None):
     req = urllib.request.Request('https://%s.tts.speech.microsoft.com/cognitiveservices/v1' % env.get('AZURE_SPEECH_REGION', 'westeurope'),
                                  data=ssml.encode('utf-8'), method='POST',
                                  headers={'Ocp-Apim-Subscription-Key': env['AZURE_SPEECH_KEY'], 'Content-Type': 'application/ssml+xml',
-                                          'X-Microsoft-OutputFormat': 'audio-24khz-96kbitrate-mono-mp3', 'User-Agent': 'qazaq-trainer'})
+                                          'X-Microsoft-OutputFormat': fmt, 'User-Agent': 'qazaq-trainer'})
     for attempt in range(4):
         try:
             with urllib.request.urlopen(req, timeout=120) as r: path.write_bytes(r.read()); return
@@ -102,49 +107,51 @@ def text_block(d, text, f, x, y, width, fill, gap=1.25, center=False):
         d.text((lx, y), line, font=f, fill=fill); y += int(f.size * gap)
     return y
 def base(meta):
-    im = Image.new('RGB', (W, H), TEAL); d = ImageDraw.Draw(im)
-    d.rectangle([0, int(H * 0.72), W, H], fill=TEAL_DARK)
+    global _bg
+    if _bg is None: _bg = Image.open(HERE / 'brand' / 'bg.png').convert('RGB')
+    im = _bg.copy(); d = ImageDraw.Draw(im)
+    d.rectangle([0, 1770, W, H], fill=SUN)   # жёлтая полоса снизу, как на обложке сайта
     if meta.get('badge'): badge = meta['badge']   # ролики по сценариям (reels.py): своя плашка
     else:
         kk, ru = SECTION.get(meta['section'], ('', ''))
         badge = '%s · %s · %s' % (EXAM[meta['exam']], meta['level'], kk)
-    f = font('Arial Bold.ttf', 40)
-    d.rounded_rectangle([80, 170, 80 + d.textlength(badge, font=f) + 56, 240], 35, fill='#2b8ba3', outline='#8cc4d2', width=2)   # RGB-картинка: без прозрачности
-    d.text((108, 183), badge, font=f, fill=WHITE)
-    d.text((80, 1790), 'qazaqtrainer.com', font=font('Arial Bold.ttf', 38), fill='#d8ecf1')
+    f = font('Arial Bold.ttf', 36)
+    m = mark('sun', 72); im.paste(m, (72, 168), m)
+    d.text((150, 204), badge, font=f, fill=WHITE, anchor='lm')
+    d.text((80, 1790), 'qazaqtrainer.com', font=font('Arial Bold.ttf', 38), fill=INK)
     return im, d
 
 def frame_question(meta, q, path, count=None, reveal=False, explain=None):
     im, d = base(meta)
     y = text_block(d, q['text'], font('Arial Bold.ttf', q.get('size', 62)), 80, 330, W - 160, WHITE)   # size: reels.py крупнее
-    if q.get('sub'): y = text_block(d, q['sub'], font('Arial.ttf', 46), 80, y + 10, W - 160, '#d8ecf1')   # перевод вопроса (reels.py)
+    if q.get('sub'): y = text_block(d, q['sub'], font('Arial.ttf', 46), 80, y + 10, W - 160, PALE)   # перевод вопроса (reels.py)
     y += 40
-    fo = font('Arial Bold.ttf', 50)
+    fo = font('Semi', 50)
     for i, o in enumerate(q['options']):
         lines = wrap(d, o, fo, W - 160 - 150)
         hgt = 60 + len(lines) * 64
         good = reveal and i == q['answer']
-        bg = GOOD if good else (FADE if reveal else WHITE)
+        bg = SUN if good else (FADE if reveal else WHITE)
         d.rounded_rectangle([80, y, W - 80, y + hgt], 28, fill=bg)
-        d.ellipse([110, y + hgt / 2 - 36, 182, y + hgt / 2 + 36], fill=WHITE if good else TEAL)
+        d.ellipse([110, y + hgt / 2 - 36, 182, y + hgt / 2 + 36], fill=NAVY if good else NAVY)
         cx, cy = 146, y + hgt / 2
-        if good:   # галочку рисуем линиями: в Arial нет знака ✓
-            d.line([(cx - 18, cy + 2), (cx - 5, cy + 16), (cx + 20, cy - 14)], fill=GOOD, width=9, joint='curve')
+        if good:   # галочку рисуем линиями: так она одинакова в любом шрифте
+            d.line([(cx - 18, cy + 2), (cx - 5, cy + 16), (cx + 20, cy - 14)], fill=SUN, width=9, joint='curve')
         else:
             d.text((cx, cy), 'ABCD'[i], font=font('Arial Bold.ttf', 44), fill=WHITE, anchor='mm')
         ty = y + 30
         for line in lines:
-            d.text((210, ty), line, font=fo, fill=WHITE if good else (MUTED if reveal else INK)); ty += 64
+            d.text((210, ty), line, font=fo, fill=INK if good else (MUTED if reveal else INK)); ty += 64
         y += hgt + 26
     if count is not None:
         cy = max(y + 140, 1350)
-        d.ellipse([W / 2 - 110, cy - 110, W / 2 + 110, cy + 110], outline=GOLD, width=12)
+        d.ellipse([W / 2 - 110, cy - 110, W / 2 + 110, cy + 110], outline=SUN, width=12)
         d.text((W / 2, cy), str(count), font=font('Arial Bold.ttf', 130), fill=WHITE, anchor='mm')
     if explain:   # здесь это тизер (kk, ru), а не разбор: разбор — на сайте
         ey = y + 40
         probe = ImageDraw.Draw(Image.new('RGB', (1, 1)))
         hgt = text_block(probe, explain[0], font('Arial Bold.ttf', 50), 0, 0, W - 240, INK) + text_block(probe, explain[1], font('Arial.ttf', 40), 0, 0, W - 240, INK) + 95
-        d.rounded_rectangle([80, ey, W - 80, ey + hgt], 28, fill=GOOD_SOFT)
+        d.rounded_rectangle([80, ey, W - 80, ey + hgt], 28, fill=SUN_SOFT)
         ny = text_block(d, explain[0], font('Arial Bold.ttf', 50), 120, ey + 35, W - 240, INK)
         y = text_block(d, explain[1], font('Arial.ttf', 40), 120, ny + 15, W - 240, MUTED) + 35
     im.save(path)
@@ -152,12 +159,11 @@ def frame_question(meta, q, path, count=None, reveal=False, explain=None):
 
 def frame_outro(meta, path):
     im, d = base(meta)
-    d.ellipse([W / 2 - 120, 520, W / 2 + 120, 760], fill=WHITE)
-    d.text((W / 2, 640), 'Q', font=font('Georgia Bold.ttf', 170), fill=TEAL, anchor='mm')
+    m = mark('sun', 280); im.paste(m, (int((W - 280) / 2), 500), m)
     y = text_block(d, OUTRO[0], font('Arial Bold.ttf', 66), 80, 860, W - 160, WHITE, center=True)
-    y = text_block(d, OUTRO[1], font('Arial.ttf', 44), 80, y + 25, W - 160, '#d8ecf1', center=True)
-    y = text_block(d, 'qazaqtrainer.com', font('Arial Bold.ttf', 76), 80, y + 60, W - 160, GOLD, center=True)
-    text_block(d, 'Күн сайын тапсырма · Задание дня: t.me/qazaqtrainer', font('Arial.ttf', 38), 80, y + 40, W - 160, '#d8ecf1', center=True)
+    y = text_block(d, OUTRO[1], font('Arial.ttf', 44), 80, y + 25, W - 160, PALE, center=True)
+    y = text_block(d, 'qazaqtrainer.com', font('Arial Bold.ttf', 76), 80, y + 60, W - 160, SUN, center=True)
+    text_block(d, 'Күн сайын тапсырма · Задание дня: t.me/qazaqtrainer', font('Arial.ttf', 38), 80, y + 40, W - 160, PALE, center=True)
     im.save(path)
 
 # ---------- сборка ----------
@@ -205,7 +211,7 @@ def build(test_id, qid, out_dir, voice=None, mute=False):
              # громкость: ровное усиление на весь ролик + ограничитель пиков. Нормализатор loudnorm в один проход
              # подстраивал уровень на ходу, и во второй половине звук проседал (замечание владельца 10.10.2026);
              # голоса Azure и так одного уровня, поэтому хватает постоянного усиления.
-             '[%d:a]adelay=%d|%d[a];[%d:a]adelay=%d|%d[c];[%d:a][a][c]amix=inputs=3:normalize=0,volume=9dB,alimiter=limit=0.89:level=false,apad[aud]'
+             '[%d:a]adelay=%d|%d[a];[%d:a]adelay=%d|%d[c];[%d:a][a][c]amix=inputs=3:normalize=0,volume=5dB,alimiter=limit=0.95:attack=2:release=200:level=false,apad[aud]'
              % (a0 + 1, t_ans * 1000, t_ans * 1000, a0 + 2, t_cta * 1000, t_cta * 1000, a0))
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error'] + vin +
                    ['-i', str(tmp / 'a_q.mp3'), '-i', str(tmp / 'a_ans.mp3'), '-i', str(tmp / 'a_cta.mp3'),

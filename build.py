@@ -911,13 +911,15 @@ if _base:
     (docs / 'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /demo/\nSitemap: ' + _base + 'sitemap.xml\n', encoding='utf-8')
     import datetime
     _d = datetime.date.today().isoformat()
-    _urls = ''.join('<url><loc>%s</loc><lastmod>%s</lastmod></url>' % (_base + u, _d) for u in ['', 'privacy/', 'review/'] + landing_written)
+    _urls = ''.join('<url><loc>%s</loc><lastmod>%s</lastmod></url>' % (_base + u, _d) for u in ['', 'privacy/', 'terms/', 'review/'] + landing_written)
     (docs / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + _urls + '</urlset>\n', encoding='utf-8')
 put_audio(docs / 'audio')
 put_fonts(docs / 'fonts')
 # страница «Какие данные мы собираем» (RU/KK); ссылка - в подвале приложения и в форме обратной связи
 (docs / 'privacy').mkdir(exist_ok=True)
 shutil.copyfile(src / 'privacy' / 'index.html', docs / 'privacy' / 'index.html')
+(docs / 'terms').mkdir(exist_ok=True)
+shutil.copyfile(src / 'terms' / 'index.html', docs / 'terms' / 'index.html')   # условия и авторские права (01.11.2026)
 
 # ---- дизайн сайта (утверждён владельцем 31.10.2026): слой src/design поверх styles.css и LANDING_CSS ----
 # Стили стоят сразу за стилями страницы, design.js достраивает шапку, свёрнутые подробности и порядок блоков после отрисовки.
@@ -954,6 +956,8 @@ lab = root / 'lab-site'; lab.mkdir(exist_ok=True)
 (lab / '.assetsignore').write_text('.git\n.gitignore\n.assetsignore\n', encoding='utf-8')
 for ico in ('favicon.svg', 'favicon.ico', 'favicon-48.png', 'favicon-192.png', 'apple-touch-icon.png'):
     if (docs / ico).exists(): shutil.copyfile(docs / ico, lab / ico)
+for _d in ('privacy', 'terms'):   # в лаборатории ссылки из подвала ведут на копии этих страниц
+    (lab / _d).mkdir(exist_ok=True); shutil.copyfile(src / _d / 'index.html', lab / _d / 'index.html')
 put_audio(lab / 'audio')
 put_fonts(lab / 'fonts')
 # статистика сайта: страница читает /api/stats (tools/lab-deploy/worker.js); вопросы и варианты - из файлов тестов,

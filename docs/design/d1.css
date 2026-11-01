@@ -466,3 +466,11 @@
 [data-design=d1] .skel.now{background:none;border-color:var(--border)}
 [data-design=d1] .skel.now .tag{color:var(--ink-faint)}
 [data-design=d1] .skel.past{opacity:1}
+
+/* правки владельца 01.11.2026 (второй круг) */
+[data-design=d1] .dz-hero.dz-hub .lede,[data-design=d1] .dz-hero.dz-hub .dz-more-body{max-width:none}
+[data-design=d1][data-route=test] .dz-head h1{font-size:clamp(1.75rem,5.2vw,3.25rem);max-width:none}
+[data-design=d1] .dz-end .btn{box-sizing:border-box;height:44px;min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center}
+[data-design=d1] .dz-end .btn.icon{width:44px;min-width:44px;padding:0}
+[data-design=d1] .legal-row{font-size:.875rem;color:var(--ink-muted)}
+[data-design=d1] .sub{max-width:none}

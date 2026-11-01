@@ -137,6 +137,8 @@
     var box = el('div', 'dz-split'), q = pass.nextElementSibling;
     app.insertBefore(box, pass);
     move(box, [pass, q]);
+    /* обе карточки одной высоты, а текст внутри левой едет за прокруткой: низ у них общий (просьба владельца 01.11.2026) */
+    var inner = el('div', 'dz-pass-in'); move(inner, Array.prototype.slice.call(pass.childNodes)); pass.appendChild(inner);
   }
 
   /* ---------- результат: счёт, «Насколько трудно?», «Что дальше» и кнопки на первом экране, разбор ниже ---------- */
@@ -320,6 +322,17 @@
     });
     return out;
   }
+  /* каждое предложение пояснений с новой строки (просьба владельца 01.11.2026). Только короткие абзацы из 2-4 предложений без вложенной разметки,
+     тексты и вопросы тестов не трогаем */
+  function sentences(box) {
+    $$('.lede, .sub, .notice p, .dz-more-body > p, .nstep p, .hint', box).forEach(function (p) {
+      if (p.children.length || p.getAttribute('data-ln') || p.closest('.passage, .script, .essay-view, .opts, .qt, .sq, .prompt-pick, .prompt-list, .skeleton')) return;
+      p.setAttribute('data-ln', '1');
+      var t = p.textContent, parts = t.replace(/([.!?…])\s+(?=[А-ЯЁA-ZҚӘҒҢӨҰҮІҺ«])/g, '$1\n').split('\n');
+      if (parts.length < 2 || parts.length > 4) return;
+      p.textContent = parts.join('\n'); p.style.whiteSpace = 'pre-line';
+    });
+  }
   function calmSeoNav() {
     var nav = $('.seo-nav'); if (!nav) return;
     var lang = isKk() ? 'kk' : 'ru';
@@ -395,7 +408,7 @@
     split();
     progress();
     result();
-    if (D === 'd1') { calm(route, p); calmSeoNav(); }
+    if (D === 'd1') { calm(route, p); calmSeoNav(); sentences(app); }
     if (keep && keep !== document.activeElement && document.contains(keep)) try { keep.focus({ preventScroll: true }); } catch (e) {}
   }
   enhance();

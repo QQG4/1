@@ -45,13 +45,13 @@ html[data-phase=run] .dz-head,html[data-phase=review] .dz-head{padding-bottom:18
 .timerbar.dz-xbar{display:flex}
 
 /* чтение: текст и вопросы рядом на широком экране */
-.dz-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.dz-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:stretch}
 .dz-split>.block{margin:0}
-.dz-split>.block:first-child{position:sticky;top:96px;max-height:calc(100vh - 112px);overflow:auto}
+.dz-split>.block:first-child .dz-pass-in{position:sticky;top:96px;max-height:calc(100vh - 112px);overflow:auto}
 @media (max-width:900px){
   .dz-split{display:block}
   .dz-split>.block{margin-bottom:18px}
-  .dz-split>.block:first-child{position:static;max-height:none;overflow:visible}
+  .dz-split>.block:first-child .dz-pass-in{position:static;max-height:none;overflow:visible}
 }
 
 /* экран результата */

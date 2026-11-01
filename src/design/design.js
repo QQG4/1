@@ -148,14 +148,14 @@
       card.style.setProperty('--p', p + '%');
       card.setAttribute('data-band', p >= 80 ? 'good' : p >= 50 ? 'mid' : 'bad');
     } else card.setAttribute('data-band', 'level');
-    var diff = $(':scope > .diff', app), ns = $(':scope > .nsteps', app), act = $(':scope > .actions', app);
+    var diff = $(':scope > .diff', app), nss = $$(':scope > .nsteps', app), act = $(':scope > .actions:not(.dz-end)', app);
     var after = diff || card;
     if (act && $('.dz-split, .block', app)) { after.parentNode.insertBefore(act, after.nextSibling); after = act; }
-    if (ns) after.parentNode.insertBefore(ns, after.nextSibling);
+    nss.forEach(function (ns) { after.parentNode.insertBefore(ns, after.nextSibling); after = ns; });
   }
 
   /* ---------- Дизайн 1: коротко на экране, подробности под кнопкой (просьба владельца 30.10.2026) ----------
-     На экране — заголовок и действие. Все пояснения остаются в разметке, только свёрнуты в <details>: кнопка «Подробнее» прямо под текстом
+     На экране - заголовок и действие. Все пояснения остаются в разметке, только свёрнуты в <details>: кнопка «Подробнее» прямо под текстом
      или раздел-гармошка с прежним заголовком. Ничего не удалено. Что открыто, запоминается на время перерисовки той же страницы. */
   function isKk() { return (window.KZ && KZ.lang === 'kk') || root.lang === 'kk'; }
   function fold(cls, head, nodes) {
@@ -166,7 +166,7 @@
     d.addEventListener('toggle', function () { opened[k] = d.open; });
     return d;
   }
-  /* на экране только стрелка (решение владельца 30.10.2026), слово — для экранного диктора. «Толығырақ» ждёт носителя: tools/kk-review-redesign-2026-10-30.md */
+  /* на экране только стрелка (решение владельца 30.10.2026), слово - для экранного диктора. «Толығырақ» ждёт носителя: tools/kk-review-redesign-2026-10-30.md */
   function more(nodes) {
     nodes = nodes.filter(Boolean); if (!nodes.length) return null;
     var box = el('div', 'dz-more'), body = el('div', 'dz-more-body'); move(body, nodes); body.hidden = true;
@@ -202,7 +202,7 @@
   }
   /* плашка: заголовок и кнопки на виду, текст свёрнут */
   function calmNotice(n) {
-    var t = $(':scope > b.t', n); if (!t || n.classList.contains('nsteps')) return;
+    var t = $(':scope > b.t', n); if (!t || n.classList.contains('nsteps') || n.classList.contains('dz-hack')) return;
     var rest = Array.prototype.slice.call(n.children).filter(function (c) {
       if (c === t) return false;
       if ($('a.btn, button.btn', c)) return false;
@@ -216,7 +216,7 @@
     var steps = $$('.nstep', n); if (!steps.length) return;
     var btns = el('div', 'dz-next-btns'), notes = [];
     steps.forEach(function (s) { var b = $('.btn', s), p = $('p', s); if (b) { b.classList.remove('small'); btns.appendChild(b); } if (p) notes.push(p); s.remove(); });
-    n.appendChild(more(notes)); n.appendChild(btns);
+    var mn = more(notes); if (mn) n.appendChild(mn); n.appendChild(btns);
   }
   function calmHead(route) {
     var head = $(':scope > .dz-head, :scope > .dz-hero', app); if (!head) return;
@@ -232,22 +232,9 @@
     } else if (route !== 'sources' && lede && !lede.classList.contains('hintx') && textLen(lede) > 60) after($('h1', head), more([lede]));   // на странице литературы фраза об авторах всегда на виду
   }
   /* блоки аудирования не стоят в одном списке с уровнями: своя гармошка под экзаменами, строка на экзамен */
+  /* блоки аудирования с главной убраны (решение владельца 01.11.2026) */
   function calmHubBlocks() {
-    var rows = $$('.exam-card-wrap .level-row').filter(function (r) { return $('.lvl-au', r); }); if (!rows.length) return;
-    var exams = $('.exam-card-wrap').closest('section'), sec = document.createElement('section');
-    var title = el('h2', '');
-    title.textContent = ($('.hub-nm span', rows[0]).firstChild.nodeValue || '').trim();
-    var list = el('div', 'levels');
-    rows.forEach(function (r) {
-      var name = $('.name', r.closest('.exam-card-wrap')), nm = $('.nm', r);
-      if (name && nm) nm.textContent = name.textContent;
-      $('.lvl', r).remove(); r.classList.add('dz-au-row');
-      var chip = $('.vchip', r); if (chip) r.setAttribute('href', chip.getAttribute('data-href'));   // на странице экзамена списка блоков больше нет
-      list.appendChild(r);
-    });
-    sec.appendChild(title); sec.appendChild(list);
-    after(exams, sec);
-    accordion(sec);
+    $$('.exam-card-wrap .level-row').filter(function (r) { return $('.lvl-au', r); }).forEach(function (r) { r.remove(); });
   }
   function calmHub() {
     var ex = $('.dz-express', app);
@@ -266,19 +253,19 @@
       tag.textContent = n + ' ' + (n === 4 ? T('блока') : T('разделов')) + (x.totalMinutes ? ' · ' + x.totalMinutes + ' ' + T('мин') : '');
     });
   }
-  /* страница экзамена: выбор уровня сверху и одной строкой на уровень, остальное — гармошкой */
+  /* страница экзамена: выбор уровня сверху и одной строкой на уровень, остальное - гармошкой */
   function calmExam() {
     var head = $(':scope > .dz-head', app), secs = $$(':scope > section', app);
-    /* решение владельца 30.10.2026: на сайте нигде нет «подтверждено / не подтверждено» — ни плашки, ни подписи, ни списка неопубликованного.
-       Источники и дата сверки остаются в подробностях; строка «рабочая реконструкция» — в подвале и на посадочных */
+    /* решение владельца 30.10.2026: на сайте нигде нет «подтверждено / не подтверждено» - ни плашки, ни подписи, ни списка неопубликованного.
+       Источники и дата сверки остаются в подробностях; строка «рабочая реконструкция» - в подвале и на посадочных */
     $$(':scope > .notice:not(.info)', app).forEach(function (x) { x.remove(); });
     secs = secs.filter(function (x) {
-      if (x.id === 'blocks') { x.remove(); return false; }   // блоки аудирования на странице экзамена не показываем, вход — с главной и из «Что дальше» (решение владельца 30.10.2026)
+      if (x.id === 'blocks') { x.remove(); return false; }   // блоки аудирования на странице экзамена не показываем, вход - с главной и из «Что дальше» (решение владельца 30.10.2026)
       if ($('.notice', x) && !$('.levels, .stages, table', x)) { x.remove(); return false; }
       var st = $('.stages', x), sb = st && $(':scope > .sub', x); if (sb) sb.remove();
       return true;
     });
-    var callout = $('[data-act=scroll]', app); if (callout && callout.closest('.notice')) callout.closest('.notice').remove();   // блоки аудирования — в своей гармошке ниже, отдельной плашкой не выделяем
+    var callout = $('[data-act=scroll]', app); if (callout && callout.closest('.notice')) callout.closest('.notice').remove();   // блоки аудирования - в своей гармошке ниже, отдельной плашкой не выделяем
     var mock = secs.filter(function (s) { return !s.id && $('.levels', s); })[0];
     if (mock) {
       var list = $('.levels', mock), rows = $$('.level-row', list), groups = {}, order = [];
@@ -310,7 +297,7 @@
   }
   function calmFooter() {
     var f = $(':scope > footer', app); if (!f || $('ul', f)) return;
-    /* на виду ссылки и строка о независимости от организаторов; реконструкция и статистика — под кнопкой */
+    /* на виду ссылки и строка о независимости от организаторов; реконструкция и статистика - под кнопкой */
     var ps = Array.prototype.slice.call(f.childNodes), first = $(':scope > p', f), hide = [];
     ps.forEach(function (n) {
       if (n === first) return;
@@ -319,10 +306,30 @@
     });
     var m = more(hide); if (m) f.appendChild(m);
   }
+  /* в казахском интерфейсе нижняя навигация только казахская: абзац и заголовок берём из двуязычной строки, ссылки ведут на /kk/,
+     русскоязычные страницы «Об экзаменах» не показываем (казахских версий пока нет) */
+  function kkSeoNav(kids) {
+    var out = [];
+    kids.forEach(function (c) {
+      if (c.tagName === 'P') { c.textContent = (c.textContent.split('·')[1] || '').trim(); out.push(c); }
+      else if (c.tagName === 'B') { if (out.length < 2) { c.textContent = (c.textContent.split('·')[1] || '').trim(); out.push(c); } }
+      else if (c.tagName === 'A') {
+        var h = c.getAttribute('href') || '';
+        if (/^\/ru\/(kaztest|qrt)\/[a-z]\d\/$/.test(h)) { c.setAttribute('href', h.replace('/ru/', '/kk/')); out.push(c); }
+      }
+    });
+    return out;
+  }
   function calmSeoNav() {
-    var nav = $('.seo-nav'); if (!nav || nav.getAttribute('data-calm')) return;
-    nav.setAttribute('data-calm', '1');
-    var kids = Array.prototype.slice.call(nav.children).filter(function (c) { return c.tagName !== 'STYLE'; });
+    var nav = $('.seo-nav'); if (!nav) return;
+    var lang = isKk() ? 'kk' : 'ru';
+    if (nav.getAttribute('data-calm') === lang) return;
+    var styles = $$(':scope > style', nav);
+    if (!nav.__orig) nav.__orig = Array.prototype.slice.call(nav.children).filter(function (c) { return c.tagName !== 'STYLE'; }).map(function (c) { return c.cloneNode(true); });
+    Array.prototype.slice.call(nav.children).forEach(function (c) { if (c.tagName !== 'STYLE') c.remove(); });
+    var kids = nav.__orig.map(function (c) { return c.cloneNode(true); });
+    nav.setAttribute('data-calm', lang);
+    if (isKk()) kids = kkSeoNav(kids);
     nav.appendChild(fold('dz-more', isKk() ? 'Барлық емтихан мен деңгей' : 'Все экзамены и уровни', kids));
     rename(nav);
   }
@@ -336,14 +343,14 @@
     function fix(v) { rules.forEach(function (r) { v = v.replace(r[0], r[1]); }); return v; }
     var w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), n;
     while ((n = w.nextNode())) if (/[Мм]ок-тест/.test(n.nodeValue)) n.nodeValue = fix(n.nodeValue);
-    /* название экзамена (решение владельца 31.10.2026): где текста мало — Qazaq Resmi Test, где много — QRT */
+    /* название экзамена (решение владельца 31.10.2026): где текста мало - Qazaq Resmi Test, где много - QRT */
     function exam(v) { return v.length <= EXAM_SHORT ? v.replace(/QazResmiTest/g, 'Qazaq Resmi Test').replace(/^QRT(?=$| )/, 'Qazaq Resmi Test') : v.replace(/QazResmiTest/g, 'QRT'); }
     w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
     while ((n = w.nextNode())) if (/QazResmiTest|^QRT(?=$| )/.test(n.nodeValue)) n.nodeValue = exam(n.nodeValue);
     $$('[data-head*="QazResmiTest"], [data-exam*="QazResmiTest"], [data-share-text*="QazResmiTest"]', box).forEach(function (x) {
       ['data-head', 'data-exam', 'data-share-text'].forEach(function (k) { var v = x.getAttribute(k); if (v) x.setAttribute(k, v.replace(/QazResmiTest/g, 'Qazaq Resmi Test')); });
     });
-    if (!isKk()) {   // «хаб» — наше внутреннее слово, посетителю понятнее «главная»
+    if (!isKk()) {   // «хаб» - наше внутреннее слово, посетителю понятнее «главная»
       w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
       while ((n = w.nextNode())) { if (n.nodeValue === 'Хаб') n.nodeValue = 'Главная'; else if (n.nodeValue === 'На хаб') n.nodeValue = 'На главную'; }
     }
@@ -388,7 +395,7 @@
     split();
     progress();
     result();
-    if (D === 'd1') calm(route, p);
+    if (D === 'd1') { calm(route, p); calmSeoNav(); }
     if (keep && keep !== document.activeElement && document.contains(keep)) try { keep.focus({ preventScroll: true }); } catch (e) {}
   }
   enhance();

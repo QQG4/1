@@ -2,13 +2,13 @@
    Экспресс-тест «Узнать уровень за 10 минут» (29.10.2026): #/express/<exam>, отдельно для ҚАЗТЕСТ и QazResmiTest.
    Зачем: полные тесты длинные, письмо и говорение бросают в 28–34 % случаев; короткий тест даёт ориентир и ведёт
    в полный тест найденного уровня.
-   Лесенка: старт с A2, по 4 вопроса на ступень. 3–4 верных — ступень выше, 2 — уровень этой ступени, 0–1 — стоп
-   (уровень — прошлая ступень; если провалена первая же A2, проверяем A1). Ступени — examLevels экзамена.
-   Вопросы — только из вариантов 04–05 того же экзамена и уровня (их почти не проходят), новых казахских текстов нет:
+   Лесенка: старт с A2, по 4 вопроса на ступень. 3–4 верных - ступень выше, 2 - уровень этой ступени, 0–1 - стоп
+   (уровень - прошлая ступень; если провалена первая же A2, проверяем A1). Ступени - examLevels экзамена.
+   Вопросы - только из вариантов 04–05 того же экзамена и уровня (их почти не проходят), новых казахских текстов нет:
    лексико-грамматические задания и лексика понятны без текста, к вопросу на понимание показывается один абзац —
-   тот, который цитирует пояснение (как в «задании дня» в Telegram, tools/dump_meta.js). В конце — одна запись
+   тот, который цитирует пояснение (как в «задании дня» в Telegram, tools/dump_meta.js). В конце - одна запись
    аудирования найденного уровня, если вопросов было не больше 17 (всего не больше 20). На уровень она не влияет.
-   Результат — в обычном прогрессе: state.express[exam] = {level, at, ok, n, seconds, steps, listen}. Пороги KZ.strict
+   Результат - в обычном прогрессе: state.express[exam] = {level, at, ok, n, seconds, steps, listen}. Пороги KZ.strict
    здесь не используются и не показываются. Подключается после app.js через KZ.registerRoute / KZ.util.
    ============================================================ */
 (function () {
@@ -32,13 +32,13 @@
     var whole = paras.join('\n\n');
     return whole.length <= 800 ? { paras: paras, part: false } : null;
   }
-  /* задания уровня: gram — понятны сами по себе, read — вопрос к абзацу, au — записи аудирования */
+  /* задания уровня: gram - понятны сами по себе, read - вопрос к абзацу, au - записи аудирования */
   function pools(exam, lv) {
     var gram = [], read = [], au = [];
     variants(exam, lv).forEach(function (t) {
       t.sections.forEach(function (s) {
         (s.questions || []).forEach(function (q) {
-          if (q.kind === 'tf' || /мәтін/i.test(q.text || '') && !(s.passage && excerpt(s, q) && !excerpt(s, q).part)) return;   // «по тексту» — только если текст виден целиком
+          if (q.kind === 'tf' || /мәтін/i.test(q.text || '') && !(s.passage && excerpt(s, q) && !excerpt(s, q).part)) return;   // «по тексту» - только если текст виден целиком
           if (s.type === 'lexis' || (s.type === 'reading' && q.tag)) gram.push({ t: t, s: s, q: q });
           else if (s.type === 'reading' && s.passage) { var ex = excerpt(s, q); if (ex) read.push({ t: t, s: s, q: q, paras: ex.paras }); }
         });
@@ -47,7 +47,7 @@
     });
     return { gram: gram, read: read, au: au };
   }
-  /* ступень: два вопроса к абзацам (из разных абзацев) и два лексико-грамматических; чего не хватает — добираем другим */
+  /* ступень: два вопроса к абзацам (из разных абзацев) и два лексико-грамматических; чего не хватает - добираем другим */
   function stepItems(exam, lv) {
     var p = pools(exam, lv), read = [], seen = {};
     shuffle(p.read).forEach(function (x) { var k = x.paras.join('').slice(0, 60); if (read.length < 2 && !seen[k]) { seen[k] = 1; read.push(x); } });
@@ -75,7 +75,7 @@
     if (ok >= 3) { next = X.steps.some(function (s) { return s.lv === nextLevel(X.lv); }) ? null : nextLevel(X.lv); if (!next) X.level = X.lv; }
     else if (ok === 2) X.level = X.lv;
     else if (top) X.level = top;
-    else if (prevLevel(X.lv) && X.steps.length === 1) next = prevLevel(X.lv);   // первая же ступень не далась — проверяем уровень ниже
+    else if (prevLevel(X.lv) && X.steps.length === 1) next = prevLevel(X.lv);   // первая же ступень не далась - проверяем уровень ниже
     else X.level = '';   // ниже A1
     if (next && asked() + STEP <= MAX_Q) { X.lv = next; X.items = stepItems(X.exam, next); X.answers = {}; return; }
     if (next) X.level = X.lv;
@@ -114,7 +114,7 @@
     var other = KZ.examOrder.filter(function (e) { return e !== exam; })[0], L = ladder(exam);
     return head(exam) + '<div class="kicker">' + esc(KZ.exams[exam].kicker) + ' · ' + T('Экспресс-тест') + '</div>' +
       '<h1>' + T('Узнать уровень за 10 минут') + ' · ' + esc(examName(exam)) + '</h1>' +
-      '<p class="lede">' + T('Около 10 минут и 16–20 вопросов: лексика, грамматика, короткие тексты и в конце одна запись аудирования. Начинаем с A2: справились — вопросы становятся сложнее, нет — тест заканчивается раньше. Письма и говорения нет.') + '</p>' +
+      '<p class="lede">' + T('Около 10 минут и 16–20 вопросов: лексика, грамматика, короткие тексты и в конце одна запись аудирования. Начинаем с A2: справились - вопросы становятся сложнее, нет - тест заканчивается раньше. Письма и говорения нет.') + '</p>' +
       '<div class="block"><div class="row"><span class="badge level">' + L[0] + '–' + L[L.length - 1] + '</span> <span class="badge muted">' + T('16–20 вопросов · ~10 минут') + '</span></div>' +
       '<p class="small muted mt">' + T('Это быстрая оценка, а не экзамен: точнее уровень покажет полный тест.') + '</p>' + lastResult(exam) +
       '<div class="actions"><button class="btn" data-act="x-start" data-exam="' + exam + '">' + T('Начать') + '</button>' +
@@ -155,7 +155,7 @@
     var msg = lv ? T('Ваш примерный уровень:') + ' ' + lv : T('Похоже, пока ниже A1. Начните с уровня A1.');
     var rows = X.steps.map(function (s) { return '<li>' + T('Ступень') + ' ' + s.lv + ': ' + s.ok + '/' + s.tot + ' ' + (s.ok >= 3 ? '✓' : s.ok <= 1 ? '✗' : '·') + '</li>'; }).join('') +
       (X.listen ? '<li>' + LK(KZ.sectionTypes.listening, 'label') + ' ' + X.listen.lv + ': ' + X.listen.ok + '/' + X.listen.tot + '</li>' : '');
-    var auNote = X.listen && X.listen.ok * 2 < X.listen.tot ? '<p class="small">' + T('Аудирование далось труднее остального — в полном тесте обратите на него внимание.') + '</p>' : '';
+    var auNote = X.listen && X.listen.ok * 2 < X.listen.tot ? '<p class="small">' + T('Аудирование далось труднее остального - в полном тесте обратите на него внимание.') + '</p>' : '';
     var exN = examName(X.exam);
     var share = lv && KZ.site && KZ.site.siteUrl && KZ.site.build !== 'inline'
       ? '<button class="btn ghost" data-share="image" data-exam="' + esc(exN) + '" data-level="' + lv + '" data-head="' + esc(exN) + '" data-big="' + lv + '" data-label="' + esc(T('Примерный уровень')) + '" data-foot="' + esc(T('Экспресс-тест')) + '"' +
@@ -223,5 +223,5 @@
     e.stopPropagation();
   }, true);
 
-  KZ.route();   // первая отрисовка в app.js прошла до подключения этого файла: хаб без карточки, #/express/… — «не найдено»
+  KZ.route();   // первая отрисовка в app.js прошла до подключения этого файла: хаб без карточки, #/express/… - «не найдено»
 })();

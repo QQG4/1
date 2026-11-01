@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Собирает src/ в три площадки:
-   docs/index.html    — ПУБЛИЧНЫЙ САЙТ (GitHub Pages, папка docs/): только бесплатные мок-тесты, без курса
-                        и без платного материала; аудио — отдельные файлы docs/audio/*.mp3
-   lab-site/index.html — ЛАБОРАТОРИЯ (приватный репозиторий + Cloudflare Pages, доступ по списку почт через Access):
+   docs/index.html    - ПУБЛИЧНЫЙ САЙТ (GitHub Pages, папка docs/): только бесплатные мок-тесты, без курса
+                        и без платного материала; аудио - отдельные файлы docs/audio/*.mp3
+   lab-site/index.html - ЛАБОРАТОРИЯ (приватный репозиторий + Cloudflare Pages, доступ по списку почт через Access):
                         тесты + курс + платный материал (src/data/paid/*.js), noindex, свой ключ прогресса.
-                        Папка lab-site/ в публичный репозиторий не входит — это рабочая копия приватного репозитория.
-   dist/index.html    — всё одним файлом (аудио data-URI), открывается локально без сервера
-   dist/artifact.html — тело без <html>/<head>, для публикации как Artifact (внешние файлы в артефакте запрещены)
+                        Папка lab-site/ в публичный репозиторий не входит - это рабочая копия приватного репозитория.
+   dist/index.html    - всё одним файлом (аудио data-URI), открывается локально без сервера
+   dist/artifact.html - тело без <html>/<head>, для публикации как Artifact (внешние файлы в артефакте запрещены)
 Источники литературы берутся из ../база/sources.json → KZ.sources (страница #/sources).
 Курс и платные данные лежат вне git публичного репозитория (см. .gitignore): материал, за который планируем брать деньги,
 не должен попадать ни в публичную сборку, ни в историю публичного репозитория.
@@ -29,16 +29,16 @@ def read(p): return pathlib.Path(p).read_text(encoding='utf-8')
 data = [read(src / 'data' / 'exams.js'), read(src / 'data' / 'site.js')]
 for f in sorted(glob.glob(str(src / 'data' / 'tests' / '*.js'))): data.append(read(f))
 course_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'course' / '*.js')))]
-paid_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'paid' / '*.js')))]   # платные моки и прочее «в разработке» — только лаборатория
+paid_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'paid' / '*.js')))]   # платные моки и прочее «в разработке» - только лаборатория
 
 # источники литературы
 srcs = root.parent / 'база' / 'sources.json'
 if srcs.exists():
     S = json.loads(srcs.read_text(encoding='utf-8'))['sources']
-    keep = [{k: s.get(k) for k in ('id', 'tier', 'level', 'kind', 'author', 'year', 'title', 'source') if s.get(k) is not None} for s in S if s.get('site', True)]   # site: false — в базе, но не на странице литературы
+    keep = [{k: s.get(k) for k in ('id', 'tier', 'level', 'kind', 'author', 'year', 'title', 'source') if s.get(k) is not None} for s in S if s.get('site', True)]   # site: false - в базе, но не на странице литературы
     data.append('KZ.sources = ' + json.dumps(keep, ensure_ascii=False) + ';')
 
-# аудио: манифест общий, src — файл (сайт) или data-URI (артефакт/локальный файл)
+# аудио: манифест общий, src - файл (сайт) или data-URI (артефакт/локальный файл)
 manifest = json.loads((root / 'audio' / 'manifest.json').read_text(encoding='utf-8')) if (root / 'audio' / 'manifest.json').exists() else {}
 def audio_js(mode):
     bundle = {}
@@ -58,7 +58,7 @@ for key, field in (('analytics', 'analyticsSnippet'), ('url', 'siteUrl'), ('even
 
 # ---- метаданные для посадочных страниц под поиск ----
 # Данные экзаменов лежат в .js для браузера, поэтому их выгружает node (tools/dump_meta.js) в tools/pages-meta.json.
-# Кэш коммитится: если node на машине нет, сборка берёт прошлый файл, а если нет и его — просто пропускает страницы.
+# Кэш коммитится: если node на машине нет, сборка берёт прошлый файл, а если нет и его - просто пропускает страницы.
 import subprocess
 META_CACHE = root / 'tools' / 'pages-meta.json'
 def load_meta():
@@ -69,7 +69,7 @@ def load_meta():
             return json.loads(out.stdout)
         print('!! dump_meta.js не отработал:', (out.stderr or '').strip()[:200])
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
-        print('!! node недоступен (%s) — беру tools/pages-meta.json' % type(e).__name__)
+        print('!! node недоступен (%s) - беру tools/pages-meta.json' % type(e).__name__)
     if META_CACHE.exists(): return json.loads(META_CACHE.read_text(encoding='utf-8'))
     print('!! посадочные страницы пропущены: нет ни node, ни tools/pages-meta.json')
     return None
@@ -80,7 +80,7 @@ META = load_meta()
 # поэтому у сайта был ровно один адрес для поисковика. Эти страницы статические, по одной на пару
 # «экзамен × уровень» и на каждый язык (/ru/<экзамен>/<уровень>/ и /kk/...), с собственным заголовком,
 # описанием, структурой блоков и списком вариантов. Кнопка ведёт внутрь приложения по прямой ссылке #/test/<id>.
-# Тексты берутся только из данных: русские поля и поля *_kk. Ничего не переводим на ходу — если казахского
+# Тексты берутся только из данных: русские поля и поля *_kk. Ничего не переводим на ходу - если казахского
 # поля нет, строка просто не выводится.
 import html as _html
 LANDING_LANGS = ('ru', 'kk')
@@ -89,7 +89,7 @@ L10N = {
            'variants': 'Варианты мок-теста', 'sec': 'Раздел', 'tasks': 'Заданий', 'min': 'Минут', 'total': 'Всего на тест',
            'cta': 'Начать мок-тест', 'free': 'Бесплатно, без регистрации, результат сразу после проверки.',
            'home': 'Все экзамены и уровни', 'mins': 'мин',
-           'note': 'Формат заданий — рабочая реконструкция по опубликованной структуре теста, а не копия реального интерфейса. '
+           'note': 'Формат заданий - рабочая реконструкция по опубликованной структуре теста, а не копия реального интерфейса. '
                    'Письмо и говорение здесь оцениваются самопроверкой по критериям.',
            'vocab': 'Объём лексики', 'exam_page': 'Пробный тест', 'cta_first': 'Начать с варианта 1',
            'express': 'Не знаете свой уровень? Экспресс-тест за 10 минут подскажет, с какого начать →'},
@@ -97,7 +97,7 @@ L10N = {
            'variants': 'Сынақ тест нұсқалары', 'sec': 'Бөлім', 'tasks': 'Тапсырма', 'min': 'Минут', 'total': 'Тестке барлығы',
            'cta': 'Сынақ тестті бастау', 'free': 'Тегін, тіркеусіз, нәтиже тексеруден кейін бірден.',
            'home': 'Барлық емтихан мен деңгей', 'mins': 'мин',
-           'note': 'Тапсырмалардың пішімі — тестің жарияланған құрылымы бойынша жасалған жұмыс реконструкциясы, нақты '
+           'note': 'Тапсырмалардың пішімі - тестің жарияланған құрылымы бойынша жасалған жұмыс реконструкциясы, нақты '
                    'интерфейстің көшірмесі емес. Жазылым мен айтылым мұнда критерийлер бойынша өзін-өзі тексерумен бағаланады.',
            'vocab': 'Лексика көлемі', 'exam_page': 'Сынақ тест', 'cta_first': '1-нұсқадан бастау',
            'express': 'Деңгейіңізді білмейсіз бе? 10 минуттық экспресс-тест қай деңгейден бастау керегін көрсетеді →'},
@@ -114,7 +114,7 @@ def landing_pairs():
     out = []
     for eid, ex in META['exams'].items():
         for lv in ex.get('examLevels', []):
-            tests = [x for x in META['tests'] if x['exam'] == eid and x['level'] == lv and not x.get('block')]   # блоки аудирования — не варианты уровня
+            tests = [x for x in META['tests'] if x['exam'] == eid and x['level'] == lv and not x.get('block')]   # блоки аудирования - не варианты уровня
             if tests: out.append((eid, ex, lv, sorted(tests, key=lambda x: x['id'])))
     return out
 def landing_url(lang, eid, lv): return f'{lang}/{eid}/{lv.lower()}/'
@@ -145,8 +145,8 @@ LANDING_CSS = (
 )
 
 def page_head(lang, title, desc, url, alts=()):
-    """Начало статической страницы до <main>: заголовок, описание, canonical, hreflang (alts — пары язык/адрес,
-       только если у страницы есть перевод), og-теги. Без url (siteUrl пуст) — без canonical и og."""
+    """Начало статической страницы до <main>: заголовок, описание, canonical, hreflang (alts - пары язык/адрес,
+       только если у страницы есть перевод), og-теги. Без url (siteUrl пуст) - без canonical и og."""
     e = _html.escape
     h = ['<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8">',
          '<meta name="viewport" content="width=device-width,initial-scale=1">',
@@ -179,14 +179,14 @@ def landing_page(lang, eid, ex, lv, tests, base):
     lvl_name = _lk(lvl, 'name', lang)
     n = len(tests)
     if lang == 'ru':
-        # в заголовок — написание, которым ищут: «казтест» обычной К; официальное ҚАЗТЕСТ остаётся в H1
+        # в заголовок - написание, которым ищут: «казтест» обычной К; официальное ҚАЗТЕСТ остаётся в H1
         alias = 'Казтест' if eid == 'kaztest' else ex_name
-        # Google показывает примерно 60 знаков: держим заголовок коротким, синонимы («Казресмитест») — в описании и H1
-        title = f'Пробный {alias} {lv} онлайн — {_plural_ru(n, "вариант", "варианта", "вариантов")} бесплатно'
+        # Google показывает примерно 60 знаков: держим заголовок коротким, синонимы («Казресмитест») - в описании и H1
+        title = f'Пробный {alias} {lv} онлайн - {_plural_ru(n, "вариант", "варианта", "вариантов")} бесплатно'
         h1 = f'Пробный {ex_name} {lv} онлайн' + (' (Казтест)' if eid == 'kaztest' else ' (Казресмитест)')
         vheading = f'{_plural_ru(n, "вариант", "варианта", "вариантов")} мок-теста'
     else:
-        title = f'{ex_name} {lv} сынақ тесті онлайн — {n} нұсқа тегін'
+        title = f'{ex_name} {lv} сынақ тесті онлайн - {n} нұсқа тегін'
         h1 = f'{ex_name} {lv} сынақ тесті онлайн'
         vheading = f'{n} нұсқа'
     lead = (f'Подготовка к Казтест (ҚАЗТЕСТ, Kaztest) {lv}.' if eid == 'kaztest' else f'Подготовка к Казресмитест ({ex_name}) {lv}.') if lang == 'ru' \
@@ -231,29 +231,29 @@ def landing_page(lang, eid, ex, lv, tests, base):
     for i, x in enumerate(tests, 1):
         nm = f'{i}-нұсқа' if lang == 'kk' else f'Вариант {i}'
         sm = _lk(x, 'summary', lang)
-        h.append('<li><a href="/#/test/' + e(x['id']) + '">' + e(nm) + '</a>' + (' — ' + e(sm) if sm else '') + '</li>')
+        h.append('<li><a href="/#/test/' + e(x['id']) + '">' + e(nm) + '</a>' + (' - ' + e(sm) if sm else '') + '</li>')
     h.append('</ol>')
     # блоки аудирования ҚАЗТЕСТ и записи QazResmiTest этого уровня: выложены 10–11.10.2026, но их почти не находили
     bl = [x for x in META['tests'] if x['exam'] == eid and x.get('block') and (eid == 'kaztest' or x['level'] == lv)]
     if bl:
         nb = len(bl)
         if eid == 'kaztest':
-            txt = (f'Отдельно — {_plural_ru(nb, "блок", "блока", "блоков")} аудирования, как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут.'
-                   if lang == 'ru' else f'Бөлек — {nb} тыңдалым блогы, емтихандағыдай: A1–A2-ден C1-ге дейін төрт мәтін, 20 тапсырма, 20 минут.')
+            txt = (f'Отдельно - {_plural_ru(nb, "блок", "блока", "блоков")} аудирования, как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут.'
+                   if lang == 'ru' else f'Бөлек - {nb} тыңдалым блогы, емтихандағыдай: A1–A2-ден C1-ге дейін төрт мәтін, 20 тапсырма, 20 минут.')
             href = '/#/exam/kaztest'
         else:
-            txt = (f'Отдельно — {_plural_ru(nb, "запись", "записи", "записей")} аудирования уровня {lv}: одна запись, 5 заданий, 10 минут.'
-                   if lang == 'ru' else f'Бөлек — {lv} деңгейінде {nb} тыңдалым жазбасы: бір жазба, 5 тапсырма, 10 минут.')
+            txt = (f'Отдельно - {_plural_ru(nb, "запись", "записи", "записей")} аудирования уровня {lv}: одна запись, 5 заданий, 10 минут.'
+                   if lang == 'ru' else f'Бөлек - {lv} деңгейінде {nb} тыңдалым жазбасы: бір жазба, 5 тапсырма, 10 минут.')
             href = '/#/test/' + sorted(bl, key=lambda x: x['id'])[0]['id']
         h.append('<p>' + e(txt) + ' <a href="' + href + '">' + ('Тыңдалымға өту →' if lang == 'kk' else 'Перейти к аудированию →') + '</a></p>')
 
     # Канал в Telegram: сюда приходят из поиска, и это первое место, где человек может «остаться» с нами.
     # Клик уходит событием remind с where=landing (как ссылка в подвале приложения).
     if site_cfg.get('tg'):
-        tg_url = 'https://t.me/' + site_cfg['tg']   # метки Telegram не читает — клик считаем сами событием remind
-        h.append('<div class="tgbox"><b>' + ('Күн сайын бір тапсырма — Telegram-да' if lang == 'kk' else 'Задание дня — в Telegram') + '</b><p>' +
-                 e('Әр таңертең — сынақ тесттен бір сұрақ пен оның түсіндірмесі, ҚАЗТЕСТ тіркеу мерзімдері туралы еске салу.' if lang == 'kk'
-                   else 'Каждое утро — вопрос из пробных тестов с разбором и напоминания о сроках регистрации на ҚАЗТЕСТ.') +
+        tg_url = 'https://t.me/' + site_cfg['tg']   # метки Telegram не читает - клик считаем сами событием remind
+        h.append('<div class="tgbox"><b>' + ('Күн сайын бір тапсырма - Telegram-да' if lang == 'kk' else 'Задание дня - в Telegram') + '</b><p>' +
+                 e('Әр таңертең - сынақ тесттен бір сұрақ пен оның түсіндірмесі, ҚАЗТЕСТ тіркеу мерзімдері туралы еске салу.' if lang == 'kk'
+                   else 'Каждое утро - вопрос из пробных тестов с разбором и напоминания о сроках регистрации на ҚАЗТЕСТ.') +
                  '</p><a href="' + e(tg_url) + '" data-remind="landing" target="_blank" rel="noopener">t.me/' + e(site_cfg['tg']) + ' →</a></div>')
 
     others = [(o_eid, o_ex, o_lv) for (o_eid, o_ex, o_lv, _t) in landing_pairs() if not (o_eid == eid and o_lv == lv)]
@@ -294,7 +294,7 @@ def faq_items(lang, eid, ex, lv, n):
              f'После каждого блока открывается разбор ответов с объяснениями. На уровне {lv} {_plural_ru(n, "вариант", "варианта", "вариантов")}, все бесплатно и без регистрации.'),
             *([(f'Сколько баллов нужно на ҚАЗТЕСТ {lv}?',
                 f'От {sc["pct"][sc["levels"].index(lv)]} % в каждом блоке: {_score_row(sc, sc["levels"].index(lv))}. '
-                'Таблица по всем уровням — на странице «Сколько баллов нужно на ҚАЗТЕСТ».')]
+                'Таблица по всем уровням - на странице «Сколько баллов нужно на ҚАЗТЕСТ».')]
               if (sc := ex.get('scoring') or _exam('kaztest').get('scoring')) and lv in sc.get('levels', []) else []),
             ('Сколько длится ҚАЗТЕСТ и из чего он состоит?',
              'Сертификационное тестирование идёт 2 часа 7 минут: аудирование (20 заданий), чтение (40 заданий), письмо (2 задания) и говорение (2 задания). '
@@ -303,7 +303,7 @@ def faq_items(lang, eid, ex, lv, n):
              'В официальном пробном и диагностическом тестировании только аудирование и чтение. Здесь есть все четыре блока, включая письмо '
              'и говорение с записью голоса, и разбор каждой ошибки.'),
             ('Это официальный сайт Казтест?',
-             'Нет. Qazaq Trainer — независимый тренажёр для подготовки к экзамену по казахскому языку. Официальное тестирование проводит '
+             'Нет. Qazaq Trainer - независимый тренажёр для подготовки к экзамену по казахскому языку. Официальное тестирование проводит '
              'Национальный центр тестирования (testcenter.kz); формат заданий здесь воспроизведён по опубликованной структуре теста.'),
         ]
         return [
@@ -313,7 +313,7 @@ def faq_items(lang, eid, ex, lv, n):
             ('ҚАЗТЕСТ қанша уақытқа созылады?',
              'Сертификаттау тестілеуі 2 сағат 7 минутқа созылады: тыңдалым (20 тапсырма), оқылым (40 тапсырма), жазылым (2 тапсырма) және айтылым (2 тапсырма).'),
             ('Бұл ресми сайт па?',
-             'Жоқ. Qazaq Trainer — қазақ тілі емтиханына дайындалуға арналған тәуелсіз жаттықтырғыш. Ресми тестілеуді Ұлттық тестілеу орталығы (testcenter.kz) өткізеді.'),
+             'Жоқ. Qazaq Trainer - қазақ тілі емтиханына дайындалуға арналған тәуелсіз жаттықтырғыш. Ресми тестілеуді Ұлттық тестілеу орталығы (testcenter.kz) өткізеді.'),
         ]
     if lang == 'ru': return [
         (f'Как подготовиться к Казресмитест (QazResmiTest) на уровень {lv}?',
@@ -322,23 +322,23 @@ def faq_items(lang, eid, ex, lv, n):
         ('Что такое QazResmiTest?',
          'Дистанционный тест на знание казахского языка (Qazaq Resmi Test, QRT). Сдаётся онлайн, результат выдаётся по шкале CEFR от A1 до C2.'),
         ('Это официальный сайт Казресмитест?',
-         'Нет. Qazaq Trainer — независимый тренажёр. Официальный сайт теста — qrt.kz; формат заданий здесь воспроизведён по опубликованной структуре.'),
+         'Нет. Qazaq Trainer - независимый тренажёр. Официальный сайт теста - qrt.kz; формат заданий здесь воспроизведён по опубликованной структуре.'),
     ]
     return [
         (f'QazResmiTest {lv} емтиханына қалай дайындалуға болады?',
          f'Емтихан форматындағы сынақ тестті тапсырыңыз: қатарынан бес бөлім (тыңдалым, лексика және орфография, оқылым, жазылым, сұхбат), '
          f'шамамен 60 минут. {lv} деңгейінде {n} нұсқа, жауаптар талдауымен, тегін және тіркеусіз.'),
         ('Бұл ресми сайт па?',
-         'Жоқ. Qazaq Trainer — тәуелсіз жаттықтырғыш. Тестің ресми сайты — qrt.kz.'),
+         'Жоқ. Qazaq Trainer - тәуелсіз жаттықтырғыш. Тестің ресми сайты - qrt.kz.'),
     ]
 
 # ---- страницы-ответы на частые поисковые вопросы (26.10.2026) ----
-# С 12–25.10 поиск стал главным источником сайта, а запросы — вопросы: «сколько баллов нужно на казтест B1»,
+# С 12–25.10 поиск стал главным источником сайта, а запросы - вопросы: «сколько баллов нужно на казтест B1»,
 # «как проходит казтест», «чем казтест отличается от казресмитест». Посадочные «экзамен × уровень» на них не отвечают.
-# Факты — только из exams.js (scoring, sections, certificateNote, unverified, sources), то есть сверенные по PDF НЦТ
+# Факты - только из exams.js (scoring, sections, certificateNote, unverified, sources), то есть сверенные по PDF НЦТ
 # и qrt.kz. Внутренние пороги KZ.strict сюда не попадают. Страницы только на русском: казахских текстов под них нет,
 # а на ходу не переводим. Чего нет в данных (кто принимает QRT, срок его сертификата, что будет, если блоки сданы
-# на разные уровни) — не утверждаем.
+# на разные уровни) - не утверждаем.
 def _exam(eid): return (META or {}).get('exams', {}).get(eid, {})
 def _sec(eid, t): return next((s for s in _exam(eid).get('sections', []) if s.get('type') == t), {})
 def _tasks_short(s): return (s.get('tasks') or '').split(' · ')[0]
@@ -361,7 +361,7 @@ def _btns(eid, lv, label=None):
 
 def _sections_table(eid):
     e = _html.escape; ex = _exam(eid)
-    # описания разделов идут ниже отдельными абзацами, в таблице — только объём и время
+    # описания разделов идут ниже отдельными абзацами, в таблице - только объём и время
     rows = ''.join('<tr><td><b>' + e(s.get('title', '')) + '</b> <span lang="kk" style="color:var(--mut)">' + e(s.get('kk', '')) + '</span>'
                    '</td><td>' + e(s.get('tasks', '')) + '</td>'
                    '<td>' + e(str(s.get('minutes', ''))) + '</td></tr>' for s in ex.get('sections', []))
@@ -377,7 +377,7 @@ def page_kaztest_scores():
     ex = _exam('kaztest'); sc = ex.get('scoring')
     if not sc: return None
     e = _html.escape; lv = sc['levels']; pct = sc['pct']
-    thr = ', '.join(f'{l} — от {p} %' for l, p in zip(lv, pct))
+    thr = ', '.join(f'{l} - от {p} %' for l, p in zip(lv, pct))
     b1 = lv.index('B1') if 'B1' in lv else 0
     title = f'Сколько баллов нужно на Казтест {lv[0]}–{lv[-1]}: пороги по блокам'
     desc = (f'Официальные пороги ҚАЗТЕСТ: {thr} в каждом блоке. Таблица минимальных баллов по аудированию, чтению, '
@@ -392,7 +392,7 @@ def page_kaztest_scores():
          ''.join(f'<tr><td lang="kk"><b>{e(bl["title"])}</b></td><td>{bl["max"]}</td>' + ''.join(f'<td>{m}</td>' for m in bl['min']) + '</tr>'
                  for bl in sc['blocks']) +
          '<tr><td>Порог</td><td></td>' + ''.join(f'<td>{p} %</td>' for p in pct) + '</tr></tbody></table></div>',
-         '<p style="color:var(--mut);font-size:.92rem">Пороги — из «Руководства тестируемого» Национального центра тестирования '
+         '<p style="color:var(--mut);font-size:.92rem">Пороги - из «Руководства тестируемого» Национального центра тестирования '
          '(testcenter.kz, февраль 2026). Сверено ' + e((ex.get('verifiedNote') or '').rsplit('Проверено ', 1)[-1].rstrip('.')) + '.</p>']
     for i, l in enumerate(lv):
         b.append(f'<h2 id="{l.lower()}">Сколько баллов нужно на ҚАЗТЕСТ {e(l)}</h2>'
@@ -417,8 +417,8 @@ def page_kaztest_format():
             f"письмо ({_tasks_short(W)}, {W.get('minutes')} мин) и говорение ({_tasks_short(S)}, {S.get('minutes')} мин). Баллы, пороги и результат.")
     b = ['<p class="kicker">ҚАЗТЕСТ · формат</p><h1>Как проходит ҚАЗТЕСТ (Казтест)</h1>',
          '<p class="lead">' + e(ex.get('tagline', '')) + ' ' +
-         e(f"Аудирование — {_tasks_short(L)} за {_min_ru(L.get('minutes'))}, чтение — {_tasks_short(R)} за {_min_ru(R.get('minutes'))}, "
-           f"письмо — {_tasks_short(W)} за {_min_ru(W.get('minutes'))}, говорение — {_tasks_short(S)} за {_min_ru(S.get('minutes'))}.") + '</p>',
+         e(f"Аудирование - {_tasks_short(L)} за {_min_ru(L.get('minutes'))}, чтение - {_tasks_short(R)} за {_min_ru(R.get('minutes'))}, "
+           f"письмо - {_tasks_short(W)} за {_min_ru(W.get('minutes'))}, говорение - {_tasks_short(S)} за {_min_ru(S.get('minutes'))}.") + '</p>',
          _btns('kaztest', 'B1', 'Пройти пробный ҚАЗТЕСТ'),
          '<h2>Блоки теста</h2>' + _sections_table('kaztest')]
     for s in secs:
@@ -427,7 +427,7 @@ def page_kaztest_format():
     sc = ex.get('scoring')
     if sc:
         b.append('<h2>Как считают уровень</h2><p>' + e(sc['note'].split(' Ниже')[0]) +
-                 ' Таблица минимальных баллов по каждому блоку — на странице <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
+                 ' Таблица минимальных баллов по каждому блоку - на странице <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
     if ex.get('certificateNote'):
         b.append('<h2>Результат и сертификат</h2><p>' + e(ex['certificateNote']) + '</p>')
     if ex.get('unverified'):
@@ -443,7 +443,7 @@ def page_qrt_format():
     if not secs: return None
     e = _html.escape
     title = 'Как проходит QazResmiTest (Казресмитест): разделы и время'
-    parts = ', '.join(f"{s.get('title','').lower()} — {s.get('minutes')} мин" for s in secs)
+    parts = ', '.join(f"{s.get('title','').lower()} - {s.get('minutes')} мин" for s in secs)
     desc = f"{ex.get('tagline', '')} Разделы: {parts}. Что в каждом разделе и что официально не публикуется."
     b = ['<p class="kicker">QazResmiTest · формат</p><h1>Как проходит QazResmiTest (Казресмитест)</h1>',
          '<p class="lead">' + e(ex.get('tagline', '')) + ' ' + e(parts[0].upper() + parts[1:]) + '. '
@@ -455,11 +455,11 @@ def page_qrt_format():
                  '<p>' + e(s.get('tasks', '')) + ', ' + e(_min_ru(s.get('minutes'))) + '. ' + e(s.get('desc', '')) + '</p>')
     un = ex.get('unverified') or []
     # из пунктов unverified берём только то, что сказано про сам тест; описание тренажёра («в тренажёре…», «здесь…») отрезаем
-    open_q = [un[0].split(' — в тренажёре')[0]] if un else []
+    open_q = [un[0].split(' - в тренажёре')[0]] if un else []
     if len(un) > 2: open_q += [x.strip().rstrip('.') for x in re.split(r';\s|(?<=\.)\s', un[2]) if 'официально' in x]
     if len(un) > 1:
         b.append('<h2>Сколько баллов нужно на QazResmiTest</h2><p>' + e(un[1]) +
-                 ' Официальные пороги по блокам есть только у ҚАЗТЕСТ — см. <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
+                 ' Официальные пороги по блокам есть только у ҚАЗТЕСТ - см. <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
     if open_q:
         b.append('<h2>Что официально не уточнено</h2><p>' + e('. '.join(open_q)) + '.</p>')
     b.append('<h2>Пробный тест по уровню</h2><p class="more">' +
@@ -475,23 +475,23 @@ def page_compare():
     kl, ql = k.get('examLevels', []), q.get('examLevels', [])
     kL, qL = _sec('kaztest', 'listening'), _sec('qrt', 'listening')
     rows = [
-        ('Что это', 'Сертификационный тест Национального центра тестирования (testcenter.kz)', 'Дистанционный тест, официальный сайт — qrt.kz'),
+        ('Что это', 'Сертификационный тест Национального центра тестирования (testcenter.kz)', 'Дистанционный тест, официальный сайт - qrt.kz'),
         ('Уровни', f'{kl[0]}–{kl[-1]}', f'{ql[0]}–{ql[-1]} по шкале CEFR'),
         ('Разделы', ', '.join(s['title'].split(' и ')[0].lower() for s in k['sections']), ', '.join(s['title'].lower() for s in q['sections'])),
         ('Время', f"{k.get('totalMinutes')} минут", f"около {q.get('totalMinutes')} минут"),
-        ('Заданий', f"{k.get('totalTasks')}", ', '.join(f"{s['title'].lower()} — {s['tasks']}" for s in q['sections'])),
+        ('Заданий', f"{k.get('totalTasks')}", ', '.join(f"{s['title'].lower()} - {s['tasks']}" for s in q['sections'])),
         ('Аудирование', kL.get('desc', ''), qL.get('desc', '')),
-        ('Пороги', 'Опубликованы: ' + ', '.join(f'{l} — от {p} %' for l, p in zip(k['scoring']['levels'], k['scoring']['pct'])) + ' в каждом блоке'
+        ('Пороги', 'Опубликованы: ' + ', '.join(f'{l} - от {p} %' for l, p in zip(k['scoring']['levels'], k['scoring']['pct'])) + ' в каждом блоке'
                    if k.get('scoring') else '—', 'Проходные баллы не публикуются'),
         ('Результат', k.get('certificateNote', '').split('. ')[0], 'Уровень по шкале CEFR от A1 до C2'),
     ]
     title = 'Казтест или Казресмитест: чем отличаются ҚАЗТЕСТ и QazResmiTest'
-    desc = (f"ҚАЗТЕСТ — {len(k['sections'])} блока, {_plural_ru(k.get('totalTasks') or 0, 'задание', 'задания', 'заданий')}, {k.get('totalMinutes')} минут, уровни {kl[0]}–{kl[-1]}. "
-            f"QazResmiTest — {len(q['sections'])} разделов, около {q.get('totalMinutes')} минут, шкала {ql[0]}–{ql[-1]}. Сравнение формата, баллов и результата.")
+    desc = (f"ҚАЗТЕСТ - {len(k['sections'])} блока, {_plural_ru(k.get('totalTasks') or 0, 'задание', 'задания', 'заданий')}, {k.get('totalMinutes')} минут, уровни {kl[0]}–{kl[-1]}. "
+            f"QazResmiTest - {len(q['sections'])} разделов, около {q.get('totalMinutes')} минут, шкала {ql[0]}–{ql[-1]}. Сравнение формата, баллов и результата.")
     b = ['<p class="kicker">ҚАЗТЕСТ · QazResmiTest</p><h1>Чем ҚАЗТЕСТ отличается от QazResmiTest</h1>',
-         '<p class="lead">' + e(f"ҚАЗТЕСТ — сертификационный тест Национального центра тестирования: {len(k['sections'])} блока, "
+         '<p class="lead">' + e(f"ҚАЗТЕСТ - сертификационный тест Национального центра тестирования: {len(k['sections'])} блока, "
                                 f"{_plural_ru(k.get('totalTasks') or 0, 'задание', 'задания', 'заданий')}, {k.get('totalMinutes')} минут, уровни {kl[0]}–{kl[-1]} и официальные пороги по каждому блоку. "
-                                f"QazResmiTest — дистанционный тест: {len(q['sections'])} разделов подряд, около {q.get('totalMinutes')} минут, "
+                                f"QazResmiTest - дистанционный тест: {len(q['sections'])} разделов подряд, около {q.get('totalMinutes')} минут, "
                                 f"результат по шкале CEFR от {ql[0]} до {ql[-1]}, проходные баллы не публикуются.") + '</p>',
          '<div class="tbl-wrap"><table><thead><tr><th></th><th>ҚАЗТЕСТ</th><th>QazResmiTest</th></tr></thead><tbody>' +
          ''.join(f'<tr><td><b>{e(a)}</b></td><td>{e(x)}</td><td>{e(y)}</td></tr>' for a, x, y in rows) + '</tbody></table></div>',
@@ -513,9 +513,9 @@ def page_samples():
     e = _html.escape
     title = 'Образцы заданий Казтест и QazResmiTest по уровням A1–C2 с ответами'
     desc = ('По одному заданию каждого уровня ҚАЗТЕСТ (A1–C1) и QazResmiTest (A1–C2) с ответом и разбором. '
-            'Под каждым — полный пробный тест этого уровня, бесплатно и без регистрации.')
+            'Под каждым - полный пробный тест этого уровня, бесплатно и без регистрации.')
     b = ['<p class="kicker">Образцы заданий</p><h1>Образцы заданий ҚАЗТЕСТ и QazResmiTest по уровням</h1>',
-         '<p class="lead">Ниже — по одному заданию каждого уровня из наших пробных тестов, с ответом и разбором. '
+         '<p class="lead">Ниже - по одному заданию каждого уровня из наших пробных тестов, с ответом и разбором. '
          'Полный вариант в формате экзамена открывается кнопкой под заданием. Официальные примеры заданий ҚАЗТЕСТ '
          'Национальный центр тестирования публикует архивом на testcenter.kz.</p>']
     sec_ru = {'reading': 'Лексико-грамматическое задание из блока чтения', 'lexis': 'Задание из раздела «Лексика и орфография»'}
@@ -525,7 +525,7 @@ def page_samples():
         for (o, _x, lv, _t) in landing_pairs():
             q = sm.get(f'{eid}-{lv}')
             if o != eid or not q: continue
-            # в данных ключ часто стоит первым; на экране приложения варианты перемешиваются — здесь тоже, но стабильно
+            # в данных ключ часто стоит первым; на экране приложения варианты перемешиваются - здесь тоже, но стабильно
             order = list(range(len(q['options']))); random.Random(q['test'] + q['id']).shuffle(order)
             letters = 'ABCDE'
             right = letters[order.index(q['answer'])]
@@ -553,9 +553,9 @@ def page_qrt_levels():
     desc = (f'QazResmiTest выдаёт результат уровнем от {lv[0]} до {lv[-1]}, проходные баллы не публикуются. Что означает каждый уровень '
             'по описанию qrt.kz и как заранее проверить свой уровень на пробных тестах.')
     b = ['<p class="kicker">QazResmiTest · уровни</p><h1>Уровни и баллы QazResmiTest (Казресмитест)</h1>',
-         f'<p class="lead">QazResmiTest — один тест для всех: результат выдаётся уровнем по шкале от {lv[0]} до {lv[-1]}. '
+         f'<p class="lead">QazResmiTest - один тест для всех: результат выдаётся уровнем по шкале от {lv[0]} до {lv[-1]}. '
          'Сколько баллов нужно на каждый уровень, qrt.kz не публикует, на сайте теста описаны только сами уровни. '
-         'Ниже — эти описания и способ заранее понять свой уровень по пробным тестам.</p>',
+         'Ниже - эти описания и способ заранее понять свой уровень по пробным тестам.</p>',
          '<h2>Шесть уровней QazResmiTest</h2><div class="tbl-wrap"><table><thead><tr><th>Уровень</th><th>Что он означает (qrt.kz)</th>'
          '<th>Пробный тест</th></tr></thead><tbody>' +
          ''.join(f'<tr id="{l.lower()}"><td><b>{e(l)}</b><br><span style="color:var(--mut)">{e(scale[l]["name"])}</span></td>'
@@ -564,7 +564,7 @@ def page_qrt_levels():
                  '</td></tr>' for l in lv) + '</tbody></table></div>']
     b.append('<h2>Сколько баллов нужно на QazResmiTest</h2><p>' +
              e(un[1] if len(un) > 1 else 'Проходные баллы не публикуются.') +
-             ' Официальной таблицы порогов, как у ҚАЗТЕСТ, у QazResmiTest нет — см. '
+             ' Официальной таблицы порогов, как у ҚАЗТЕСТ, у QazResmiTest нет - см. '
              '<a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a> для сравнения.</p>')
     if ex.get('sittingNote'):
         b.append('<h2>Как сдаётся тест</h2><p>По данным qrt.kz: «' + e(ex['sittingNote']) + '» ' + e(ex.get('tagline', '')) + '</p>')
@@ -572,7 +572,7 @@ def page_qrt_levels():
              '<li>Выберите уровень, на который рассчитываете, и пройдите мок-тест в режиме «как на экзамене»: таймер раздела не останавливается.</li>'
              '<li>После аудирования, лексики и чтения тренажёр покажет итог: «Ваш уровень по чтению и аудированию: B1» '
              'или разделы, в которых не хватило баллов.</li>'
-             '<li>Уровень подтвердился — попробуйте следующий. Не подтвердился — пройдите уровень ниже, разберите ошибки и вернитесь.</li>'
+             '<li>Уровень подтвердился - попробуйте следующий. Не подтвердился - пройдите уровень ниже, разберите ошибки и вернитесь.</li>'
              '<li>Письмо и интервью проверяются самопроверкой по чек-листу и в итог уровня не входят. В режиме «тренировка» уровень не подтверждается.</li></ol>'
              '<p>Реальный тест один для всех уровней, а наши мок-тесты различаются сложностью: так проще проверить, держите ли вы '
              'конкретный уровень, и тренировать именно его.</p>' + _btns('qrt', 'B1', 'Пробный QazResmiTest B1'))
@@ -585,7 +585,7 @@ def page_kaztest_criteria():
     c = (META or {}).get('criteria'); ex = _exam('kaztest')
     if not c: return None
     if c.get('same') != c.get('of'):
-        print('!! критерии письма/говорения различаются в вариантах ҚАЗТЕСТ (%s из %s совпадают) — проверить данные' % (c.get('same'), c.get('of')))
+        print('!! критерии письма/говорения различаются в вариантах ҚАЗТЕСТ (%s из %s совпадают) - проверить данные' % (c.get('same'), c.get('of')))
     e = _html.escape
     W, S = c['writing'], c['speaking']
     pic = next((x for x in W if x['kind'] == 'picture'), None); ess = next((x for x in W if x['kind'] == 'essay'), None)
@@ -593,38 +593,38 @@ def page_kaztest_criteria():
     sp_max = sum(x['max'] for x in S['criteria'])
     wsec, ssec = _sec('kaztest', 'writing'), _sec('kaztest', 'speaking')
     title = 'Критерии оценки ҚАЗТЕСТ: письмо и говорение (жазылым, айтылым)'
-    desc = (f"Как оценивают письмо и говорение на Казтест: описание картинки — {pic['points']} баллов, эссе — {ess['points']}, "
-            f"говорение — {len(S['tasks'])} задания по {sp_max}. Официальные критерии НЦТ и что нужно для высшего балла.")
+    desc = (f"Как оценивают письмо и говорение на Казтест: описание картинки - {pic['points']} баллов, эссе - {ess['points']}, "
+            f"говорение - {len(S['tasks'])} задания по {sp_max}. Официальные критерии НЦТ и что нужно для высшего балла.")
     def tbl(crit):
         return ('<div class="tbl-wrap"><table><thead><tr><th>Критерий</th><th>Макс.</th><th>Что нужно для высшего балла</th></tr></thead><tbody>' +
                 ''.join(f'<tr><td lang="kk"><b>{e(x["name"])}</b></td><td>{x["max"]}</td><td>{e(x.get("top", ""))}</td></tr>' for x in crit) +
                 '</tbody></table></div>')
     b = ['<p class="kicker">ҚАЗТЕСТ · критерии</p><h1>Критерии оценки письма и говорения ҚАЗТЕСТ</h1>',
          '<p class="lead">' + e(f"Письмо и говорение ҚАЗТЕСТ оценивают по официальным критериям НЦТ, по 50 баллов за блок. "
-                                f"Описание картинки — {pic['points']} баллов ({len(pic['criteria'])} критерия по {pic['criteria'][0]['max']}), "
-                                f"эссе — {ess['points']} баллов ({len(ess['criteria'])} критерия по {ess['criteria'][0]['max']}), "
-                                f"говорение — {len(S['tasks'])} задания по {sp_max} баллов, {len(S['criteria'])} критериев по {S['criteria'][0]['max']}.") + '</p>',
+                                f"Описание картинки - {pic['points']} баллов ({len(pic['criteria'])} критерия по {pic['criteria'][0]['max']}), "
+                                f"эссе - {ess['points']} баллов ({len(ess['criteria'])} критерия по {ess['criteria'][0]['max']}), "
+                                f"говорение - {len(S['tasks'])} задания по {sp_max} баллов, {len(S['criteria'])} критериев по {S['criteria'][0]['max']}.") + '</p>',
          _btns('kaztest', 'B1', 'Проверить себя на пробном ҚАЗТЕСТ'),
          f'<h2>Письмо (Жазылым): {wsec.get("tasks", "")}, {_min_ru(wsec.get("minutes") or 0)}</h2>',
-         f"<h3 style=\"font-size:1rem;margin:1.4em 0 .3em\">Задание 1. Описание картинки — {pic['points']} баллов</h3>"
-         f"<p>Ориентир — {_min_ru(pic['minutes'])} и от {pic.get('minWords')} слов.</p>" + tbl(pic['criteria']),
-         f"<h3 style=\"font-size:1rem;margin:1.4em 0 .3em\">Задание 2. Эссе — {ess['points']} баллов</h3>"
-         f"<p>{_min_ru(ess['minutes']).capitalize()}, для высшего балла — около {ess.get('minWords')} слов.</p>" + tbl(ess['criteria']),
+         f"<h3 style=\"font-size:1rem;margin:1.4em 0 .3em\">Задание 1. Описание картинки - {pic['points']} баллов</h3>"
+         f"<p>Ориентир - {_min_ru(pic['minutes'])} и от {pic.get('minWords')} слов.</p>" + tbl(pic['criteria']),
+         f"<h3 style=\"font-size:1rem;margin:1.4em 0 .3em\">Задание 2. Эссе - {ess['points']} баллов</h3>"
+         f"<p>{_min_ru(ess['minutes']).capitalize()}, для высшего балла - около {ess.get('minWords')} слов.</p>" + tbl(ess['criteria']),
          f'<h2>Говорение (Айтылым): {ssec.get("tasks", "")}, {_min_ru(ssec.get("minutes") or 0)}</h2>',
          '<p>' + e(ssec.get('desc', '')) + ' Оба ответа оцениваются по одним и тем же критериям.</p>' + tbl(S['criteria'])]
     sc = ex.get('scoring')
     if sc:
         bl = {x['title']: x for x in sc['blocks']}
         if 'Жазылым' in bl:
-            row = ', '.join(f"{l} — {m}" for l, m in zip(sc['levels'], bl['Жазылым']['min']))
+            row = ', '.join(f"{l} - {m}" for l, m in zip(sc['levels'], bl['Жазылым']['min']))
             b.append(f'<h2>Сколько баллов нужно за письмо и говорение</h2><p>Пороги одинаковые для обоих блоков (из 50): {e(row)}. '
-                     'Полная таблица — на странице <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
+                     'Полная таблица - на странице <a href="/ru/kaztest/bally/">«Сколько баллов нужно на ҚАЗТЕСТ»</a>.</p>')
     if ex.get('certificateNote') and '. ' in ex['certificateNote']:
         b.append('<p>' + e(ex['certificateNote'].split('. ', 1)[1]) + '</p>')
     b.append('<h2>Как потренироваться</h2><p>В пробном тесте оба задания письма и оба задания говорения идут с таймером, ответ '
              'на говорение записывается с микрофона. После раздела вы оцениваете себя по этим же критериям: так видно, на каком '
              'критерии теряются баллы.</p>'
-             '<p style="color:var(--mut);font-size:.92rem">Названия критериев — как в документах НЦТ; описания высшего балла — '
+             '<p style="color:var(--mut);font-size:.92rem">Названия критериев - как в документах НЦТ; описания высшего балла - '
              'наш краткий пересказ официальных критериев. Сверено ' +
              e((ex.get('verifiedNote') or '').rsplit('Проверено ', 1)[-1].rstrip('.')) + '.</p>')
     b.append('<p class="more"><a href="/ru/kaztest/kak-prohodit/">Как проходит ҚАЗТЕСТ</a> <a href="/ru/kaztest/podgotovka-za-mesyac/">Подготовка за месяц</a></p>')
@@ -651,9 +651,9 @@ def page_kaztest_month():
          'неделя на полные прогоны в режиме экзамена. Всё делается на бесплатных пробных тестах в формате ҚАЗТЕСТ: ' +
          e(f'{nv} вариантов на каждый уровень от {pairs[0][0]} до {pairs[-1][0]}') + (e(f' и {len(blocks)} блоков аудирования') if blocks else '') + '.</p>',
          '<h2>Что на экзамене</h2><p>' + e(ex.get('tagline', '')) + ' ' +
-         e(f"Аудирование — {_tasks_short(L)} за {_min_ru(L.get('minutes'))}, чтение — {_tasks_short(R)} за {_min_ru(R.get('minutes'))}, "
-           f"письмо — {_tasks_short(W)} за {_min_ru(W.get('minutes'))}, говорение — {_tasks_short(S)} за {_min_ru(S.get('minutes'))}.") +
-         ' Подробнее — <a href="/ru/kaztest/kak-prohodit/">как проходит ҚАЗТЕСТ</a> и <a href="/ru/kaztest/bally/">сколько баллов нужно</a>.</p>',
+         e(f"Аудирование - {_tasks_short(L)} за {_min_ru(L.get('minutes'))}, чтение - {_tasks_short(R)} за {_min_ru(R.get('minutes'))}, "
+           f"письмо - {_tasks_short(W)} за {_min_ru(W.get('minutes'))}, говорение - {_tasks_short(S)} за {_min_ru(S.get('minutes'))}.") +
+         ' Подробнее - <a href="/ru/kaztest/kak-prohodit/">как проходит ҚАЗТЕСТ</a> и <a href="/ru/kaztest/bally/">сколько баллов нужно</a>.</p>',
          '<h2>Неделя 1. Узнать свой уровень</h2><ol>'
          f'<li>Пройдите первый вариант своего уровня целиком, в режиме «как на экзамене»: {lv_links(0)}.</li>'
          '<li>Посмотрите итог по аудированию и чтению. Если уровень не подтвердился, пройдите первый вариант уровня ниже: '
@@ -662,7 +662,7 @@ def page_kaztest_month():
          (f'<li>Пройдите {blk(0)} аудирования: в нём четыре текста от A1 до C1 и 20 минут, как в настоящем блоке.</li>' if blocks else '') +
          '</ol>',
          '<h2>Неделя 2. Аудирование и чтение</h2><ol>' +
-         (f'<li>Через день — один блок аудирования ({blk(1)}, {blk(2)}, {blk(3)} и дальше по порядку). После каждого читайте '
+         (f'<li>Через день - один блок аудирования ({blk(1)}, {blk(2)}, {blk(3)} и дальше по порядку). После каждого читайте '
           'разбор и переслушивайте тексты, где ошиблись.</li>' if len(blocks) > 3 else '') +
          f'<li>Разделы чтения из вариантов 2 и 3 своего уровня. Вариант 2: {lv_links(1)}. Вариант 3: {lv_links(2)}.</li>'
          '<li>В блоке чтения 18 из 40 заданий лексико-грамматические. В наших вариантах это окончания, синонимы и антонимы, '
@@ -679,7 +679,7 @@ def page_kaztest_month():
          '<li>Если уровень подтверждается уверенно, пройдите один вариант уровня выше: на экзамене тексты идут от A1 до C1.</li>'
          '<li>За два-три дня до теста новое не берите: повторите ошибки из разборов и выспитесь.</li></ol>',
          '<h2>Чего пробный тест не заменит</h2><p>' +
-         e((ex.get('unverified') or ['', ''])[1].split(' — это')[0]) + '. Поэтому блоки аудирования с четырьмя текстами и полные прогоны в четвёртую неделю важны.</p>',
+         e((ex.get('unverified') or ['', ''])[1].split(' - это')[0]) + '. Поэтому блоки аудирования с четырьмя текстами и полные прогоны в четвёртую неделю важны.</p>',
          _btns('kaztest', 'B1', 'Начать с пробного ҚАЗТЕСТ B1')]
     b.append('<p class="more"><a href="/ru/kaztest/kriterii/">Критерии письма и говорения</a> <a href="/ru/obrazcy-zadaniy/">Образцы заданий</a> '
              '<a href="/ru/kaztest-ili-qrt/">ҚАЗТЕСТ или QazResmiTest</a></p>')
@@ -701,10 +701,10 @@ def info_page_html(u, title, desc, body_parts, base):
     h = page_head('ru', title, desc, (base + u) if base else '')
     h += body_parts
     if site_cfg.get('tg'):
-        h.append('<div class="tgbox"><b>Задание дня — в Telegram</b><p>Каждое утро — вопрос из пробных тестов с разбором и '
+        h.append('<div class="tgbox"><b>Задание дня - в Telegram</b><p>Каждое утро - вопрос из пробных тестов с разбором и '
                  'напоминания о сроках регистрации на ҚАЗТЕСТ.</p><a href="https://t.me/' + e(site_cfg['tg']) +
                  '" data-remind="landing" target="_blank" rel="noopener">t.me/' + e(site_cfg['tg']) + ' →</a></div>')
-    h.append('<p class="note">' + e(L10N['ru']['note']) + ' Qazaq Trainer — независимый тренажёр, не официальный сайт экзаменов.</p>')
+    h.append('<p class="note">' + e(L10N['ru']['note']) + ' Qazaq Trainer - независимый тренажёр, не официальный сайт экзаменов.</p>')
     h.append('<footer><p><a href="/">' + e(L10N['ru']['home']) + '</a> · <a href="/privacy/">privacy</a>' +
              (' · ' + e(site_cfg['email']) if site_cfg.get('email') else '') + '</p></footer>')
     h.append('</main>' + landing_script('ru', path='lp/' + u.rstrip('/')) + '</body></html>\n')
@@ -715,7 +715,7 @@ def landing_script(lang, eid=None, lv=None, path=None):
        иначе заходы из поиска не видны вовсе, пока человек не нажмёт кнопку. (2) Ссылки внутрь приложения получают
        utm-метки и ?ref=<домен источника>: при переходе /ru/... → /#/test/... document.referrer становится нашим
        собственным доменом, и без этого все заходы из поиска и из Telegram записывались бы как прямые.
-       Номер вкладки — тот же `kz-trainer:sid` в sessionStorage, что у приложения (29.10.2026): иначе человек,
+       Номер вкладки - тот же `kz-trainer:sid` в sessionStorage, что у приложения (29.10.2026): иначе человек,
        перешедший с посадочной в тест, считался двумя посетителями, а переход «посадочная → тест» не был виден."""
     ev = site_cfg.get('events') or ''
     return ('<script>(function(){var sp=new URLSearchParams(location.search),q=new URLSearchParams(),ref="";'
@@ -740,8 +740,8 @@ def seo_nav():
            '<style>.seo-nav{max-width:46rem;margin:0 auto;padding:1.5rem 1rem 3rem;font-size:.85rem;opacity:.75}'
            '.seo-nav b{display:block;font-weight:600;margin-bottom:.5em}'
            '.seo-nav a{display:inline-block;margin:.15em .8em .15em 0}</style>'
-           '<p style="max-width:40rem">Qazaq Trainer — бесплатные пробные тесты для подготовки к экзаменам по казахскому языку: '
-           'Казтест (ҚАЗТЕСТ, Kaztest) и Казресмитест (QazResmiTest, QRT). Все блоки экзамена, включая письмо и говорение, '
+           '<p style="max-width:40rem">Qazaq Trainer - бесплатные пробные тесты для подготовки к экзаменам по казахскому языку: '
+           'Казтест (ҚАЗТЕСТ, Kaztest) и Казресмитест (Qazaq Resmi Test, QRT). Все блоки экзамена, включая письмо и говорение, '
            'таймер, озвученное аудирование и разбор ошибок. Без регистрации. · Қазақ тілінен ҚАЗТЕСТ пен QazResmiTest '
            'емтихандарына дайындыққа арналған тегін сынақ тестер.</p>'
            '<b>Пробные тесты по экзаменам и уровням · Емтихан мен деңгей бойынша сынақ тестер</b>']
@@ -758,10 +758,10 @@ def seo_nav():
 app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
 app += '\n' + read(src / 'express.js')   # экспресс-тест «Узнать уровень за 10 минут» (29.10.2026), во всех сборках
 def body(mode):
-    # публичный сайт — только тесты; лаборатория и локальная сборка — плюс курс и платный материал
+    # публичный сайт - только тесты; лаборатория и локальная сборка - плюс курс и платный материал
     extra = [] if mode == 'site' else course_data + (paid_data if mode == 'lab' else [])
     flag = ["KZ.site.build = '" + mode + "';"]
-    # сайт и лаборатория берут шрифты со своего сервера (src/fonts → fonts/), автономный dist — по-прежнему с Google Fonts
+    # сайт и лаборатория берут шрифты со своего сервера (src/fonts → fonts/), автономный dist - по-прежнему с Google Fonts
     return (tpl.replace('/*STYLES*/', local_fonts(css) if mode in ('site', 'lab') else css)
                .replace('/*DATA*/', '\n'.join(data + flag + extra + [audio_js(mode)]))
                .replace('/*APP*/', app)
@@ -769,19 +769,19 @@ def body(mode):
 SITE_NAME = 'Qazaq Trainer'
 TITLES = {
     # люди ищут «казтест» обычной К, а в тексте было только официальное ҚАЗТЕСТ с Қ: для поиска это разные слова (19.09.2026)
-    'site': 'Казтест и QazResmiTest — бесплатные пробные тесты A1–C2',
+    'site': 'Казтест и QazResmiTest - бесплатные пробные тесты A1–C2',
     'lab': 'Qazaq Trainer · лаборатория',
     'inline': 'Qazaq Trainer',
 }
 DESCS = {
     'site': 'Подготовка к Казтест (ҚАЗТЕСТ, Kaztest) и Казресмитест (QazResmiTest). Бесплатные пробные тесты по уровням A1–C2: аудирование с озвучкой, чтение, письмо и говорение с таймером, как на экзамене. Без регистрации.',
     'lab': 'Внутренняя сборка: мок-тесты, курс по уровням и материал в разработке. Не для публикации.',
-    'inline': 'Qazaq Trainer — тренажёр для подготовки к ҚАЗТЕСТ и QazResmiTest: мок-тесты по уровням, курс лексики и грамматики',
+    'inline': 'Qazaq Trainer - тренажёр для подготовки к ҚАЗТЕСТ и QazResmiTest: мок-тесты по уровням, курс лексики и грамматики',
 }
 
 def head(mode, extra_head=''):
-    """<head> страницы: заголовок, описание, превью ссылки (og:image — абсолютный URL, иначе Telegram его не покажет),
-       иконки. Адрес берётся из KZ.site.siteUrl — при смене домена править только src/data/site.js."""
+    """<head> страницы: заголовок, описание, превью ссылки (og:image - абсолютный URL, иначе Telegram его не покажет),
+       иконки. Адрес берётся из KZ.site.siteUrl - при смене домена править только src/data/site.js."""
     base = (site_cfg.get('url') or '').strip()
     if base and not base.endswith('/'): base += '/'
     page = base
@@ -795,7 +795,7 @@ def head(mode, extra_head=''):
               '<link rel="icon" href="favicon.svg" type="image/svg+xml">'
               '<link rel="apple-touch-icon" href="apple-touch-icon.png">')
         if mode == 'lab': h += '<meta name="robots" content="noindex,nofollow">'   # лаборатория в поиск не попадает ни при каких условиях
-        if mode == 'site':   # подтверждение прав в Search Console / Вебмастере — только на публичной главной
+        if mode == 'site':   # подтверждение прав в Search Console / Вебмастере - только на публичной главной
             if site_cfg.get('gverify'): h += '<meta name="google-site-verification" content="' + site_cfg['gverify'] + '">'
             if site_cfg.get('yverify'): h += '<meta name="yandex-verification" content="' + site_cfg['yverify'] + '">'
         if base and mode == 'site':
@@ -851,7 +851,7 @@ def _tests_count_ru():
 _base = (site_cfg.get('url') or '').strip()
 if _base and not _base.endswith('/'): _base += '/'
 # 404, заголовки безопасности и список файлов, которые не выкладываются на Cloudflare (16.09.2026).
-# Приложение маршрутизирует через #хэш, поэтому любой путь вида /что-угодно — действительно несуществующая страница:
+# Приложение маршрутизирует через #хэш, поэтому любой путь вида /что-угодно - действительно несуществующая страница:
 # раньше Cloudflare отдавал на него главную с кодом 200, и мусорные адреса могли попасть в поиск.
 (docs / '404.html').write_text(
     '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -863,7 +863,7 @@ if _base and not _base.endswith('/'): _base += '/'
     + (f'<p style="font-size:.9rem;opacity:.8">{site_cfg["email"]}</p>' if site_cfg.get('email') else '') + '</main></body></html>\n', encoding='utf-8')
 # _headers читает Cloudflare (статика на Workers); GitHub Pages его игнорирует. CSP не ставим: весь код и стили
 # встроены в страницу, и политика с 'unsafe-inline' почти ничего не даёт, а сломать может многое.
-# Исключение — frame-ancestors (с 21.09.2026 вместо X-Frame-Options: SAMEORIGIN): сайт открывается как Mini App бота
+# Исключение - frame-ancestors (с 21.09.2026 вместо X-Frame-Options: SAMEORIGIN): сайт открывается как Mini App бота
 # @qazaqtrainer_bot, а веб-версия Telegram показывает его во фрейме. Разрешены только свой домен и web.telegram.org;
 # в мобильных и настольных приложениях Telegram это обычный встроенный браузер, фрейма там нет.
 (docs / '_headers').write_text(
@@ -915,13 +915,13 @@ if _base:
     (docs / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + _urls + '</urlset>\n', encoding='utf-8')
 put_audio(docs / 'audio')
 put_fonts(docs / 'fonts')
-# страница «Какие данные мы собираем» (RU/KK); ссылка — в подвале приложения и в форме обратной связи
+# страница «Какие данные мы собираем» (RU/KK); ссылка - в подвале приложения и в форме обратной связи
 (docs / 'privacy').mkdir(exist_ok=True)
 shutil.copyfile(src / 'privacy' / 'index.html', docs / 'privacy' / 'index.html')
 
 # ---- дизайн сайта (утверждён владельцем 31.10.2026): слой src/design поверх styles.css и LANDING_CSS ----
 # Стили стоят сразу за стилями страницы, design.js достраивает шапку, свёрнутые подробности и порядок блоков после отрисовки.
-# На статических страницах «мок-тест» заменяется при сборке, в приложении — в design.js (строки данных и словаря прежние).
+# На статических страницах «мок-тест» заменяется при сборке, в приложении - в design.js (строки данных и словаря прежние).
 _dz = docs / 'design'; shutil.rmtree(_dz, ignore_errors=True); shutil.copytree(src / 'design', _dz)
 _DZ_LINKS = ''.join('<link rel="stylesheet" href="/design/' + f + '">' for f in ('fonts/fonts.css', 'base.css', 'd1.css'))
 _DZ_WORDS = (('Мок-тесты', 'Пробные тесты'), ('мок-тесты', 'пробные тесты'), ('Мок-тестов', 'Пробных тестов'), ('мок-тестов', 'пробных тестов'),
@@ -933,7 +933,7 @@ def _dress(p):
     else:
         h = h.replace('<body><main>', '<body>' + _DZ_LINKS + '<main>', 1)
         for x, y in _DZ_WORDS: h = h.replace(x, y)
-        # название экзамена в видимом тексте: мало текста — Qazaq Resmi Test, много — QRT. <title>, описание и разметка поиска не меняются: QazResmiTest и Казресмитест там ищут
+        # название экзамена в видимом тексте: мало текста - Qazaq Resmi Test, много - QRT. <title>, описание и разметка поиска не меняются: QazResmiTest и Казресмитест там ищут
         _head, _sep, _body = h.partition('<body>')
         _parts = re.split(r'(<script\b.*?</script>)', _body, flags=re.S)
         def _ex(m):
@@ -950,25 +950,25 @@ for _p in [docs / 'index.html', docs / '404.html'] + [pathlib.Path(x) for pat in
 lab = root / 'lab-site'; lab.mkdir(exist_ok=True)
 (lab / 'index.html').write_text(full('lab'), encoding='utf-8')
 (lab / 'robots.txt').write_text('User-agent: *\nDisallow: /\n', encoding='utf-8')
-# lab-site — рабочая копия приватного репозитория: без этого файла wrangler выкладывает на Cloudflare и папку .git (найдено 16.09.2026)
+# lab-site - рабочая копия приватного репозитория: без этого файла wrangler выкладывает на Cloudflare и папку .git (найдено 16.09.2026)
 (lab / '.assetsignore').write_text('.git\n.gitignore\n.assetsignore\n', encoding='utf-8')
 for ico in ('favicon.svg', 'favicon.ico', 'favicon-48.png', 'favicon-192.png', 'apple-touch-icon.png'):
     if (docs / ico).exists(): shutil.copyfile(docs / ico, lab / ico)
 put_audio(lab / 'audio')
 put_fonts(lab / 'fonts')
-# статистика сайта: страница читает /api/stats (tools/lab-deploy/worker.js); вопросы и варианты — из файлов тестов,
-# вставленных как есть (каждый файл — KZ.tests.push({...}))
+# статистика сайта: страница читает /api/stats (tools/lab-deploy/worker.js); вопросы и варианты - из файлов тестов,
+# вставленных как есть (каждый файл - KZ.tests.push({...}))
 _tests_js = '\n'.join(read(f) for f in sorted(glob.glob(str(src / 'data' / 'tests' / '*.js'))))
-assert '</script' not in _tests_js.lower(), 'в данных тестов есть </script> — страница статистики сломается'
+assert '</script' not in _tests_js.lower(), 'в данных тестов есть </script> - страница статистики сломается'
 (lab / 'stats').mkdir(exist_ok=True)
 (lab / 'stats' / 'index.html').write_text(read(src / 'stats' / 'index.html').replace('/*TESTS*/', _tests_js), encoding='utf-8')
 
-# новая версия публичного сайта внутри лаборатории — на оценку владельцу до выкладки (29.10.2026): переключатель
+# новая версия публичного сайта внутри лаборатории - на оценку владельцу до выкладки (29.10.2026): переключатель
 # «Обучение · Новый сайт» добавляет воркер лаборатории (tools/lab-deploy/worker.js), сама обучалка не меняется.
 # Аудио и шрифты у сборок одинаковые, поэтому берутся из лаборатории, а не копируются второй раз.
 shutil.rmtree(lab / '_site', ignore_errors=True)
 shutil.copytree(docs, lab / '_site', ignore=lambda d, names: [n for n in names if d == str(docs) and n in ('audio', 'fonts', 'CNAME', '_headers')])
 
 kb = lambda p: p.stat().st_size // 1024
-print('built: docs/index.html (%d KB, сайт — только мок-тесты), lab-site/index.html (%d KB, лаборатория: +курс%s), dist/index.html (%d KB), dist/artifact.html'
+print('built: docs/index.html (%d KB, сайт - только мок-тесты), lab-site/index.html (%d KB, лаборатория: +курс%s), dist/index.html (%d KB), dist/artifact.html'
       % (kb(docs / 'index.html'), kb(lab / 'index.html'), ' +платное' if paid_data else '', kb(root / 'dist' / 'index.html')))

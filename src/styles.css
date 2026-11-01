@@ -426,3 +426,11 @@ table.prog .sc{display:block;font-size:0.75rem;color:var(--ink-faint);white-spac
 .nsteps .nstep p{margin:0;flex:1 1 16rem}
 .nsteps .nstep .btn{flex:0 0 auto}
 .diff{margin:-8px 0 18px}
+
+/* карточка «результат в сторис» (01.11.2026) */
+.story-card{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,18,40,.6)}
+.story-panel{position:relative;width:100%;max-width:360px;background:var(--surface);color:var(--ink);border:1px solid var(--border-strong);border-radius:10px;padding:22px 18px 18px;box-shadow:var(--shadow)}
+.story-x{position:absolute;top:8px;right:8px}
+.story-t{font-weight:700;margin:0 28px 14px 0}
+.story-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.story-steps .btn{width:100%;justify-content:center;text-align:center}

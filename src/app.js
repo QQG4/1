@@ -1,5 +1,5 @@
 /* ============================================================
-   Qazaq Trainer — приложение (без фреймворков).
+   Qazaq Trainer - приложение (без фреймворков).
    Маршруты:  #/            хаб
               #/course/:level[/:topic/:tab]  курс по уровням (course.js)
               #/exam/:exam  экзамен: структура + уровни
@@ -12,10 +12,10 @@
   var T = KZ.T, LK = KZ.LK;
 
   /* ---------------- статистика ----------------
-     KZ.track(name, props) и trackPage(path) — единственная точка отправки. Работает только в публичной сборке
+     KZ.track(name, props) и trackPage(path) - единственная точка отправки. Работает только в публичной сборке
      (KZ.site.build === 'site'), чтобы лаборатория и локальные прогоны не пачкали цифры.
      Персональных данных не отправляем: идентификатор сессии случайный, живёт до закрытия вкладки и никуда не привязан.
-     Два приёмника, оба необязательные: KZ.site.eventsUrl (свой endpoint — POST JSON, шлём sendBeacon,
+     Два приёмника, оба необязательные: KZ.site.eventsUrl (свой endpoint - POST JSON, шлём sendBeacon,
      чтобы уход со страницы не терял событие) и счётчик из analyticsSnippet (GoatCounter / Umami / Plausible —
      что подключено, то и используется). Не настроено ничего → все вызовы молча ничего не делают. */
   var TRACK_ON = !!(KZ.site && KZ.site.build === 'site') && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);   // локальный просмотр docs/ цифры не пачкает
@@ -30,7 +30,7 @@
   function sendEvent(name, props) {
     var url = KZ.site && KZ.site.eventsUrl; if (!url) return;
     var body = JSON.stringify({ e: name, sid: SID, lang: KZ.lang, ts: Date.now(), p: props || {} });
-    /* тип тела — text/plain намеренно: это один из типов, не требующих предварительного запроса CORS.
+    /* тип тела - text/plain намеренно: это один из типов, не требующих предварительного запроса CORS.
        С application/json браузер шлёт preflight, а sendBeacon уходит с credentials, и ответ с '*' он не принимает —
        событие молча теряется. Приёмник разбирает тело как JSON независимо от заголовка. */
     try {
@@ -58,7 +58,7 @@
       else if (window.plausible) window.plausible('pageview', { u: location.origin + location.pathname + '#/' + path });
     } catch (e) {}   // Umami считает переходы по history сам
   }
-  /* Откуда пришли — только при первом просмотре во вкладке: домен сайта-источника (без адреса страницы)
+  /* Откуда пришли - только при первом просмотре во вкладке: домен сайта-источника (без адреса страницы)
      и utm-метки из ссылки (?utm_source=telegram&utm_campaign=…). Нужны, чтобы понять, какой канал продвижения работает. */
   function landing(path) {
     var p = { path: path }, ref = '';
@@ -99,6 +99,7 @@
         ev.preventDefault();
         navigator.share({ title: 'Qazaq Trainer', text: sh.getAttribute('data-share-text'), url: sh.getAttribute('data-share-url') }).catch(function () {});
       }
+      if (how === 'image' && sh.getAttribute('data-soc')) { ev.preventDefault(); openStoryCard(sh, sh.getAttribute('data-soc')); return; }
       if (how === 'image') { ev.preventDefault(); shareImage(sh); }
     }
   });
@@ -110,7 +111,7 @@
     return { version: 1, tests: {}, history: [] };
   }
   /* История попыток для графика «Мой прогресс»: {t: testId, s: раздел, sc, tot, at, pr: тренировка}.
-     До 17.09.2026 хранилась только последняя попытка раздела — старый прогресс превращается в историю из неё. */
+     До 17.09.2026 хранилась только последняя попытка раздела - старый прогресс превращается в историю из неё. */
   var HIST_MAX = 2000;
   function seedHistory(st) {
     var h = [];
@@ -122,7 +123,7 @@
   }
   function saveState() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
   var state = loadState();
-  /* другая вкладка изменила прогресс — перечитать, если здесь не идёт раздел */
+  /* другая вкладка изменила прогресс - перечитать, если здесь не идёт раздел */
   window.addEventListener('storage', function (e) { if (e.key === STORE_KEY && !(run && run.phase === 'run')) { state = loadState(); route(); } });
   /* импорт: оставляем только известные тесты, числовые поля приводим к числу (защита от мусора и разметки в JSON) */
   function cleanState(s) {
@@ -160,13 +161,13 @@
     t.sections[type] = Object.assign({}, t.sections[type] || {}, data);
     t.updatedAt = Date.now();
     var r = t.sections[type];
-    if (data && data.status === 'done' && +r.total > 0) {   // каждая завершённая попытка — в историю (перезапись раздела её не стирает)
+    if (data && data.status === 'done' && +r.total > 0) {   // каждая завершённая попытка - в историю (перезапись раздела её не стирает)
       if (!Array.isArray(state.history)) state.history = [];
       state.history.push({ t: testId, s: type, sc: +r.score || 0, tot: +r.total, at: +r.finishedAt || t.updatedAt, pr: !!r.practice });
       if (state.history.length > HIST_MAX) state.history.splice(0, state.history.length - HIST_MAX);
     }
     saveState();
-    if (data && data.status === 'done') {   // завершение любого раздела — единая точка учёта
+    if (data && data.status === 'done') {   // завершение любого раздела - единая точка учёта
       var tt = findTest(testId);
       track('section-done', {
         test: testId, exam: tt && tt.exam, level: tt && tt.level, section: type,
@@ -199,7 +200,8 @@
       '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + '</p></div>';
   }
   function uiButtons() {
-    return '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
+    return '<button class="btn ghost small hintbtn' + (ui.hints ? ' on' : '') + '" data-act="ui-hints" data-v="' + (ui.hints ? 'false' : 'true') + '" aria-pressed="' + !!ui.hints + '" title="' + T('Подсказки') + '">' + T('Подсказки') + '<span class="sw" aria-hidden="true"></span></button>' +
+      '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
       '<button class="btn ghost small gear" data-act="ui-panel" aria-expanded="false" aria-controls="ui-panel" title="' + T('Настройки') + '">⚙<span class="sr">' + T('Настройки') + '</span></button>';
   }
 
@@ -230,9 +232,9 @@
     return { label: lbl, cls: cls, pct: pct };
   }
   /* Вердикт по строгой шкале (KZ.strict): вывод об уровне считается ТОЛЬКО по разделам с автоматической проверкой
-     (аудирование, чтение, лексика). Письмо и говорение оценивает сам пользователь — они показываются в списке,
+     (аудирование, чтение, лексика). Письмо и говорение оценивает сам пользователь - они показываются в списке,
      но на вывод не влияют: обещать точность там, где оценку ставит себе сам сдающий, нельзя. */
-  /* Полный блок ҚАЗТЕСТ (уровень «A1–C1»): как на экзамене, уровень определяется по проценту за блок — берём высший
+  /* Полный блок ҚАЗТЕСТ (уровень «A1–C1»): как на экзамене, уровень определяется по проценту за блок - берём высший
      уровень, порог которого пройден по нашей строгой шкале KZ.strict (на полуровень выше официальной). */
   function blockVerdict(t) {
     var sec = t.sections[0], r = sp(t.id, sec.type);
@@ -267,16 +269,16 @@
     var v = verdict(t); if (!v) return '';
     if (v.block) {
       if (!v.all) return '<div class="notice info"><b class="t">' + T('Результат') + '</b><p>' + T('Пройдите блок целиком, чтобы увидеть уровень по аудированию.') + '</p></div>';
-      var hd = v.level ? T('Ваш уровень по аудированию:') + ' ' + v.level + ' (' + v.pct + ' %)' : T('Результат') + ' ' + v.pct + ' % — ' + T('ниже порога уровня A1.');
+      var hd = v.level ? T('Ваш уровень по аудированию:') + ' ' + v.level + ' (' + v.pct + ' %)' : T('Результат') + ' ' + v.pct + ' % - ' + T('ниже порога уровня A1.');
       return '<div class="notice ' + (v.pass ? 'good' : '') + '"><b class="t">' + T('Результат') + ' · ' + T('блок аудирования') + '</b><p><b>' + hd + '</b></p>' +
-        (v.practice ? '<p class="small muted">' + T('тренировка без таймера — для подтверждения пройдите как на экзамене') + '</p>' : '') +
+        (v.practice ? '<p class="small muted">' + T('тренировка без таймера - для подтверждения пройдите как на экзамене') + '</p>' : '') +
         '<ul>' + v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + r.score + '/' + r.total + '</li>'; }).join('') + '</ul></div>' + nextSteps([variantStep(t), levelStep(t, v.pct)]);
     }
     var failed = v.rows.filter(function (r) { return r.pct != null && !r.ok && !r.self; }).map(function (r) { return r.name; }).join(', ');
     var head = v.pass ? (t.block ? T('Ваш уровень по аудированию:') : T('Ваш уровень по чтению и аудированию:')) + ' ' + t.level : v.all ? t.level + ' ' + T('— баллов не хватило в разделах:') + ' ' + failed + '.' : T('Пройдите разделы с автоматической проверкой, чтобы увидеть результат по уровню.');
     var selfNote = v.rows.some(function (r) { return r.self; }) ? '<p class="small muted">' + T('Письмо и говорение вы оцениваете сами, поэтому в вывод об уровне они не входят.') + '</p>' : '';
     return '<div class="notice ' + (v.pass ? 'good' : v.all ? '' : 'info') + '"><b class="t">' + T('Результат') + ' · ' + t.level + '</b><p><b>' + head + '</b></p>' + selfNote + '<ul>' +
-      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' %' + (r.self ? '' : ' ' + (r.ok ? '✓' : '✗'))) + (r.self ? ' <span class="muted">· ' + T('самооценка, в вывод не входит') + '</span>' : '') + (r.practice ? ' <span class="muted">· ' + T('тренировка без таймера — для подтверждения пройдите как на экзамене') + '</span>' : '') + '</li>'; }).join('') +
+      v.rows.map(function (r) { return '<li>' + esc(r.name) + ': ' + (r.pct == null ? T('не пройден') : r.pct + ' %' + (r.self ? '' : ' ' + (r.ok ? '✓' : '✗'))) + (r.self ? ' <span class="muted">· ' + T('самооценка, в вывод не входит') + '</span>' : '') + (r.practice ? ' <span class="muted">· ' + T('тренировка без таймера - для подтверждения пройдите как на экзамене') + '</span>' : '') + '</li>'; }).join('') +
       '</ul></div>' + (v.all ? nextSteps([variantStep(t), levelStep(t, Math.min.apply(null, v.rows.filter(function (r) { return !r.self; }).map(function (r) { return r.pct; })))]) : '');
   }
   function testStatus(test) {
@@ -284,7 +286,7 @@
     var done = 0, any = false;
     test.sections.forEach(function (s) { var r = sp(test.id, s.type); if (r && r.status === 'done') done++; if (r) any = true; });
     var v = verdict(test);
-    // итог виден, как только пройдены разделы с автопроверкой: письмо и говорение — самооценка, их можно не проходить (29.10.2026)
+    // итог виден, как только пройдены разделы с автопроверкой: письмо и говорение - самооценка, их можно не проходить (29.10.2026)
     if (done === test.sections.length || (v && v.all)) { if (v) return { label: v.pass ? '✓ ' + (v.block ? v.level : test.level) : T('баллов не хватило'), cls: v.pass ? 'ok' : 'bad', done: done }; return { label: T('пройден'), cls: 'ok', done: done }; }
     if (any || done) return { label: done + '/' + test.sections.length + ' ' + T('разделов'), cls: 'warn', done: done };
     return { label: T('не начат'), cls: 'muted', done: 0 };
@@ -292,8 +294,8 @@
 
   /* ---------------- что дальше: варианты, блоки аудирования, уровень выше, итог без письма ----------------
      Статистика 15.09–29.10.2026: проходят почти только вариант 1, блоки аудирования открыли один раз, письмо и говорение
-     бросают чаще всего (28 и 34 %), A1 и QRT B1 сдают на 90 %+. Поэтому после раздела и на странице теста — подсказки,
-     куда идти дальше. «Пройден» здесь — пройдены все разделы с автопроверкой (как в verdict). */
+     бросают чаще всего (28 и 34 %), A1 и QRT B1 сдают на 90 %+. Поэтому после раздела и на странице теста - подсказки,
+     куда идти дальше. «Пройден» здесь - пройдены все разделы с автопроверкой (как в verdict). */
   function isSelf(type) { return type === 'writing' || type === 'speaking'; }
   function readyOnly(list) { return list.filter(function (x) { return x.status !== 'draft' && x.sections.length; }); }
   function autoDone(x) { var v = verdict(x); return v ? !!v.all : testStatus(x).done === x.sections.length; }
@@ -322,20 +324,20 @@
     if (t.block) return step(T('Следующая запись того же уровня.'), '#/test/' + nx.t.id, (kk ? 'Тыңдалым ' : 'Аудирование ') + t.level + ' · №' + nx.n);
     return step(T('Другие тексты и вопросы того же уровня: по двум-трём вариантам результат надёжнее, чем по одному.'), '#/test/' + nx.t.id, kk ? nx.n + '-нұсқаға өту' : 'Пройти вариант ' + nx.n);
   }
-  /* выше 90 % в разделе с автопроверкой — уровень, похоже, лёгкий: предлагаем следующий */
+  /* выше 90 % в разделе с автопроверкой - уровень, похоже, лёгкий: предлагаем следующий */
   function levelStep(t, pct) {
     if (pct == null || pct <= 90) return '';
     var up = nextLevel(t); if (!up) return '';
     var kk = KZ.lang === 'kk';
-    return step(T('Больше 90 % — похоже, этот уровень для вас лёгкий. Попробуйте уровень выше.'), '#/test/' + up.id, kk ? up.level + ' деңгейіне өту' : 'Перейти на ' + up.level);
+    return step(T('Больше 90 % - похоже, этот уровень для вас лёгкий. Попробуйте уровень выше.'), '#/test/' + up.id, kk ? up.level + ' деңгейіне өту' : 'Перейти на ' + up.level);
   }
-  /* после аудирования — блоки аудирования ҚАЗТЕСТ или записи QazResmiTest того же уровня */
+  /* после аудирования - блоки аудирования ҚАЗТЕСТ или записи QazResmiTest того же уровня */
   function blocksStep(t) {
     if (t.block) return '';
     var kk = KZ.lang === 'kk', bl = readyOnly(blocksFor(t.exam)); if (!bl.length) return '';
     if (t.exam === 'kaztest') {
       var o = firstOpen(bl) || bl[0], k = bl.indexOf(o) + 1;
-      return step(kk ? 'Тағы ' + bl.length + ' тыңдалым блогы — емтихандағыдай: A1–A2-ден C1-ге дейін төрт мәтін, 20 тапсырма, 20 минут.'
+      return step(kk ? 'Тағы ' + bl.length + ' тыңдалым блогы - емтихандағыдай: A1–A2-ден C1-ге дейін төрт мәтін, 20 тапсырма, 20 минут.'
                      : 'Ещё ' + bl.length + ' ' + plural(bl.length, 'блок', 'блока', 'блоков') + ' аудирования, как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут.',
         '#/test/' + o.id, kk ? k + '-блокты бастау' : 'Начать блок ' + k);
     }
@@ -345,18 +347,18 @@
                    : 'Ещё ' + ls.length + ' ' + plural(ls.length, 'запись', 'записи', 'записей') + ' аудирования уровня ' + t.level + ': одна запись, 5 заданий, 10 минут.',
       '#/test/' + o2.id, (kk ? 'Тыңдалым ' : 'Аудирование ') + t.level + ' · №' + (ls.indexOf(o2) + 1));
   }
-  /* итог без письма и говорения: они здесь — самооценка и в вывод об уровне не входят */
+  /* итог без письма и говорения: они здесь - самооценка и в вывод об уровне не входят */
   function selfLeft(t) { return t.sections.some(function (s) { var r = sp(t.id, s.type); return isSelf(s.type) && !(r && r.status === 'done'); }); }
   function resultsStep(t) {
     var v = verdict(t); if (!v || v.block || !v.all || !selfLeft(t)) return '';
-    return step(T('Итог по чтению и аудированию готов. Письмо и говорение здесь — самооценка по критериям: в вывод об уровне они не входят, их можно пройти сейчас, позже или пропустить.'), '#/test/' + t.id, T('Посмотреть итог'));
+    return step(T('Итог по чтению и аудированию готов. Письмо и говорение здесь - самооценка по критериям: в вывод об уровне они не входят, их можно пройти сейчас, позже или пропустить.'), '#/test/' + t.id, T('Посмотреть итог'));
   }
-  function nextSteps(parts) {
+  function nextSteps(parts, title) {
     var h = parts.filter(Boolean).join(''); if (!h) return '';
-    return '<div class="notice info nsteps"><b class="t">' + T('Что дальше') + '</b>' + h + '</div>';
+    return '<div class="notice info nsteps"><b class="t">' + T(title || 'Что дальше') + '</b>' + h + '</div>';
   }
-  /* «Насколько трудно?» — один раз на раздел теста, ответ в одно касание уходит событием difficulty (поле why).
-     Что уже спросили — в localStorage, отдельно от прогресса: сброс теста вопрос не возвращает. */
+  /* «Насколько трудно?» - один раз на раздел теста, ответ в одно касание уходит событием difficulty (поле why).
+     Что уже спросили - в localStorage, отдельно от прогресса: сброс теста вопрос не возвращает. */
   var DIFF_KEY = 'kz-trainer:diff', diffSeen = {};
   try { diffSeen = JSON.parse(localStorage.getItem(DIFF_KEY)) || {}; } catch (e) {}
   function diffAsk(t, sec, saved) {
@@ -390,7 +392,7 @@
     if (timer.onTick) timer.onTick(elapsed());
     if (left <= 0 && run && run.phase === 'run' && !run.timedOut) { if (ui.practice) { if (!timer.overNoted) { timer.overNoted = true; announce(T('Время вышло. Режим тренировки: раздел остаётся открытым.')); } } else timeUp(); }
   }
-  /* Время раздела вышло — раздел закрывается, как на экзамене: ответы фиксируются, письмо/говорение переходят к самопроверке */
+  /* Время раздела вышло - раздел закрывается, как на экзамене: ответы фиксируются, письмо/говорение переходят к самопроверке */
   function timeUp() {
     var t = findTest(run.testId); if (!t) return;
     var sec = null; t.sections.forEach(function (x) { if (x.type === run.type) sec = x; }); if (!sec) return;
@@ -422,7 +424,7 @@
   function speak(text, onEnd) {
     var v = kkVoice(); if (!v) return false;
     speechSynthesis.cancel();
-    // Кусками по абзацам/репликам — длинные фразы некоторые движки обрывают.
+    // Кусками по абзацам/репликам - длинные фразы некоторые движки обрывают.
     var parts = text.split(/\n+/).filter(function (x) { return x.trim(); });
     var i = 0;
     function next() {
@@ -450,7 +452,7 @@
     q._perm = perm;   // позиция на экране → индекс в исходных данных теста (нужно статистике по дистракторам)
   }
   KZ.shuffleQuestion = shuffleQuestion;
-  /* Полный блок аудирования (t.block, 10.10.2026): в разделе несколько текстов — sec.parts[{label, script, questions}].
+  /* Полный блок аудирования (t.block, 10.10.2026): в разделе несколько текстов - sec.parts[{label, script, questions}].
      Для подсчёта, разбора и статистики вопросы частей собираются в общий sec.questions (те же объекты, нумерация 1…N). */
   KZ.tests.forEach(function (t) { t.sections.forEach(function (sec) { if (sec.parts && !sec.questions) { sec.questions = []; sec.parts.forEach(function (pt) { pt.questions.forEach(function (q) { sec.questions.push(q); }); }); } }); });
   KZ.tests.forEach(function (t) { t.sections.forEach(function (sec) { (sec.questions || []).forEach(function (q) { shuffleQuestion(q, t.id + '/' + sec.type + '/' + q.id); }); }); });
@@ -530,14 +532,14 @@
     });
     return '<div class="crumbs">' + out.join('') + '</div>';
   }
-  /* Обратная связь: кнопка в углу на каждой странице. Свободный текст — на случай, когда дело не в конкретном
+  /* Обратная связь: кнопка в углу на каждой странице. Свободный текст - на случай, когда дело не в конкретном
      вопросе: съехала вёрстка, не играет аудио, опечатка в диалоге, предложение. Вместе с текстом уходит адрес
-     страницы и строка браузера — без них «у меня не открывается» невозможно разобрать. */
-  // ссылка на страницу «Какие данные мы собираем» (docs/privacy/) — только там, где сайт опубликован; в автономном dist её нет
+     страницы и строка браузера - без них «у меня не открывается» невозможно разобрать. */
+  // ссылка на страницу «Какие данные мы собираем» (docs/privacy/) - только там, где сайт опубликован; в автономном dist её нет
   function privacyLink() {
     return KZ.site && KZ.site.siteUrl && KZ.site.build !== 'inline' ? ' <a href="' + esc(KZ.site.siteUrl) + 'privacy/" target="_blank" rel="noopener">' + T('Какие данные мы собираем') + '</a>' : '';
   }
-  var fbCtx = null;   // если форму открыли из жалобы на вопрос — сюда кладётся его контекст
+  var fbCtx = null;   // если форму открыли из жалобы на вопрос - сюда кладётся его контекст
   function feedbackWidget() {
     if (!(KZ.site && KZ.site.eventsUrl)) return '';
     return '<div class="fb" id="fb">' +
@@ -549,7 +551,7 @@
         '<textarea id="fb-text" rows="4" placeholder="' + T('Что не так или что улучшить? Чем конкретнее, тем быстрее починим.') + '"></textarea>' +
         '<div class="actions"><button class="btn small" data-act="fb-send">' + T('Отправить') + '</button>' +
         '<span class="hint" id="fb-msg" role="status"></span></div>' +
-        '<p class="small muted">' + T('Отправляется текст, адрес страницы и название браузера. Имени и почты не спрашиваем — ответить не сможем, но прочитаем всё.') + privacyLink() + '</p>' +
+        '<p class="small muted">' + T('Отправляется текст, адрес страницы и название браузера. Имени и почты не спрашиваем - ответить не сможем, но прочитаем всё.') + privacyLink() + '</p>' +
       '</div></div>';
   }
   function topbar(items, right) {
@@ -569,7 +571,7 @@
         var chips = tests.length > 1 ? '<span class="variants">' + tests.map(function (x, i) { var sx = testStatus(x); return '<span class="vchip ' + sx.cls + '" role="link" tabindex="0" data-act="go" data-href="#/test/' + x.id + '" title="' + esc(LK(x, 'title')) + ' · ' + esc(sx.label) + '">' + (i + 1) + '</span>'; }).join('') + '</span>' : '';
         return '<a class="level-row' + (t && t.status === 'draft' ? ' draft' : '') + '" href="' + href + '">' +
           '<span class="lvl">' + lv + '</span>' +
-          // 19.09.2026: статус — в строке с названием, номера вариантов — столбиком справа, чтобы описанию оставалась ширина
+          // 19.09.2026: статус - в строке с названием, номера вариантов - столбиком справа, чтобы описанию оставалась ширина
           '<span><div class="nm hub-nm"><span>' + esc(LK(KZ.levels[lv], 'name')) + (tests.length > 1 ? ' <span class="muted small">· ' + tests.length + ' ' + plural(tests.length, T('вариант'), T('варианта'), T('вариантов')) + '</span>' : '') + '</span><span class="badge ' + st.cls + '">' + st.label + '</span></div><div class="dsc">' + (ti > 0 ? '<b>' + (KZ.lang === 'kk' ? (ti + 1) + '-нұсқа' : 'Вариант ' + (ti + 1)) + ':</b> ' : '') + esc(t ? LK(t, 'summary') : '') + '</div></span>' +
           '<span class="st hub-st">' + chips + '</span></a>';
       }).join('');
@@ -583,22 +585,22 @@
     return topbar([{ label: T('Хаб') }], '<a class="btn ghost small" href="#/progress">' + T('Мой прогресс') + '</a>') +
       '<div class="kicker">' + T('Qazaq trainer · тренажёр') + '</div>' +
       '<h1>' + T('Подготовка к государственным экзаменам по казахскому языку') + '</h1>' +
-      '<p class="lede">' + T('Два экзамена, уровни от A1 до C2, варианты мок-теста на каждый уровень. Результаты по разделам сохраняются в этом браузере; для переноса на другое устройство есть экспорт.') + '</p>' +
-      (KZ.expressCard ? KZ.expressCard('hub') : '') +   // экспресс-тест «Узнать уровень за 10 минут» — первой карточкой (src/express.js)
+      '<p class="lede">' + T('Два экзамена, уровни от A1 до C2, варианты пробного теста на каждый уровень.') + socialLine() + '</p>' +
+      (KZ.expressCard ? KZ.expressCard('hub') : '') +   // экспресс-тест «Узнать уровень за 10 минут» - первой карточкой (src/express.js)
       courseCards() +
-      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Варианты мок-теста на каждую пару «экзамен × уровень», формат и хронометраж — по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
+      '<section><div class="kicker" style="margin-bottom:8px">' + T('Экзамены') + '</div><h2>' + T('Мок-тесты по уровням') + '</h2><p class="sub">' + T('Варианты мок-теста на каждую пару «экзамен × уровень», формат и хронометраж - по официальным документам.') + '</p><div class="grid2">' + cards + '</div></section>' +
       '<section><div class="kicker" style="margin-bottom:8px">' + T('Шкала') + '</div><h2>' + T('Как отличаются уровни в тренажёре') + '</h2>' +
-      '<p class="sub">' + T('Объём лексики — по методике ҚАЗТЕСТ (testcenter.kz). Остальное — рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
+      '<p class="sub">' + T('Объём лексики - по методике ҚАЗТЕСТ (testcenter.kz). Остальное - рабочие критерии дифференциации заданий, а не официальные требования.') + '</p>' +
       '<div class="ladder">' + KZ.levelOrder.map(function (lv) { var L = KZ.levels[lv]; return '<div class="rung"><div class="rung-head"><span class="rung-level">' + lv + '</span><span><span class="rung-name">' + esc(LK(L, 'name')) + '</span><span class="rung-units">' + esc(LK(L, 'units')) + '</span></span></div><p class="rung-focus">' + esc(LK(L, 'focus')) + '</p></div>'; }).join('') + '</div></section>' +
-      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + remindCta('footer') + (KZ.site && KZ.site.supportEmail ? ' · ' + T('Почта:') + ' <a href="mailto:' + esc(KZ.site.supportEmail) + '">' + esc(KZ.site.supportEmail) + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде — рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + '<p class="small muted">' + T('Qazaq Trainer — независимый тренажёр. Он не связан с Национальным центром тестирования и организаторами ҚАЗТЕСТ и QazResmiTest; названия экзаменов указаны только для того, чтобы описать, к чему готовят задания.') + '</p>' + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных — ответы нужны, чтобы находить неудачные вопросы и чинить их.') + privacyLink() + '</p>' : '') + '</footer>';
+      '<footer><p><a href="#/sources">' + T('Литература и источники') + '</a>' + (KZ.site && KZ.site.feedbackTelegram ? ' · <a href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" target="_blank" rel="noopener">' + T('Написать в Telegram') + '</a>' : '') + remindCta('footer') + (KZ.site && KZ.site.supportEmail ? ' · ' + T('Почта:') + ' <a href="mailto:' + esc(KZ.site.supportEmail) + '">' + esc(KZ.site.supportEmail) + '</a>' : '') + (KZ.site && KZ.site.siteUrl && location.protocol !== 'https:' && location.hostname !== 'localhost' ? ' · <a href="' + esc(KZ.site.siteUrl) + '" target="_blank" rel="noopener">' + T('Открыть сайт отдельной вкладкой') + '</a>' : '') + '</p>' + T('Форматы заданий везде - рабочая реконструкция по опубликованной структуре тестов, а не копия реального интерфейса. Подтверждённые и неподтверждённые факты помечены на странице каждого экзамена.') + '<p class="small muted">' + T('Qazaq Trainer - независимый тренажёр. Он не связан с Национальным центром тестирования и организаторами ҚАЗТЕСТ и QazResmiTest; названия экзаменов указаны только для того, чтобы описать, к чему готовят задания.') + '</p>' + (KZ.site && (KZ.site.eventsUrl || KZ.site.analyticsSnippet) ? '<p class="small muted">' + T('Мы считаем обезличенную статистику: какие разделы открывают и какие ответы выбирают. Без cookies, без регистрации, без личных данных - ответы нужны, чтобы находить неудачные вопросы и чинить их.') + privacyLink() + '</p>' : '') + '</footer>';
   }
   /* Строка «Блоки аудирования» на хабе: отдельные моки только аудирования в формате экзамена. */
   function blockRow(eid) {
     var bl = blocksFor(eid); if (!bl.length) return '';
     var full = eid === 'kaztest';
     var chips;
-    /* ҚАЗТЕСТ: 30 номеров сеткой выглядели тяжело рядом с соседними строками (29.10.2026) — показываем пятёрки «1–5» … «26–30»
-       сеткой 3×2, как уровни QazResmiTest. Кнопка ведёт на первый непройденный блок пятёрки, цвет — сколько пройдено. */
+    /* ҚАЗТЕСТ: 30 номеров сеткой выглядели тяжело рядом с соседними строками (29.10.2026) - показываем пятёрки «1–5» … «26–30»
+       сеткой 3×2, как уровни QazResmiTest. Кнопка ведёт на первый непройденный блок пятёрки, цвет - сколько пройдено. */
     var group = function (label, ts) {
       var done = ts.filter(function (x) { var r = sp(x.id, 'listening'); return r && r.status === 'done'; });
       var next = ts.filter(function (x) { return done.indexOf(x) < 0; })[0] || ts[0];
@@ -610,31 +612,31 @@
       for (var k = 0; k < bl.length; k += 5) packs.push(group((k + 1) + '–' + Math.min(k + 5, bl.length), bl.slice(k, k + 5)));
       chips = '<span class="variants v-grid v-lv">' + packs.join('') + '</span>';
     } else {
-      /* QazResmiTest: по моку на уровень было бы 36 кнопок — показываем уровни (11.10.2026). Кнопка ведёт на первый
-         непройденный мок уровня, цвет — сколько пройдено: ничего / часть / все. */
+      /* QazResmiTest: по моку на уровень было бы 36 кнопок - показываем уровни (11.10.2026). Кнопка ведёт на первый
+         непройденный мок уровня, цвет - сколько пройдено: ничего / часть / все. */
       chips = '<span class="variants v-grid v-lv">' + LEVEL_ORDER5.map(function (lv) {
         var ts = bl.filter(function (x) { return x.level === lv; }); return ts.length ? group(lv, ts) : '';
       }).join('') + '</span>';
     }
     return '<a class="level-row" href="#/exam/' + eid + '"><span class="lvl lvl-au">' + T('Ауд.') + '</span><span><div class="nm hub-nm"><span>' + T('Блоки аудирования') + ' <span class="muted small">· ' + bl.length + '</span></span></div><div class="dsc">' +
-      (full ? T('Как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут. Уровень — по проценту за блок.') : T('Раздел аудирования в формате экзамена по уровням: одна запись, 5 заданий, 10 минут.')) +
+      (full ? T('Как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут. Уровень - по проценту за блок.') : T('Раздел аудирования в формате экзамена по уровням: одна запись, 5 заданий, 10 минут.')) +
       '</div></span><span class="st hub-st">' + chips + '</span></a>';
   }
   function courseCards() {
     if (!KZ.courses) return '';
     var keys = Object.keys(KZ.courses); if (!keys.length) return '';
-    return '<section><div class="kicker" style="margin-bottom:8px">' + T('Курс') + '</div><h2>' + T('Учебная программа по уровням') + '</h2><p class="sub">' + T('Программа построена на нашей методологии, разработанной с опорой на официальный лексический минимум ҰТО и типовые учебники уровней; по каждой теме — карточки слов, грамматика с заданиями, тексты с вопросами и итоговый тест.') + '</p><div class="grid2">' + keys.map(function (k) {
+    return '<section><div class="kicker" style="margin-bottom:8px">' + T('Курс') + '</div><h2>' + T('Учебная программа по уровням') + '</h2><p class="sub">' + T('Программа построена на нашей методологии, разработанной с опорой на официальный лексический минимум ҰТО и типовые учебники уровней; по каждой теме - карточки слов, грамматика с заданиями, тексты с вопросами и итоговый тест.') + '</p><div class="grid2">' + keys.map(function (k) {
       var c = KZ.courses[k], pr = KZ.courseProgress ? KZ.courseProgress(c) : null;
       return '<a class="exam-card" href="#/course/' + k + '"><div class="row spread"><span class="badge level">' + k + '</span>' + (pr ? '<span class="badge ' + (pr.done ? 'ok' : 'muted') + '">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + '</span>' : '') + '</div><div class="name">' + esc(c.title) + ' · ' + esc(c.kk) + '</div><p class="tag">' + c.topics.length + ' ' + T('тем') + ' · ' + (c.stats.uniqueWords || c.stats.words) + ' ' + T('слов') + (c.coverage ? ' (' + LK(c, 'coverage') + ')' : '') + ' · ' + c.stats.grammar + ' ' + plural(c.stats.grammar, T('грамматическая тема'), T('грамматические темы'), T('грамматических тем')) + ' · ' + c.stats.texts + ' ' + T('текстов') + (c.stats.textsWithQuestions != null ? ', ' + T('с вопросами') + ' ' + c.stats.textsWithQuestions : '') + (pr && pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</p></a>';
     }).join('') + '</div></section>';
   }
   /* Перенос прогресса по коду: сайт кладёт текущий прогресс в приёмник статистики и показывает код из 8 знаков,
-     на другом устройстве код вводят — прогресс переезжает. Аккаунта не нужно, личных данных в прогрессе нет,
+     на другом устройстве код вводят - прогресс переезжает. Аккаунта не нужно, личных данных в прогрессе нет,
      запись живёт сутки. Без настроенного eventsUrl блок не показывается: складывать некуда. */
   function syncPanel() {
     if (!KZ.site || !KZ.site.eventsUrl) return '';
     return '<div class="block io"><h3>' + T('Код переноса') + '</h3>' +
-      '<p class="small muted">' + T('Получите код на этом устройстве и введите его на другом — прогресс переедет. Код действует 24 часа, входить никуда не нужно.') + '</p>' +
+      '<p class="small muted">' + T('Получите код на этом устройстве и введите его на другом - прогресс переедет. Код действует 24 часа, входить никуда не нужно.') + '</p>' +
       '<div class="actions"><button class="btn small" data-act="sync-make">' + T('Получить код') + '</button>' +
       '<input id="sync-code" class="code-in" maxlength="9" autocomplete="off" spellcheck="false" placeholder="' + T('Код с другого устройства') + '" aria-label="' + T('Код с другого устройства') + '">' +
       '<button class="btn secondary small" data-act="sync-use">' + T('Перенести сюда') + '</button>' +
@@ -665,7 +667,7 @@
       '<div class="kicker">' + esc(ex.kicker) + '</div><h1>' + esc(ex.name) + '</h1><p class="lede">' + esc(LK(ex, 'tagline')) + '</p>' +
       '<div class="notice ' + (ex.verified ? 'good' : '') + '"><b class="t">' + (ex.verified ? T('Подтверждено') : T('Не подтверждено')) + '</b><p>' + esc(LK(ex, 'verifiedNote')) + '</p></div>' +
       (KZ.expressCard ? KZ.expressCard('exam', ex.id) : '') + blocksCallout(ex) +
-      '<section><h2>' + T('Структура теста') + '</h2><p class="sub">' + (ex.verified ? T('По официальному описанию.') : T('Рабочая гипотеза по вторичным источникам — звёздочкой помечены цифры, требующие сверки.')) + '</p>' +
+      '<section><h2>' + T('Структура теста') + '</h2><p class="sub">' + (ex.verified ? T('По официальному описанию.') : T('Рабочая гипотеза по вторичным источникам - звёздочкой помечены цифры, требующие сверки.')) + '</p>' +
       '<div class="stages">' + stages + (ex.totalMinutes ? '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + ex.totalMinutes + ' ' + T('минут') + ' · ' + ex.sections.length + ' ' + (ex.sections.length === 4 ? T('блока') : T('разделов')) + (ex.totalTasks ? ' · ' + ex.totalTasks + ' ' + T('задания') : '') + '</b></div>' : '') + '</div>' +
       (ex.mockNote ? '<p class="small muted mt">' + esc(LK(ex, 'mockNote')) + '</p>' : '') + '</section>' +
       (ex.scoring ? scoringTable(ex) : '') +
@@ -678,22 +680,22 @@
       '<footer>' + T('Источники:') + '<ul class="srclist">' + ex.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(LK(s, 'title')) + '</a></li>'; }).join('') + '</ul></footer>';
   }
 
-  /* Блоки аудирования на странице экзамена — сразу под заголовком, а не в самом низу (29.10.2026: их не находили) */
+  /* Блоки аудирования на странице экзамена - сразу под заголовком, а не в самом низу (29.10.2026: их не находили) */
   function blocksCallout(ex) {
     var bl = readyOnly(blocksFor(ex.id)); if (!bl.length) return '';
     var kk = KZ.lang === 'kk', full = ex.id === 'kaztest', o = firstOpen(bl) || bl[0];
-    var txt = full ? (kk ? bl.length + ' тыңдалым блогы — емтихандағыдай: A1–A2-ден C1-ге дейін төрт мәтін, 20 тапсырма, 20 минут. Деңгей блок бойынша пайызбен анықталады.'
-                         : bl.length + ' ' + plural(bl.length, 'блок', 'блока', 'блоков') + ' аудирования, как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут. Уровень — по проценту за блок.')
+    var txt = full ? (kk ? bl.length + ' тыңдалым блогы - емтихандағыдай: A1–A2-ден C1-ге дейін төрт мәтін, 20 тапсырма, 20 минут. Деңгей блок бойынша пайызбен анықталады.'
+                         : bl.length + ' ' + plural(bl.length, 'блок', 'блока', 'блоков') + ' аудирования, как на экзамене: четыре текста от A1–A2 до C1, 20 заданий, 20 минут. Уровень - по проценту за блок.')
                    : (kk ? 'Деңгейлер бойынша ' + bl.length + ' тыңдалым жазбасы: бір жазба, 5 тапсырма, 10 минут.'
                          : bl.length + ' ' + plural(bl.length, 'запись', 'записи', 'записей') + ' аудирования по уровням: одна запись, 5 заданий, 10 минут.');
     return '<div class="notice info"><b class="t">' + T('Блоки аудирования') + '</b><p>' + txt + '</p><p class="row">' +
       (full ? '<a class="btn small" href="#/test/' + o.id + '">' + (kk ? (bl.indexOf(o) + 1) + '-блокты бастау' : 'Начать блок ' + (bl.indexOf(o) + 1)) + '</a>' : '') +
-      '<button class="btn small ghost" data-act="scroll" data-to="blocks">' + (full ? T('Все блоки') : T('Выбрать уровень')) + ' ↓</button></p></div>';
+      '</p></div>';
   }
 
   /* ---------------- views: test ---------------- */
   /* Объём раздела на странице теста: у разделов с вопросами показываем, сколько их в этом моке, а официальный объём
-     экзамена — справкой. Раньше показывался только официальный («20 заданий · 20 баллов»), и мок из 5 вопросов
+     экзамена - справкой. Раньше показывался только официальный («20 заданий · 20 баллов»), и мок из 5 вопросов
      выглядел недогрузившимся. */
   function stageTasks(s, es) {
     var official = LK(es, 'tasks') || '';
@@ -716,8 +718,7 @@
     var total = t.sections.reduce(function (a, s) { return a + (s.minutes || 0); }, 0);
     return topbar([{ label: T('Хаб'), href: '#/' }, { label: ex.short, href: '#/exam/' + ex.id }, { label: t.level + ' · ' + LK(t, 'title') }],
         '<span class="badge level">' + t.level + '</span><span class="badge ' + st.cls + '">' + st.label + '</span>') +
-      '<div class="kicker">' + esc(ex.kicker) + ' · ' + (t.block ? T('блок аудирования') + ' · ' : '') + T('уровень') + ' ' + t.level + '</div><h1>' + esc(LK(t, 'title')) + (KZ.levels[t.level] ? ' — ' + esc(LK(KZ.levels[t.level], 'name')) : '') + '</h1>' +
-      '<p class="lede">' + esc(LK(t, 'summary')) + ' ' + T('Разделы можно проходить по порядку, как на экзамене, или по одному. Ответы фиксируются один раз, после этого открывается разбор.') + '</p>' +
+      '<div class="kicker">' + esc(ex.kicker) + ' · ' + (t.block ? T('блок аудирования') + ' · ' : '') + T('уровень') + ' ' + t.level + '</div><h1>' + esc(LK(t, 'title')) + (KZ.levels[t.level] ? ' - ' + esc(LK(KZ.levels[t.level], 'name')) : '') + '</h1>' +
       verdictCard(t) +
       '<div class="stages">' + stages + '<div class="stages-total"><span>' + T('Итого') + '</span><b>' + total + ' ' + T('минут') + ' · ' + t.sections.length + (t.sections.length === 4 ? ' ' + T('блока') : ' ' + T('разделов')) + '</b></div></div>' +
       '<div class="actions"><button class="btn danger small" data-act="reset-test" data-test="' + t.id + '">' + T('Сбросить результаты этого теста') + '</button>' +
@@ -749,14 +750,43 @@
   function sectionDots(t, cur) {
     return '<span class="progress-dots">' + t.sections.map(function (s) { var r = sp(t.id, s.type); return '<i class="' + (r && r.status === 'done' ? 'done' : r ? 'part' : '') + (s.type === cur ? ' cur' : '') + '" title="' + esc(LK(KZ.sectionTypes[s.type], 'label')) + '"></i>'; }).join('') + '</span>';
   }
+  /* лайфхак вместо справки перед разделом (решение владельца 01.11.2026); строки ждут носителя: tools/kk-review-lifehacks-2026-11-01.md */
+  var HACKS = {
+    lexis: 'Не знаете слово: отбросьте варианты, которые не подходят по окончанию или по смыслу, и выберите из оставшихся. На одно задание не больше минуты.',
+    reading: 'Сначала прочитайте вопросы, потом текст: так вы читаете, чтобы найти ответ, а не всё подряд. Ответ ищите в самом тексте, а не по памяти.',
+    listening: 'Пока идёт пауза, прочитайте вопросы и варианты. Во время записи отмечайте ключевые слова, а не пытайтесь записать всё.',
+    writing: 'Потратьте две минуты на план: вступление, основная часть, вывод. Последние две минуты оставьте на проверку окончаний и запятых.',
+    speaking: 'Отвечайте по схеме: прямой ответ, причина с примером, короткий вывод. Не знаете слово, объясните другими словами, но не замолкайте.'
+  };
+  function lifehack(type) {
+    if (!HACKS[type]) return '';
+    return '<div class="notice mt dz-hack" style="margin-bottom:0"><b class="t">' + T('Лайфхак') + '</b><p>' + T(HACKS[type]) + '</p></div>';
+  }
+  /* соцсети в шапке главной: пустой адрес прячет значок */
+  var SOC_ICONS = {
+    telegram: '<path d="M21 4 3 11l5.5 2L10 19l3-4 5 4z"/><path d="m8.5 13 9-6.5"/>',
+    instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor"/>',
+    tiktok: '<path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 4c.4 2.6 2 4.2 5 4.5"/>',
+    mail: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6.5L20.5 7"/>',
+    share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>'
+  };
+  function socIcon(n) { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + SOC_ICONS[n] + '</svg>'; }
+  function socialLine() {
+    var S = KZ.site || {}, links = [];
+    if (S.telegramChannel) links.push(['telegram', 'Telegram', 'https://t.me/' + S.telegramChannel]);
+    if (S.tiktok) links.push(['tiktok', 'TikTok', 'https://www.tiktok.com/@' + S.tiktok]);
+    if (S.instagram) links.push(['instagram', 'Instagram', 'https://www.instagram.com/' + S.instagram + '/']);
+    if (!links.length) return '';
+    return '<span class="soc-line"><span class="soc-text">' + T('Ежедневные мини-задания в наших соцсетях') + '</span><span class="soc">' +
+      links.map(function (l) { return '<a class="soc-link" href="' + esc(l[2]) + '" target="_blank" rel="noopener" aria-label="' + l[1] + '" title="' + l[1] + '" data-soc="' + l[0] + '">' + socIcon(l[0]) + '</a>'; }).join('') + '</span></span>';
+  }
   function viewReady(t, sec, es) {
     var n = sec.questions ? sec.questions.length + ' ' + T('заданий') : sec.tasks ? sec.tasks.length + ' ' + T('задания') : sec.prompts ? sec.prompts.length + ' ' + T('темы на выбор') : sec.sets ? sec.sets.length + ' ' + T('комплекта × 3 вопроса') : '';
     var pts = sec.tasks ? sec.tasks.reduce(function (a, x) { return a + (x.points || 0); }, 0) : sec.pointsPerTask && sec.questions ? sec.questions.length * sec.pointsPerTask : 0;
     var tasks = sec.tasks ? '<ol class="prompt-list mt">' + sec.tasks.map(function (x) { return '<li><span><b>' + esc(LK(x, 'title')) + '</b><br><span class="small muted">' + (x.minutes ? '~' + x.minutes + ' ' + T('мин') + ' · ' : '') + x.points + ' ' + T('баллов') + (x.minWords ? ' · ' + T('от') + ' ' + x.minWords + ' ' + T('слов') : '') + (x.questions ? ' · ' + x.questions.length + ' ' + T('вопросов') : '') + '</span></span></li>'; }).join('') + '</ol>' : '';
     return '<div class="block"><div class="row spread"><div><span class="badge exam">' + sec.minutes + ' ' + T('мин') + '</span> <span class="badge muted">' + n + '</span>' + (pts ? ' <span class="badge muted">' + pts + ' ' + T('баллов') + '</span>' : '') + '</div></div>' + tasks +
-      '<p class="small muted mt">' + T('Задания созданы нашими специалистами по официальной структуре теста.') + '</p>' + selfNote(t, sec) +
-      (sec.checkNote ? '<div class="notice mt" style="margin-bottom:0"><b class="t">' + T('Орфография') + '</b><p>' + esc(LK(sec, 'checkNote')) + '</p></div>' : '') +
-      '<div class="actions"><button class="btn" data-act="start">' + T('Начать раздел — таймер') + ' ' + sec.minutes + ' ' + T('мин') + '</button><span class="hint">' + (KZ.exams[t.exam].verified ? T('Структура по официальным документам; конкретные тексты — тренировочные.') : T('Формат заданий — рабочая реконструкция.')) + '</span></div></div>' +
+      selfNote(t, sec) + lifehack(sec.type) +
+      '<div class="actions"><button class="btn" data-act="start">' + T('Начать раздел - таймер') + ' ' + sec.minutes + ' ' + T('мин') + '</button></div></div>' +
       tipsBlock(es);
   }
   /* перед письмом и говорением: это самооценка, итог по уровню без них уже можно посмотреть */
@@ -787,7 +817,7 @@
 
   /* --- вопросы с выбором (общие для listening / lexis / reading) --- */
   /* Жалоба на вопрос: показывается в разборе, отправляется тем же маяком, что и статистика.
-     Ни почты, ни модерации — в базе сразу видно, на какие вопросы жалуются и на что именно. */
+     Ни почты, ни модерации - в базе сразу видно, на какие вопросы жалуются и на что именно. */
   var REASONS = [
     { id: 'key', label: 'Неверный правильный ответ' },
     { id: 'ambiguous', label: 'Подходят два варианта' },
@@ -796,10 +826,10 @@
     { id: 'other', label: 'Другое' }
   ];
   function reportBox(ctx, q, chosen) {
-    if (!ctx || !(KZ.site && KZ.site.eventsUrl)) return '';   // приёмник не настроен — кнопку не показываем
+    if (!ctx || !(KZ.site && KZ.site.eventsUrl)) return '';   // приёмник не настроен - кнопку не показываем
     return '<div class="report" data-test="' + esc(ctx.test) + '" data-section="' + esc(ctx.section) + '" data-qid="' + esc(q.id) + '"' +
       ' data-a="' + (chosen == null ? -1 : (q._perm ? q._perm[chosen] : chosen)) + '" data-ok="' + (chosen === q.answer ? 1 : 0) + '">' +
-      '<button class="btn ghost small" data-act="report-open">' + T('Сообщить об ошибке') + '</button>' +
+      '<button class="btn ghost small" data-act="report-open" title="' + T('Сообщить об ошибке') + '">' + T('Ошибка?') + '</button>' +
       '<span class="rep-why" hidden><span class="small muted">' + T('Что не так?') + '</span> ' +
       REASONS.map(function (r) { return '<button class="cb" data-act="report-send" data-why="' + r.id + '">' + T(r.label) + '</button>'; }).join(' ') +
       '</span></div>';
@@ -825,7 +855,7 @@
   function runQuiz(t, sec, es) {
     var body = '';
     if (sec.passage) {
-      body += '<div class="block"><div class="passage-title">Мәтін · ' + esc(sec.passage.title) + '</div><div class="passage">' + sec.passage.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div></div>';  // passage.note — служебная пометка о калибровке, в интерфейс не выводится
+      body += '<div class="block"><div class="passage-title">Мәтін · ' + esc(sec.passage.title) + '</div><div class="passage">' + sec.passage.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div></div>';  // passage.note - служебная пометка о калибровке, в интерфейс не выводится
     }
     body += '<div class="block"><span class="setlabel">' + T('Задания') + '</span>' + renderQuestions(sec, run.answers, false) +
       '<div class="actions"><button class="btn" data-act="submit">' + T('Зафиксировать ответы') + '</button><span class="hint" id="submit-msg" role="status" aria-live="polite"></span></div></div>';
@@ -846,7 +876,7 @@
     if (run.resume && d && d.startedAt) { timer.start = d.startedAt; tick(); } else quizDraft();
   }
   /* Блок аудирования: свой плеер и свои вопросы у каждого текста, таймер общий. Звучать может только один текст за раз:
-     run.playing = 'p<i>' (у обычного раздела — true). */
+     run.playing = 'p<i>' (у обычного раздела - true). */
   function runListeningParts(t, sec) {
     if (run.playsUsed == null) run.playsUsed = 0;
     var off = 0;
@@ -881,20 +911,20 @@
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="au-play"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         '<button class="btn ghost small" data-act="au-pause" id="au-pause"' + (run.playing ? '' : ' hidden') + '>⏸ ' + T('Пауза') + '</button>' +
-        '<span class="hint" id="tts-msg" role="status" aria-live="polite">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + (/[,\/+]/.test(String(au.voices)) ? T('голоса') : T('голос:')) + ' ' + esc(au.voices) + '</span></div>' +
+        '<span class="hint" id="tts-msg" role="status" aria-live="polite">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны - зафиксируйте ответы')) + ' · ' + mmss(au.seconds) + ' · ' + (/[,\/+]/.test(String(au.voices)) ? T('голоса') : T('голос:')) + ' ' + esc(au.voices) + '</span></div>' +
         '<div class="aubar" aria-hidden="true"><i id="aubar"></i></div><audio id="au" preload="auto" src="' + au.src + '"></audio>' + transcriptBlock(sec) +
         '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене: читайте вопросы и отмечайте ответы по ходу звучания. Паузу поставить можно, перемотки нет; прослушивание засчитывается, когда запись дозвучала до конца.') + (plays === Infinity ? ' ' + T('Повторять запись можно, пока идёт время раздела.') : plays > 1 ? ' ' + T('Прослушиваний:') + ' ' + plays + '.' : ' ' + T('Запись звучит один раз.')) + '</p></div>';
     } else if (voice) {
       head = '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(sec.script.title) + '</span>' +
         '<div class="row"><button class="btn" data-act="tts"' + (left <= 0 || run.playing ? ' disabled' : '') + '>▶ ' + (run.playing ? T('Звучит…') : T('Воспроизвести')) + '</button>' +
         (run.playing ? '<button class="btn ghost small" data-act="tts-pause">' + (window.speechSynthesis && speechSynthesis.paused ? '▶ ' + T('Продолжить') : '⏸ ' + T('Пауза')) + '</button><button class="btn ghost small" data-act="tts-stop">■ ' + T('Остановить') + '</button>' : '') +
-        '<span class="hint" id="tts-msg" role="status" aria-live="polite">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны — зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
+        '<span class="hint" id="tts-msg" role="status" aria-live="polite">' + (left > 0 ? (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('прослушиваний осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) : T('прослушивания исчерпаны - зафиксируйте ответы')) + ' · ' + T('голос:') + ' ' + esc(voice.name) + '</span></div>' +
         transcriptBlock(sec) +
         (kkVoices().length > 1 ? '<div class="row mt small"><span class="muted">' + T('Голос:') + '</span>' + kkVoices().map(function (v) { return '<button class="cb' + (v === voice ? ' on' : '') + '" data-act="voice" data-name="' + esc(v.name) + '">' + esc(v.name.replace(/Microsoft |Online |\(Natural\)| - Kazakh.*$/g, '').trim()) + '</button>'; }).join('') + '</div>' : '') +
         '<p class="small muted mt hintx">' + T('Текст скрыт, как на экзамене. Читайте вопросы во время звучания и отмечайте ответы сразу.') + (plays === Infinity ? ' ' + T('Повторять запись можно, пока идёт время раздела.') : plays > 1 ? ' ' + T('Прослушиваний:') + ' ' + plays + '.' : ' ' + T('Запись звучит один раз.')) + '</p></div>';
     } else {
-      head = '<div class="notice"><b class="t">' + T('Казахский голос не найден') + '</b><p>' + T('В этом браузере нет голоса для казахского языка, кнопка воспроизведения отключена. Бесплатно работает в') + ' <b>Microsoft Edge</b> ' + T('(голоса Aigul и Daulet, Windows и macOS): откройте эту же ссылку в Edge.') + (isEdge ? ' ' + T('Похоже, это Edge — подождите пару секунд, голоса подгружаются, или проверьте, что в системе включён «Kazakh» в языках речи.') : '') + '</p>' +
-        '<p>' + T('Запасной режим без голоса: текст покажется на') + ' ' + (sec.script.readSeconds || 90) + ' ' + T('секунд, читайте его вслух в темпе диктора и отвечайте по ходу — это слабая замена, но лучше, чем запоминать текст целиком.') + '</p>' +
+      head = '<div class="notice"><b class="t">' + T('Казахский голос не найден') + '</b><p>' + T('В этом браузере нет голоса для казахского языка, кнопка воспроизведения отключена. Бесплатно работает в') + ' <b>Microsoft Edge</b> ' + T('(голоса Aigul и Daulet, Windows и macOS): откройте эту же ссылку в Edge.') + (isEdge ? ' ' + T('Похоже, это Edge - подождите пару секунд, голоса подгружаются, или проверьте, что в системе включён «Kazakh» в языках речи.') : '') + '</p>' +
+        '<p>' + T('Запасной режим без голоса: текст покажется на') + ' ' + (sec.script.readSeconds || 90) + ' ' + T('секунд, читайте его вслух в темпе диктора и отвечайте по ходу - это слабая замена, но лучше, чем запоминать текст целиком.') + '</p>' +
         '<div class="actions"><button class="btn secondary small" data-act="show-script"' + (left <= 0 || run.scriptVisible ? ' disabled' : '') + '>' + T('Показать текст на') + ' ' + (sec.script.readSeconds || 90) + ' ' + T('с') + '</button><span class="hint" role="status">' + (plays === Infinity ? T('повтор доступен, пока идёт время раздела') : T('показов осталось:') + ' ' + left + ' ' + T('из') + ' ' + plays) + '</span></div></div>' +
         (run.scriptVisible ? '<div class="block"><span class="setlabel">' + T('Скрипт') + ' · <span id="script-left"></span></span><div class="script">' + esc(sec.script.text) + '</div></div>' : '');
     }
@@ -910,7 +940,7 @@
   function playAudio(t, sec, btn, part) {
     var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     var sfx = part == null ? '' : String(part);   // у блока аудирования у каждого текста свои au<i>, aubar<i>, tts-msg<i>
-    // блок: включили другой текст — звучащий (или стоящий на паузе) останавливаем, как в обычном плеере
+    // блок: включили другой текст - звучащий (или стоящий на паузе) останавливаем, как в обычном плеере
     if (part != null && typeof run.playing === 'string' && run.playing !== 'p' + part) {
       var prev = run.playing.slice(1), pa = document.getElementById('au' + prev);
       if (pa) { pa.onended = pa.onpause = null; pa.pause(); }
@@ -965,11 +995,11 @@
     if (missing && !run.confirmSkip) { run.confirmSkip = true; if (msg) msg.textContent = T('Без ответа:') + ' ' + missing + '. ' + T('Нажмите ещё раз, чтобы зафиксировать как есть.'); return; }
     var score = 0; sec.questions.forEach(function (q) { if (run.answers[q.id] === q.answer) score++; });
     setSection(t.id, sec.type, { status: 'done', score: score, total: sec.questions.length, answers: run.answers, secondsUsed: Math.round(elapsed()), finishedAt: Date.now(), practice: !!ui.practice, startedAt: undefined });
-    /* подробность по вопросам — ради неё всё и затевалось: видно, какой дистрактор выбирают и какой не выбирает никто */
+    /* подробность по вопросам - ради неё всё и затевалось: видно, какой дистрактор выбирают и какой не выбирает никто */
     sendEvent('answers', { test: t.id, section: sec.type, level: t.level, exam: t.exam,
       q: sec.questions.map(function (q) {
         var a = run.answers[q.id];
-        return { id: q.id, a: a == null ? -1 : (q._perm ? q._perm[a] : a), ok: a === q.answer ? 1 : 0 };   // a — индекс в исходных данных, не на экране
+        return { id: q.id, a: a == null ? -1 : (q._perm ? q._perm[a] : a), ok: a === q.answer ? 1 : 0 };   // a - индекс в исходных данных, не на экране
       }) });
     run.phase = 'review'; route();
   }
@@ -994,9 +1024,9 @@
       var acc = 0;
       var skel = sec.scaffold.map(function (s) { var from = acc; acc += s.minutes; return '<div class="skel" data-from="' + from * 60 + '" data-to="' + acc * 60 + '"><span class="tag">' + esc(LK(s, 'label')) + '<br>~' + s.minutes + ' ' + T('мин') + '</span><span><b>' + esc(LK(s, 'label')) + '.</b> <span class="hint hintx">' + esc(LK(s, 'hint')) + '</span></span></div>'; }).join('');
       body = '<div class="block"><span class="setlabel">' + T('Тема') + '</span><p style="font-size:16.5px;font-weight:600">' + esc(prompt.text) + '</p>' +
-        '<div class="skeleton" id="skel">' + skel + '</div>' +
-        '<div class="tags">' + sec.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
-        (sec.sample ? '<details class="sample"><summary>' + T('Образец текста (структура, не копируйте)') + '</summary><div lang="kk" class="script">' + esc(sec.sample) + '</div></details>' : '') +
+        '<div class="skeleton hintx" id="skel">' + skel + '</div>' +
+        '<div class="tags hintx">' + sec.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
+        (sec.sample ? '<details class="sample hintx"><summary>' + T('Образец текста (структура, не копируйте)') + '</summary><div lang="kk" class="script">' + esc(sec.sample) + '</div></details>' : '') +
         '<textarea class="essay" id="essay" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(run.text) + '</textarea><div class="wc" id="wc">' + wordCount(run.text) + ' ' + T('слов') + '</div>' +
         '<div class="actions"><button class="btn" data-act="finish-writing">' + T('Завершить и перейти к самопроверке') + '</button><span class="hint">' + T('Черновик сохраняется автоматически.') + '</span></div></div>';
       run.afterRender = function () {
@@ -1006,7 +1036,7 @@
       return timerBar(sec) + body;
     }
     body = '<div class="block"><span class="setlabel">' + T('Ваш текст') + '</span><p class="small muted">' + esc(prompt.text) + '</p><div class="essay-view">' + esc(run.text) + '</div><div class="wc">' + wordCount(run.text) + ' ' + T('слов') + ' · ' + mmss(run.secondsUsed || 0) + '</div></div>' +
-      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span>' + (wordCount(run.text) === 0 ? '<p class="small cap-note">' + T('Текст пустой — чек-лист не засчитывается, результат будет 0.') + '</p>' : '') + '<ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
+      '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span>' + (wordCount(run.text) === 0 ? '<p class="small cap-note">' + T('Текст пустой - чек-лист не засчитывается, результат будет 0.') + '</p>' : '') + '<ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
       '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button>') + '</div></div>';
     run.afterRender = null;
     return body;
@@ -1029,7 +1059,7 @@
     if (run.qdone == null) run.qdone = {};
     var body;
     if (!run.setId) {
-      body = '<div class="block"><span class="setlabel">' + T('Выберите комплект') + '</span><div class="prompt-pick">' + sec.sets.map(function (s, i) { return '<label class="opt"><input type="radio" name="set" value="' + s.id + '"' + (i === 0 ? ' checked' : '') + '><span class="k">' + (i + 1) + '</span><span>' + esc(LK(s, 'title')) + (s.main ? ' <span class="badge level">' + T('основной') + '</span>' : '') + '</span></label>'; }).join('') + '</div>' +
+      body = '<div class="block"><span class="setlabel">' + T('Выберите комплект') + '</span><div class="prompt-pick">' + sec.sets.map(function (s, i) { return '<label class="opt' + (i === 0 ? ' selected' : '') + '"><input type="radio" name="set" value="' + s.id + '"' + (i === 0 ? ' checked' : '') + '><span class="k">' + (i + 1) + '</span><span>' + esc(LK(s, 'title')) + (s.main ? ' <span class="badge level">' + T('основной') + '</span>' : '') + '</span></label>'; }).join('') + '</div>' +
         '<div class="actions"><button class="btn" data-act="pick-set">' + T('Начать интервью') + '</button></div></div>';
       run.afterRender = function () { if (!timer.iv) startTimer(sec.minutes * 60); else tick(); };
       return timerBar(sec) + body;
@@ -1038,13 +1068,13 @@
     var totalF = sec.answerFrame.reduce(function (a, f) { return a + f.seconds; }, 0);
     if (run.sub !== 'check') {
       var bar = '<div class="timebar">' + sec.answerFrame.map(function (f) { return '<span style="flex:' + f.seconds + '">~' + f.seconds + T('с') + '</span>'; }).join('') + '</div><div class="timebar-labels">' + sec.answerFrame.map(function (f) { return '<span>' + esc(LK(f, 'label')) + '</span>'; }).join('') + '</div>';
-      body = micNotice() + '<div class="block"><span class="setlabel">' + esc(LK(set, 'title')) + '</span><p class="small muted">' + T('Каркас одного ответа (') + mmss(totalF) + '):</p>' + bar +
+      body = micNotice() + '<div class="block"><span class="setlabel">' + esc(LK(set, 'title')) + '</span><div class="hintx"><p class="small muted">' + T('Каркас одного ответа (') + mmss(totalF) + '):</p>' + bar + '</div>' +
         '<div class="mt">' + set.questions.map(function (q, i) {
           return '<div class="sq' + (run.qdone[i] ? ' done' : '') + '" id="sq' + i + '"><p class="qt"><span class="qn">' + (i + 1) + '.</span>' + esc(q) + '</p><div class="row">' +
             (run.qdone[i] ? '<span class="badge ok">' + T('отвечен') + ' · ' + mmss(run.qdone[i]) + '</span>' :
               '<button class="btn secondary small" data-act="q-start" data-q="' + i + '">' + T('Старт таймера') + '</button><span class="clock" id="qclock' + i + '"></span><span class="phase" id="qphase' + i + '"></span>') + ' ' + recButton(set.id + '-' + i) + '</div></div>';
         }).join('') + '</div>' +
-        '<div class="actions"><button class="btn" data-act="finish-speaking">' + T('Завершить интервью → самопроверка') + '</button><span class="hint">' + T('Записывайте ответы на телефон — переслушать на следующий день.') + '</span></div></div>';
+        '<div class="actions"><button class="btn" data-act="finish-speaking">' + T('Завершить интервью → самопроверка') + '</button><span class="hint">' + T('Записывайте ответы на телефон - переслушать на следующий день.') + '</span></div></div>';
       run.afterRender = function () { if (!timer.iv) startTimer(sec.minutes * 60); else tick(); };
       return timerBar(sec) + body;
     }
@@ -1078,7 +1108,7 @@
     return '<div class="tasktabs">' + sec.tasks.map(function (x, i) { return '<span class="ttab' + (i === idx ? ' now' : i < idx ? ' past' : '') + '">' + (i + 1) + '. ' + esc(x.title.split(' · ')[1] || x.title) + '</span>'; }).join('') + '</div>';
   }
   /* Лимиты самооценки письма по объёму текста. Пустой текст не оценивается; при недоборе слов максимум по критерию
-     «Сөздік қорды пайдалануы» ограничивается пропорционально — именно там официальный дескриптор требует объём
+     «Сөздік қорды пайдалануы» ограничивается пропорционально - именно там официальный дескриптор требует объём
      («50 сөзден артық», «шамамен 250 сөз»). Без этого эссе из одного слова можно было оценить на 50/50. */
   function critCaps(task, text) {
     var w = wordCount(text);
@@ -1090,7 +1120,7 @@
   }
   function capNote(task, text) {
     var w = wordCount(text);
-    if (w === 0) return '<p class="small cap-note">' + T('Текст пустой — оценивать нечего, все критерии — 0.') + '</p>';
+    if (w === 0) return '<p class="small cap-note">' + T('Текст пустой - оценивать нечего, все критерии - 0.') + '</p>';
     if (task.minWords && w < task.minWords) return '<p class="small cap-note">' + T('В тексте') + ' ' + w + ' ' + T('слов при ориентире') + ' ' + task.minWords + ': ' + T('по критерию «Сөздік қорды пайдалануы» максимум снижен пропорционально объёму.') + '</p>';
     return '';
   }
@@ -1181,7 +1211,7 @@
   }
   function taskSkeleton(task) {
     var acc = 0;
-    return '<div class="skeleton" id="skel">' + (task.scaffold || []).map(function (st) { var from = acc; acc += st.minutes; return '<div class="skel" data-from="' + from * 60 + '" data-to="' + acc * 60 + '"><span class="tag">' + esc(LK(st, 'label')) + '<br>~' + st.minutes + ' ' + T('мин') + '</span><span><b>' + esc(LK(st, 'label')) + '.</b> <span class="hint hintx">' + esc(LK(st, 'hint')) + '</span></span></div>'; }).join('') + '</div>';
+    return '<div class="skeleton hintx" id="skel">' + (task.scaffold || []).map(function (st) { var from = acc; acc += st.minutes; return '<div class="skel" data-from="' + from * 60 + '" data-to="' + acc * 60 + '"><span class="tag">' + esc(LK(st, 'label')) + '<br>~' + st.minutes + ' ' + T('мин') + '</span><span><b>' + esc(LK(st, 'label')) + '.</b> <span class="hint hintx">' + esc(LK(st, 'hint')) + '</span></span></div>'; }).join('') + '</div>';
   }
   function taskElapsed() { return run.taskStart == null ? 0 : elapsed() - run.taskStart; }
   function updateTask(task) {
@@ -1206,7 +1236,7 @@
         (task.picture ? pictureSvg(task.picture) : '') +
         '<p class="prompt-text">' + esc(task.prompt) + '</p>' + (task.targetNote ? '<p class="small muted">' + esc(LK(task, 'targetNote')) + '</p>' : '') +
         taskSkeleton(task) +
-        (task.connectors ? '<div class="tags">' + task.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
+        (task.connectors ? '<div class="tags hintx">' + task.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
         '<textarea class="essay" id="essay" data-task="' + task.id + '" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(txt) + '</textarea><div class="wc" id="wc">' + wordCount(txt) + ' ' + T('слов · для максимума от') + ' ' + task.minWords + '</div>' +
         '<div class="actions"><button class="btn" data-act="next-task">' + (last ? T('Завершить письмо → самооценка') : T('Завершить задание →') + ' ' + esc(sec.tasks[run.taskIdx + 1].title)) + '</button><span class="hint">' + T('Черновик сохраняется автоматически.') + '</span></div></div>';
       run.afterRender = function () {
@@ -1234,7 +1264,7 @@
     if (run.sub === 'script') run.sub = 'prep';
     var body, clockLbl;
     if (run.sub === 'prep') {
-      body = '<div class="block"><span class="setlabel">Дайындық · ' + sec.prepMinutes + ' ' + T('мин') + '</span><p class="small muted">' + T('Прочитайте оба задания и набросайте план: по одному тезису на вопрос и 3–4 опорных слова для темы. Бумагу на реальном тесте не дают — держите план в голове или на экране.') + '</p>' +
+      body = '<div class="block"><span class="setlabel">Дайындық · ' + sec.prepMinutes + ' ' + T('мин') + '</span><p class="small muted">' + T('Прочитайте оба задания и набросайте план: по одному тезису на вопрос и 3–4 опорных слова для темы. Бумагу на реальном тесте не дают - держите план в голове или на экране.') + '</p>' +
         sec.tasks.map(function (x) { return '<h3 class="mt">' + esc(LK(x, 'title')) + ' <span class="muted small">· ' + x.points + ' ' + T('баллов') + '</span></h3>' + speakTaskHtml(x); }).join('') +
         '<div class="actions"><button class="btn" data-act="prep-done">' + T('Подготовка окончена → отвечать (') + sec.answerMinutes + ' ' + T('мин)') + '</button></div></div>';
       clockLbl = T('подготовка');
@@ -1296,19 +1326,19 @@
   function recKey(qkey) { return run.testId + '/' + run.type + '/' + qkey; }
   function micBlocked() {
     // Только реальная невозможность записи. featurePolicy внутри iframe часто отвечает «нельзя», хотя браузер доступ даёт,
-    // поэтому по нему кнопку не отключаем — пробуем getUserMedia и показываем причину отказа.
+    // поэтому по нему кнопку не отключаем - пробуем getUserMedia и показываем причину отказа.
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return 'unsupported';
     if (!window.isSecureContext) return 'insecure';
     return null;
   }
   function micHint() {
-    try { if (document.featurePolicy && !document.featurePolicy.allowsFeature('microphone')) return T('если браузер откажет — откройте тренажёр отдельной вкладкой'); } catch (e) {}
+    try { if (document.featurePolicy && !document.featurePolicy.allowsFeature('microphone')) return T('если браузер откажет - откройте тренажёр отдельной вкладкой'); } catch (e) {}
     return '';
   }
   function micNotice() {
     var b = micBlocked(); if (!b) return '';
     var why = b === 'insecure' ? T('Страница открыта не по https, браузер не даёт доступ к микрофону.') : T('Этот браузер не поддерживает запись с микрофона.');
-    return '<div class="notice"><b class="t">' + T('Запись с микрофона недоступна') + '</b><p>' + why + ' ' + T('Кнопки записи отключены. Записывайте ответ на диктофон телефона или откройте тренажёр как отдельный сайт (локальная версия или GitHub Pages) — там запись работает.') + '</p></div>';
+    return '<div class="notice"><b class="t">' + T('Запись с микрофона недоступна') + '</b><p>' + why + ' ' + T('Кнопки записи отключены. Записывайте ответ на диктофон телефона или откройте тренажёр как отдельный сайт (локальная версия или GitHub Pages) - там запись работает.') + '</p></div>';
   }
   function recButton(qkey) {
     var full = recKey(qkey);
@@ -1336,7 +1366,7 @@
     }).catch(function (err) {
       var name = err && err.name ? err.name : String(err);
       var policy = false; try { policy = !!(document.featurePolicy && !document.featurePolicy.allowsFeature('microphone')); } catch (x) {}
-      var msg = /NotAllowed|Permission|Security/i.test(name) ? (policy ? T('Это окно встроено в другую страницу, и она не пропускает микрофон внутрь. Откройте тренажёр отдельной вкладкой (кнопка «открыть в новой вкладке» у артефакта или локальный dist/index.html) — там запись работает.') : T('Доступ к микрофону запрещён. Нажмите на значок замка или камеры в адресной строке и разрешите микрофон, затем повторите.')) :
+      var msg = /NotAllowed|Permission|Security/i.test(name) ? (policy ? T('Это окно встроено в другую страницу, и она не пропускает микрофон внутрь. Откройте тренажёр отдельной вкладкой (кнопка «открыть в новой вкладке» у артефакта или локальный dist/index.html) - там запись работает.') : T('Доступ к микрофону запрещён. Нажмите на значок замка или камеры в адресной строке и разрешите микрофон, затем повторите.')) :
         /NotFound|Devices/i.test(name) ? T('Микрофон не найден: проверьте, что он подключён и выбран в системе.') : T('Не удалось включить микрофон:') + ' ' + name;
       recMsg(key, msg);
     });
@@ -1358,7 +1388,7 @@
     var head, body;
     if (sec.questions) {
       var pct = Math.round(100 * saved.score / saved.total);
-      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + (pct >= 80 ? T('Уверенно.') : pct >= 50 ? T('Есть пробелы — смотрите разбор.') : T('Слабо — раздел стоит пройти заново после разбора.')) + '</b><div class="m">' + T('Время:') + ' ' + mmss(saved.secondsUsed || 0) + ' ' + T('из') + ' ' + sec.minutes + ':00 · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
+      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + (pct >= 80 ? T('Уверенно.') : pct >= 50 ? T('Есть пробелы - смотрите разбор.') : T('Слабо - раздел стоит пройти заново после разбора.')) + '</b><div class="m">' + T('Время:') + ' ' + mmss(saved.secondsUsed || 0) + ' ' + T('из') + ' ' + sec.minutes + ':00 · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
       if (sec.parts) {
         var offR = 0;
         body = sec.parts.map(function (pt, i) {
@@ -1374,7 +1404,7 @@
         '<div class="block"><span class="setlabel">' + T('Разбор') + '</span>' + renderQuestions(sec, saved.answers || {}, true, null, { test: t.id, section: sec.type }) + '</div>';
     } else if (sec.tasks) {
       var pct2 = Math.round(100 * saved.score / saved.total);
-      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Самооценка по официальным критериям') + (pct2 >= 80 ? ' — ' + T('уровень C1.') : pct2 >= 60 ? ' — ' + T('уровень B2.') : pct2 >= 50 ? ' — ' + T('уровень B1.') : pct2 >= 40 ? ' — ' + T('уровень A2.') : pct2 >= 30 ? ' — ' + T('уровень A1.') : ' — ' + T('ниже порога A1.')) + '</b><div class="m">' + T('Пороги блока: A1 от 30 %, A2 от 40 %, B1 от 50 %, B2 от 60 %, C1 от 80 %') + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
+      head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Самооценка по официальным критериям') + (pct2 >= 80 ? ' - ' + T('уровень C1.') : pct2 >= 60 ? ' - ' + T('уровень B2.') : pct2 >= 50 ? ' - ' + T('уровень B1.') : pct2 >= 40 ? ' - ' + T('уровень A2.') : pct2 >= 30 ? ' - ' + T('уровень A1.') : ' - ' + T('ниже порога A1.')) + '</b><div class="m">' + T('Пороги блока: A1 от 30 %, A2 от 40 %, B1 от 50 %, B2 от 60 %, C1 от 80 %') + ' · ' + mmss(saved.secondsUsed || 0) + ' · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
       body = sec.tasks.map(function (x) {
         var crit = x.criteria || sec.criteria;
         return '<div class="block"><span class="setlabel">' + esc(LK(x, 'title')) + ' · ' + x.points + ' ' + T('баллов') + '</span>' +
@@ -1393,37 +1423,62 @@
         '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li class="static" style="' + (saved.checks && saved.checks[i] ? 'color:var(--good)' : '') + '">' + esc(c) + (saved.checks && saved.checks[i] ? ' ✓' : '') + '</li>'; }).join('') + '</ul></div>';
     }
     var next = nextSection(t, sec.type), auto = !isSelf(sec.type), vv = verdict(t);
-    var after = nextSteps([auto ? resultsStep(t) : '', sec.type === 'listening' ? blocksStep(t) : '', auto && saved.total ? levelStep(t, Math.round(100 * saved.score / saved.total)) : '', vv && vv.all ? variantStep(t) : '']);
+    /* две группы, чтобы не путать: идти дальше по тесту или ещё потренировать этот раздел (просьба владельца 01.11.2026) */
+    var nextBtn = next ? '<a class="btn small" href="#/test/' + t.id + '/' + next.type + '">' + T('Следующий раздел:') + ' ' + esc(LK(KZ.sectionTypes[next.type], 'label')) + '</a>' : '<a class="btn small" href="#/test/' + t.id + '">' + T('К итогам теста') + '</a>';
+    var order = nextSteps(['<div class="nstep">' + nextBtn + '</div>', auto ? resultsStep(t) : ''], 'По порядку теста');
+    var more = nextSteps(['<div class="nstep"><button class="btn small ghost" data-act="retry">' + T('Пройти заново') + '</button></div>', feedbackLink(t, sec, saved) ? '<div class="nstep">' + feedbackLink(t, sec, saved) + '</div>' : '',
+      sec.type === 'listening' ? blocksStep(t) : '', auto && saved.total ? levelStep(t, Math.round(100 * saved.score / saved.total)) : '', vv && vv.all ? variantStep(t) : ''], 'Потренироваться ещё');
     run.afterRender = null;
-    return head + diffAsk(t, sec, saved) + body + '<div class="actions">' + (next ? '<a class="btn" href="#/test/' + t.id + '/' + next.type + '">' + T('Следующий раздел:') + ' ' + esc(LK(KZ.sectionTypes[next.type], 'label')) + '</a>' : '<a class="btn" href="#/test/' + t.id + '">' + T('К итогам теста') + '</a>') +
-      '<button class="btn ghost" data-act="retry">' + T('Пройти заново') + '</button>' + feedbackLink(t, sec, saved) + '</div>' + after + shareCta(t, sec, saved) + remindCta('after');
+    return head + diffAsk(t, sec, saved) + body + order + more + endBar(t, sec, saved);
   }
-  /* Сроки апелляции сверены 18.09.2026: правила системы «ҚАЗТЕСТ» (adilet.zan.kz/kaz/docs/V2400035109) — заявление
-     в течение 2 рабочих дней после результата; страница апелляции НЦТ (testcenter.kz) — по тыңдалым/оқылым
+  /* Сроки апелляции сверены 18.09.2026: правила системы «ҚАЗТЕСТ» (adilet.zan.kz/kaz/docs/V2400035109) - заявление
+     в течение 2 рабочих дней после результата; страница апелляции НЦТ (testcenter.kz) - по тыңдалым/оқылым
      в день тестирования сразу после выдачи результата. По QazResmiTest официальных сроков мы не нашли, поэтому не пишем.
      Канал напоминаний (KZ.site.telegramChannel): даты регистрации на тестирование и окно апелляции в 2 рабочих дня.
-     Показывается в подвале ссылкой и блоком после пройденного раздела — в момент, когда человек думает о реальном экзамене.
+     Показывается в подвале ссылкой и блоком после пройденного раздела - в момент, когда человек думает о реальном экзамене.
      Пустая настройка выключает и то, и другое. */
-  /* «Поделиться результатом» — после разделов с автоматической проверкой. Ссылка ведёт на посадочную страницу
+  /* «Поделиться результатом» - после разделов с автоматической проверкой. Ссылка ведёт на посадочную страницу
      уровня на языке интерфейса с метками utm_source=share, чтобы в статистике было видно такие переходы.
-     Telegram — прямой ссылкой t.me/share; на телефонах, где есть системное меню «Поделиться», — ещё и оно. */
+     Telegram - прямой ссылкой t.me/share; на телефонах, где есть системное меню «Поделиться», - ещё и оно. */
   function shareCta(t, sec, saved) {
     if (!sec.questions || !saved || !saved.total || !KZ.site || !KZ.site.siteUrl || KZ.site.build === 'inline') return '';
     var kk = KZ.lang === 'kk', exam = t.exam === 'kaztest' ? 'ҚАЗТЕСТ' : 'QazResmiTest', label = LK(KZ.sectionTypes[sec.type], 'label');
     var url = KZ.site.siteUrl + (kk ? 'kk/' : 'ru/') + t.exam + '/' + t.level.toLowerCase() + '/?utm_source=share&utm_medium=';
     var text = kk
-      ? exam + ' ' + t.level + ' сынақ тесті, Qazaq Trainer: ' + label.toLowerCase() + ' — ' + saved.score + '/' + saved.total + '. Тегін, тіркеусіз:'
-      : 'Пробный ' + exam + ' ' + t.level + ' на Qazaq Trainer: ' + label.toLowerCase() + ' — ' + saved.score + ' из ' + saved.total + '. Бесплатно и без регистрации:';
+      ? exam + ' ' + t.level + ' сынақ тесті, Qazaq Trainer: ' + label.toLowerCase() + ' - ' + saved.score + '/' + saved.total + '. Тегін, тіркеусіз:'
+      : 'Пробный ' + exam + ' ' + t.level + ' на Qazaq Trainer: ' + label.toLowerCase() + ' - ' + saved.score + ' из ' + saved.total + '. Бесплатно и без регистрации:';
     var tg = 'https://t.me/share/url?url=' + encodeURIComponent(url + 'telegram') + '&text=' + encodeURIComponent(text);
     var card = ' data-exam="' + esc(exam) + '" data-level="' + esc(t.level) + '" data-label="' + esc(label) + '" data-score="' + saved.score + '" data-total="' + saved.total + '"' +
       ' data-share-text="' + esc(text) + '" data-share-url="' + esc(url + 'image') + '"';
-    return '<div class="actions share"><button class="btn" data-share="image"' + card + '>' + T('Картинка для сторис') + '</button>' +
-      '<a class="btn ghost" href="' + esc(tg) + '" target="_blank" rel="noopener" data-share="telegram">' + T('Поделиться в Telegram') + '</a>' +
-      (navigator.share ? '<button class="btn ghost" data-share="native" data-share-url="' + esc(url + 'native') + '" data-share-text="' + esc(text) + '">' + T('Поделиться…') + '</button>' : '') + '</div>';
+    var mail = 'mailto:?subject=' + encodeURIComponent('Qazaq Trainer') + '&body=' + encodeURIComponent(text + ' ' + url + 'email');
+    function ib(n, label) { return '<button class="btn ghost icon" data-share="image" data-soc="' + n + '"' + card + ' aria-label="' + label + '" title="' + label + '">' + socIcon(n) + '</button>'; }
+    return '<span class="share-icons" hidden>' + ib('instagram', 'Instagram') + ib('tiktok', 'TikTok') +
+      '<a class="btn ghost icon" href="' + esc(tg) + '" target="_blank" rel="noopener" data-share="telegram" aria-label="Telegram" title="Telegram">' + socIcon('telegram') + '</a>' +
+      '<a class="btn ghost icon" href="' + esc(mail) + '" data-share="email" aria-label="Email" title="Email">' + socIcon('mail') + '</a></span>';
+  }
+  /* низ раздела: значок «Поделиться» раскрывает значки площадок (без слов), рядом кнопка «К результатам» (просьба владельца 01.11.2026) */
+  function endBar(t, sec, saved) {
+    var sh = shareCta(t, sec, saved);
+    return '<div class="actions share dz-end">' + (sh ? '<button class="btn ghost icon" data-act="share-toggle" aria-expanded="false" aria-label="' + T('Поделиться') + '" title="' + T('Поделиться') + '">' + socIcon('share') + '</button>' + sh : '') +
+      '<button class="btn ghost small" data-act="to-top">↑ ' + T('К результатам') + '</button></div>';
   }
   /* Картинка результата 1080×1920 для сторис (26.10.2026): за месяц ссылкой «Поделиться» не воспользовался никто,
      а результат картинкой выкладывают охотнее. Рисуется на canvas прямо в браузере, никуда не отправляется.
      На телефоне уходит в системное меню «Поделиться» файлом (если браузер умеет делиться файлами), иначе скачивается. */
+  /* Instagram и TikTok не принимают ссылку «поделиться»: даём две кнопки подряд - сохранить картинку и открыть приложение (01.11.2026) */
+  function openStoryCard(src, soc) {
+    var old = document.getElementById('story-card'); if (old) old.remove();
+    var name = soc === 'tiktok' ? 'TikTok' : 'Instagram', url = soc === 'tiktok' ? 'https://www.tiktok.com/' : 'https://www.instagram.com/';
+    var box = document.createElement('div'); box.id = 'story-card'; box.className = 'story-card'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', name);
+    var attrs = ['exam', 'level', 'label', 'score', 'total', 'share-text', 'share-url'].map(function (k) { return ' data-' + k + '="' + esc(src.getAttribute('data-' + k) || '') + '"'; }).join('');
+    box.innerHTML = '<div class="story-panel"><button class="btn ghost small story-x" data-act="story-close" aria-label="' + T('Закрыть') + '">✕</button>' +
+      '<p class="story-t">' + T('Результат в сторис за два шага') + '</p>' +
+      '<ol class="story-steps"><li><button class="btn" data-share="image"' + attrs + '>' + T('Сохранить картинку') + '</button></li>' +
+      '<li><a class="btn ghost" href="' + url + '" target="_blank" rel="noopener" data-share="app-' + soc + '">' + T('Открыть') + ' ' + name + '</a></li></ol></div>';
+    box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
+    document.body.appendChild(box);
+    var f = box.querySelector('button.btn[data-share]'); if (f) f.focus();
+  }
   function shareImage(btn) {
     var d = function (k) { return btn.getAttribute('data-' + k) || ''; };
     var kk = KZ.lang === 'kk', W = 1080, H = 1920;
@@ -1480,7 +1535,7 @@
     var url = 'https://t.me/' + esc(KZ.site.telegramChannel);
     if (where === 'footer') return " · <a href='" + url + "' target='_blank' rel='noopener' data-remind='footer'>" + T('Напоминания в Telegram') + '</a>';
     return '<div class="notice"><b class="t">' + T('Не пропустите регистрацию') + '</b><p>' +
-      T('Сессии тестирования идут по графику, а срок апелляции короткий: по ҚАЗТЕСТ на аудирование и чтение — в день тестирования сразу после результата, на письмо и говорение — 2 рабочих дня. Напомним заранее, без писем и без регистрации.') +
+      T('Сессии тестирования идут по графику, а срок апелляции короткий: по ҚАЗТЕСТ на аудирование и чтение - в день тестирования сразу после результата, на письмо и говорение - 2 рабочих дня. Напомним заранее, без писем и без регистрации.') +
       "</p><p><a class='btn' href='" + url + "' target='_blank' rel='noopener' data-remind='after'>" + T('Подписаться на напоминания') + '</a></p></div>';
   }
   function feedbackLink(t, sec, saved) {
@@ -1489,7 +1544,7 @@
     return '<a class="btn ghost" target="_blank" rel="noopener" href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" data-ctx="' + esc(ctx) + '">' + T('Написать в Telegram') + '</a><span class="hint">' + T('Отзыв о тесте') + ': ' + esc(ctx) + '</span>';
   }
   /* ---------------- views: мой прогресс ---------------- */
-  var progLv = null;   // фильтр графика: 'all' или 'exam:level'; null — пара последней попытки
+  var progLv = null;   // фильтр графика: 'all' или 'exam:level'; null - пара последней попытки
   var AUTO_TYPES = ['listening', 'reading', 'lexis'];   // порядок = цвет и форма маркера на графике; цвет закреплён за разделом, не за рангом
   var SEC_ORDER = ['listening', 'lexis', 'reading', 'writing', 'speaking'];
   function secShort(ty) { return ty === 'lexis' ? T('Лексика') : LK(KZ.sectionTypes[ty], 'label'); }
@@ -1503,7 +1558,7 @@
     if (k === 1) return '<rect class="' + c + '" x="' + (x - 4.5) + '" y="' + (y - 4.5) + '" width="9" height="9" rx="1.5"/>';
     return '<path class="' + c + '" d="M' + x + ' ' + (y - 6) + 'L' + (x + 6) + ' ' + y + 'L' + x + ' ' + (y + 6) + 'L' + (x - 6) + ' ' + y + 'Z"/>';
   }
-  /* линейный график: по оси X — попытки по порядку (подписи — даты), по Y — процент; линия на раздел */
+  /* линейный график: по оси X - попытки по порядку (подписи - даты), по Y - процент; линия на раздел */
   function progressChart(pts) {
     if (!pts.length) return '<p class="muted small">' + T('График появится, когда вы пройдёте аудирование, чтение или лексику.') + '</p>';
     var W = Math.round(Math.max(280, Math.min(750, (window.innerWidth || 800) - 80))), narrow = W < 520;
@@ -1540,7 +1595,7 @@
       for (var j = ends.length - 1; j >= 0; j--) ends[j].ly = Math.min(ends[j].ly, j < ends.length - 1 ? ends[j + 1].ly - 16 : TOP + ph);
       ends.forEach(function (e) { labels += '<text class="dl-lbl" x="' + (L + pw + 12) + '" y="' + (e.ly + 4) + '">' + esc(secShort(e.ty)) + '</text>'; });
     }
-    return '<div class="chart"><svg data-w="' + W + '" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + T('График результатов по попыткам; те же данные — в таблице ниже.') + '">' + g +
+    return '<div class="chart"><svg data-w="' + W + '" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + T('График результатов по попыткам; те же данные - в таблице ниже.') + '">' + g +
       '<line class="xh" x1="0" x2="0" y1="' + TOP + '" y2="' + (TOP + ph) + '" visibility="hidden"/>' + lines + marks + labels + '<g class="hits">' + hits + '</g></svg><div class="pg-tip" hidden></div></div>';
   }
   function pgTip(chart, hit) {
@@ -1554,7 +1609,7 @@
     tip.style.left = Math.max(4, Math.min(px - tw / 2, chart.clientWidth - tw - 4)) + 'px';
     tip.style.top = (py - th - 14 >= 0 ? py - th - 14 : py + 16) + 'px';
   }
-  /* наведение: ближайшая по X попытка — перекрестие и подсказка; на телефоне то же по касанию */
+  /* наведение: ближайшая по X попытка - перекрестие и подсказка; на телефоне то же по касанию */
   function pgNearest(e) {
     var chart = e.target.closest && e.target.closest('.chart'); if (!chart) return;
     var svg = chart.querySelector('svg'), sr = svg.getBoundingClientRect(), k = sr.width / +svg.getAttribute('data-w');
@@ -1582,7 +1637,7 @@
       '<div class="kicker">' + T('Прогресс') + '</div><h1>' + T('Мой прогресс') + '</h1>' +
       '<p class="lede">' + T('Результаты хранятся только в этом браузере. Каждая завершённая попытка попадает в историю, поэтому рост виден, даже если раздел пройден заново.') + '</p>';
     var io = '<section><details class="io-details"><summary>' + T('Перенести прогресс на другое устройство') + '</summary>' + syncPanel() + ioPanel() + '</details></section>';
-    if (!tests.length && !hist.length) return head + '<div class="notice info"><b class="t">' + T('Пока пусто') + '</b><p>' + T('Пройдите любой раздел мок-теста — здесь появятся таблица результатов и график.') + ' <a href="#/">' + T('На хаб') + '</a></p></div>' + io;
+    if (!tests.length && !hist.length) return head + '<div class="notice info"><b class="t">' + T('Пока пусто') + '</b><p>' + T('Пройдите любой раздел мок-теста - здесь появятся таблица результатов и график.') + ' <a href="#/">' + T('На хаб') + '</a></p></div>' + io;
 
     var tiles = '<div class="tiles">' +
       tile(tests.length, plural(tests.length, T('тест начат'), T('теста начато'), T('тестов начато'))) +
@@ -1604,7 +1659,7 @@
       var s = pts.filter(function (x) { return x.s === ty; }); if (!s.length) return '';
       var a = hPct(s[0]), z = hPct(s[s.length - 1]);
       return '<span class="lg"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">' + pgMark(ty, 7, 7) + '</svg>' + esc(secShort(ty)) + ' <span class="muted">' + (s.length > 1 && progLv !== 'all' ? a + ' → ' + z + ' % · ' + s.length + ' ' + plural(s.length, T('попытка'), T('попытки'), T('попыток')) : progLv === 'all' ? s.length + ' ' + plural(s.length, T('попытка'), T('попытки'), T('попыток')) : z + ' %') + '</span></span>';
-    }).join('') + (pts.some(function (x) { return x.pr; }) ? '<span class="lg muted">' + T('пустой маркер — тренировка') + '</span>' : '') + '</div>';
+    }).join('') + (pts.some(function (x) { return x.pr; }) ? '<span class="lg muted">' + T('пустой маркер - тренировка') + '</span>' : '') + '</div>';
     var chart = '<section><h2>' + T('Результаты по попыткам') + '</h2><p class="sub">' + T('Разделы с автоматической проверкой. Письмо и интервью оцениваете вы сами, поэтому они только в таблице.') + '</p>' +
       '<div class="block pg-chart">' + chips + (pts.length ? legend : '') + progressChart(pts) + '</div></section>';
 
@@ -1622,7 +1677,7 @@
       var st = testStatus(t), upd = state.tests[t.id].updatedAt;
       return '<tr><td><a href="#/test/' + t.id + '">' + esc(testName(t)) + '</a></td>' + cells + '<td><span class="badge ' + st.cls + '">' + st.label + '</span></td><td class="muted small">' + (upd ? new Date(upd).toLocaleDateString('ru-RU') : '') + '</td></tr>';
     }).join('');
-    var table = tests.length ? '<section><h2>' + T('Таблица результатов') + '</h2><p class="sub">' + T('Последняя попытка каждого раздела; стрелка — изменение к прошлой попытке.') + '</p>' +
+    var table = tests.length ? '<section><h2>' + T('Таблица результатов') + '</h2><p class="sub">' + T('Последняя попытка каждого раздела; стрелка - изменение к прошлой попытке.') + '</p>' +
       '<div class="tablewrap"><table class="prog"><thead><tr><th>' + T('Тест') + '</th>' + cols.map(function (ty) { return '<th>' + esc(secShort(ty)) + (ty === 'writing' || ty === 'speaking' ? '*' : '') + '</th>'; }).join('') + '<th>' + T('Итог') + '</th><th>' + T('Дата') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       (cols.indexOf('writing') >= 0 || cols.indexOf('speaking') >= 0 ? '<p class="small muted">* ' + T('самооценка, в вывод не входит') + '</p>' : '') + '</section>' : '';
 
@@ -1637,7 +1692,7 @@
   }
 
   function viewSources() {
-    var tiers = { 1: T('Ключевые пособия — рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники') };
+    var tiers = { 1: T('Ключевые пособия - рекомендуем'), 2: T('Дополнительная литература'), 3: T('Словари и справочники') };
     var groups = {};
     (KZ.sources || []).forEach(function (x) { (groups[x.tier || 9] = groups[x.tier || 9] || []).push(x); });
     var html = Object.keys(groups).sort().map(function (tk) {
@@ -1681,21 +1736,21 @@
         test: fbCtx && fbCtx.test, section: fbCtx && fbCtx.section, qid: fbCtx && fbCtx.qid });
       fbCtx = null;
       var panel2 = document.getElementById('fb').querySelector('.fb-panel');
-      panel2.innerHTML = '<p role="status"><b>' + T('Спасибо — прочитаем.') + '</b></p>' +
+      panel2.innerHTML = '<p role="status"><b>' + T('Спасибо - прочитаем.') + '</b></p>' +
         '<div class="actions"><button class="btn ghost small" data-act="fb-close">' + T('Закрыть') + '</button></div>';
       return;
     }
     if (act === 'report-open') { var box = b.closest('.report'); if (box) { b.hidden = true; var w = box.querySelector('.rep-why'); if (w) w.hidden = false; } return; }
     if (act === 'report-send') {
       var box2 = b.closest('.report'); if (!box2) return;
-      if (b.getAttribute('data-why') === 'other') {   // «Другое» — просим написать словами, иначе жалоба бесполезна
+      if (b.getAttribute('data-why') === 'other') {   // «Другое» - просим написать словами, иначе жалоба бесполезна
         fbCtx = { test: box2.getAttribute('data-test'), section: box2.getAttribute('data-section'), qid: box2.getAttribute('data-qid') };
         var ob = document.querySelector('.fb-tab'); if (ob) ob.click();
         return;
       }
       sendEvent('report', { test: box2.getAttribute('data-test'), section: box2.getAttribute('data-section'), qid: box2.getAttribute('data-qid'),
         why: b.getAttribute('data-why'), a: +box2.getAttribute('data-a'), ok: +box2.getAttribute('data-ok') });
-      box2.innerHTML = '<span class="small good-text" role="status">' + T('Спасибо — отметили, проверим этот вопрос.') + '</span>';
+      box2.innerHTML = '<span class="small good-text" role="status">' + T('Спасибо - отметили, проверим этот вопрос.') + '</span>';
       return;
     }
     if (act === 'pg-lv') { progLv = b.getAttribute('data-v'); route(); return; }
@@ -1711,6 +1766,9 @@
     }
     if (act === 'go') { e.preventDefault(); location.hash = b.getAttribute('data-href'); return; }
     if (act === 'lang') { KZ.setLang(b.getAttribute('data-v')); track('lang', { to: KZ.lang }); saveUi(); route(); return; }
+    else if (act === 'share-toggle') { var si = b.parentNode.querySelector('.share-icons'); if (si) { si.hidden = !si.hidden; b.setAttribute('aria-expanded', String(!si.hidden)); } return; }
+    else if (act === 'story-close') { var sc = document.getElementById('story-card'); if (sc) sc.remove(); return; }
+    else if (act === 'to-top') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
     else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
     if (act === 'sync-make' || act === 'sync-use') {
@@ -1743,7 +1801,7 @@
     }
     if (act === 'io-copy') {
       var ta = document.getElementById('io-text'), im = document.getElementById('io-msg');
-      function copyFallback() { try { ta.select(); if (document.execCommand('copy')) { im.textContent = T('Скопировано.'); return; } } catch (x) {} im.textContent = T('Не удалось скопировать — выделите текст и скопируйте вручную.'); }
+      function copyFallback() { try { ta.select(); if (document.execCommand('copy')) { im.textContent = T('Скопировано.'); return; } } catch (x) {} im.textContent = T('Не удалось скопировать - выделите текст и скопируйте вручную.'); }
       var pr = null; try { pr = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(ta.value) : null; } catch (x) {}
       if (pr && pr.then) pr.then(function () { im.textContent = T('Скопировано.'); }, copyFallback); else copyFallback();
     }
@@ -1794,6 +1852,10 @@
   });
   document.addEventListener('change', function (e) {
     var el = e.target;
+    if (el.type === 'radio' && el.closest && el.closest('.prompt-pick')) {   // выбор темы письма и комплекта интервью: подсветка выбранного
+      Array.prototype.forEach.call(el.closest('.prompt-pick').querySelectorAll('.opt'), function (o) { o.classList.remove('selected'); });
+      el.closest('.opt').classList.add('selected');
+    }
     if (!run) return;
     if (el.type === 'radio' && el.name && el.closest('.opts')) {
       run.answers[el.name] = +el.value;

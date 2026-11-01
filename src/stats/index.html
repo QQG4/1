@@ -2,7 +2,7 @@
 <meta name="robots" content="noindex,nofollow"><title>Статистика · Qazaq Trainer</title>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <style>
-/* Статистика публичного сайта. Живёт только в лаборатории (lab.qazaqtrainer.com/stats/), данные — /api/stats того же воркера.
+/* Статистика публичного сайта. Живёт только в лаборатории (lab.qazaqtrainer.com/stats/), данные - /api/stats того же воркера.
    Все тексты из базы (жалобы, обратная связь, анкеты) написаны посетителями: выводятся только через textContent. */
 :root{
   --bg:#f6f3ec; --surface:#fffdf9; --ink:#1e2a30; --muted:#5f6d74; --line:#ddd6c8; --line-strong:#c9bfa9;
@@ -51,7 +51,7 @@ details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;backgroun
 </style></head>
 <body><main>
 <h1>Статистика сайта</h1>
-<p class="sub">qazaqtrainer.com: посещения, прохождение разделов, ответы по каждому вопросу и сообщения посетителей. «Посетитель» здесь — одна вкладка браузера:
+<p class="sub">qazaqtrainer.com: посещения, прохождение разделов, ответы по каждому вопросу и сообщения посетителей. «Посетитель» здесь - одна вкладка браузера:
 человек, открывший сайт в двух вкладках или на следующий день, считается дважды. Записи старше 12 месяцев удаляются автоматически.</p>
 <div class="bar" id="period" role="group" aria-label="Период">
   <button data-d="1">Сегодня</button><button data-d="7">7 дней</button><button data-d="30" class="on">30 дней</button><button data-d="90">90 дней</button><button data-d="3650">Всё время</button>
@@ -118,7 +118,7 @@ var KZ = { tests: [] };
       if (!x) return; var t = document.createElementNS(ns, 'text'); t.setAttribute('x', k ? W - 2 : 2); t.setAttribute('y', H - 3); t.setAttribute('text-anchor', k ? 'end' : 'start'); t.textContent = x.day; svg.appendChild(t);
     });
     var t2 = document.createElementNS(ns, 'text'); t2.setAttribute('x', 2); t2.setAttribute('y', 10); t2.textContent = 'макс. ' + max; svg.appendChild(t2);
-    return el('div', { cls: 'card' }, [svg, el('span', { text: 'серые — посетители, цветные — начали хотя бы один раздел' })]);
+    return el('div', { cls: 'card' }, [svg, el('span', { text: 'серые - посетители, цветные - начали хотя бы один раздел' })]);
   }
 
   function questions(data) {
@@ -170,27 +170,27 @@ var KZ = { tests: [] };
     ]));
 
     out.appendChild(el('h2', { text: 'Откуда приходят' }));
-    out.appendChild(el('p', { cls: 'sub', text: 'Считается при первом открытии сайта во вкладке: сайт-источник и метки ссылки. В своих постах и рекламе давайте ссылки с метками, например ?utm_source=telegram&utm_medium=quiz — тогда видно, что сработало. До 18.09.2026 источник не записывался.' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Считается при первом открытии сайта во вкладке: сайт-источник и метки ссылки. В своих постах и рекламе давайте ссылки с метками, например ?utm_source=telegram&utm_medium=quiz - тогда видно, что сработало. До 18.09.2026 источник не записывался.' }));
     var src = (data.sources || []).filter(function (r) { return r.ref || r.utm; });
     out.appendChild(src.length ? table(['Источник', 'utm: source / medium / campaign', 'Посетителей'], src.map(function (r) { return [r.ref || '—', r.utm || '—', r.n]; }), [2])
       : el('p', { cls: 'muted', text: 'За период переходов с метками и с других сайтов не было.' }));
 
     var errs = data.errors || [];
     out.appendChild(el('h2', { text: 'Ошибки на страницах (' + errs.length + ')' }));
-    out.appendChild(el('p', { cls: 'sub', text: 'Ошибки JavaScript в браузерах посетителей: до пяти разных за вкладку. Одна и та же ошибка у нескольких человек — почти наверняка поломка на сайте.' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Ошибки JavaScript в браузерах посетителей: до пяти разных за вкладку. Одна и та же ошибка у нескольких человек - почти наверняка поломка на сайте.' }));
     out.appendChild(errs.length ? table(['Ошибка', 'Раз', 'Человек', 'Последний день', 'Страница · браузер'],
       errs.map(function (r) { return [r.text, r.n, r.people, r.last_day, '#/' + (r.path || '') + ' · ' + (r.ua || '')]; }), [1, 2])
       : el('p', { cls: 'muted', text: 'Ошибок за период нет.' }));
 
     out.appendChild(el('h2', { text: 'Разделы тестов' }));
-    out.appendChild(el('p', { cls: 'sub', text: 'Средний результат и время — по завершённым разделам. «По таймеру» — время вышло раньше, чем ответы зафиксировали; «тренировка» — режим без остановки по времени.' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Средний результат и время - по завершённым разделам. «По таймеру» - время вышло раньше, чем ответы зафиксировали; «тренировка» - режим без остановки по времени.' }));
     out.appendChild(data.tests.length ? table(['Тест', 'Раздел', 'Начали', 'Завершили', 'Доля', 'Средний %', 'Время', 'По таймеру', 'Тренировка'],
       data.tests.map(function (r) { return [testName(r.test), SECTION[r.section] || r.section, r.starts, r.done, pct(r.done, r.starts), r.avg_pct == null ? '—' : r.avg_pct + ' %', mmss(r.avg_seconds), r.timed_out, r.practice]; }), [2, 3, 4, 5, 6, 7, 8])
       : el('p', { cls: 'muted', text: 'За период разделы никто не начинал.' }));
 
     var qlist = questions(data);
     out.appendChild(el('h2', { text: 'Вопросы' }));
-    out.appendChild(el('p', { cls: 'sub', text: 'Сверху — вопросы, которые стоит проверить: с жалобами, где неверный вариант выбирают чаще верного, и слишком трудные. Флаги ставятся от 5 ответов. Зелёная полоса — верный вариант, красная — самый популярный неверный.' }));
+    out.appendChild(el('p', { cls: 'sub', text: 'Сверху - вопросы, которые стоит проверить: с жалобами, где неверный вариант выбирают чаще верного, и слишком трудные. Флаги ставятся от 5 ответов. Зелёная полоса - верный вариант, красная - самый популярный неверный.' }));
     var sel = el('select', { 'aria-label': 'Тест' }, [el('option', { value: '', text: 'Все тесты' })].concat(Object.keys(TESTS).sort().map(function (id) { return el('option', { value: id, text: testName(id) }); })));
     var onlyFlag = el('input', { type: 'checkbox', id: 'onlyflag', checked: 'checked' });
     var qbox = el('div');
@@ -246,7 +246,7 @@ var KZ = { tests: [] };
   function load(days) {
     current = days;
     [].forEach.call(document.querySelectorAll('#period button'), function (b) { b.classList.toggle('on', +b.getAttribute('data-d') === days); });
-    fetch(location.origin + '/api/stats?days=' + days,   // origin без логина:пароля — адрес вида user:pass@host fetch не принимает
+    fetch(location.origin + '/api/stats?days=' + days,   // origin без логина:пароля - адрес вида user:pass@host fetch не принимает
       { credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (d) { if (d.error) throw new Error(d.error); if (days === current) render(d); })

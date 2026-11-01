@@ -79,7 +79,7 @@
     var r = topicProgress(course.level, tp);
     var head = U.topbar([{ label: T('Хаб'), href: '#/' }, { label: course.title, href: '#/course/' + course.level }, { label: tp.kk }], '<span class="badge level">' + course.level + '</span><span class="badge ' + (r.done ? 'ok' : 'muted') + '">' + (r.done ? T('пройдена') : r.pct + ' %') + '</span>') +
       '<div class="kicker">' + T('Тема') + ' ' + tp.order + ' · ' + esc(tp.ru) + '</div><h1>' + esc(tp.kk) + '</h1>' +
-      (tp.lessons.length ? '<p class="lede">' + tp.lessons.map(function (l) { return '<b>' + l.section + '.' + l.lesson + ' ' + esc(l.title) + '</b>' + (l.phrases.length ? ' — «' + esc(l.phrases[0]) + '»' : '') + (l.grammar.length ? ' <span class="muted">(' + esc(l.grammar.join('; ')) + ')</span>' : ''); }).join('<br>') + '</p>' : '') +
+      (tp.lessons.length ? '<p class="lede">' + tp.lessons.map(function (l) { return '<b>' + l.section + '.' + l.lesson + ' ' + esc(l.title) + '</b>' + (l.phrases.length ? ' - «' + esc(l.phrases[0]) + '»' : '') + (l.grammar.length ? ' <span class="muted">(' + esc(l.grammar.join('; ')) + ')</span>' : ''); }).join('<br>') + '</p>' : '') +
       tabs(course, tp, tab);
     var body = ({ words: viewWords, grammar: viewGrammar, texts: viewTexts, test: viewTest })[tab](course, tp);
     return head + body;
@@ -119,7 +119,7 @@
       if (ds.length < 3) ds = ds.concat(shuffle(pool.filter(function (x) { return x.l !== w.l && ds.indexOf(x) < 0; })).filter(fresh).slice(0, 3 - ds.length));
       var opts = shuffle([w].concat(ds));
       return { id: 'v' + i, text: dir === 'kk-ru' ? '«' + w.l + '» сөзінің аудармасын таңдаңыз.' : '«' + w.ru + '» сөзінің қазақша баламасын таңдаңыз.',
-        options: opts.map(function (o) { return dir === 'kk-ru' ? o.ru : o.l; }), answer: opts.indexOf(w), explain: w.l + ' — ' + w.ru + (w.ex ? ' · ' + w.ex : ''), w: w.l };
+        options: opts.map(function (o) { return dir === 'kk-ru' ? o.ru : o.l; }), answer: opts.indexOf(w), explain: w.l + ' - ' + w.ru + (w.ex ? ' · ' + w.ex : ''), w: w.l };
     });
   }
   function viewQuiz(course, tp, run) {
@@ -127,7 +127,7 @@
     var locked = run.phase === 'review';
     var body = '<div class="block"><span class="setlabel">' + T('Квиз') + ' · ' + qs.length + ' ' + T('слов') + '</span>' + U.renderQuestions({ questions: qs }, run.answers, locked);
     if (!locked) body += '<div class="actions"><button class="btn" data-act="c-quiz-submit">' + T('Зафиксировать ответы') + '</button><button class="btn ghost" data-act="c-quiz-exit">' + T('Отмена') + '</button></div>';
-    else { var sc = run.score; body += '<div class="score-card mt"><div class="score-big">' + sc + '<small>/' + qs.length + '</small></div><div><b>' + (sc / qs.length >= 0.8 ? T('Отлично.') : sc / qs.length >= 0.5 ? T('Половина есть, повторите слова из фильтра «учу».') : T('Вернитесь к карточкам.')) + '</b><div class="m">' + T('Верные ответы отмечены как «знаю», неверные — как «учу».') + '</div></div></div><div class="actions"><button class="btn" data-act="c-quiz">' + T('Ещё 10 слов') + '</button><button class="btn ghost" data-act="c-quiz-exit">' + T('К карточкам') + '</button></div>'; }
+    else { var sc = run.score; body += '<div class="score-card mt"><div class="score-big">' + sc + '<small>/' + qs.length + '</small></div><div><b>' + (sc / qs.length >= 0.8 ? T('Отлично.') : sc / qs.length >= 0.5 ? T('Половина есть, повторите слова из фильтра «учу».') : T('Вернитесь к карточкам.')) + '</b><div class="m">' + T('Верные ответы отмечены как «знаю», неверные - как «учу».') + '</div></div></div><div class="actions"><button class="btn" data-act="c-quiz">' + T('Ещё 10 слов') + '</button><button class="btn ghost" data-act="c-quiz-exit">' + T('К карточкам') + '</button></div>'; }
     return body + '</div>';
   }
 
@@ -138,7 +138,7 @@
     var cards = tp.grammar.map(function (g, gi) {
       var open = run.openG == null ? gi === 0 : run.openG === gi;
       return '<div class="block"><div class="row spread" tabindex="0" role="button" data-act="c-gopen" data-g="' + gi + '" style="cursor:pointer"><h3 style="margin:0">' + esc(g.name) + '</h3><span class="badge muted">' + T('урок') + ' ' + esc(g.lesson) + ' · ' + esc(g.lesson_title || '') + '</span></div>' +
-        (open ? '<div class="rule mt">' + md(g.rule) + '</div>' + (g.tasks.length ? '<p class="small muted mt">' + g.tasks.length + ' ' + T('заданий к этому правилу — в блоке ниже.') + '</p>' : '') : '') + '</div>';
+        (open ? '<div class="rule mt">' + md(g.rule) + '</div>' + (g.tasks.length ? '<p class="small muted mt">' + g.tasks.length + ' ' + T('заданий к этому правилу - в блоке ниже.') + '</p>' : '') : '') + '</div>';
     }).join('');
     var all = []; tp.grammar.forEach(function (g) { g.tasks.forEach(function (t, i) { all.push(Object.assign({ id: 'g' + all.length, text: t.stem, gname: g.name }, t)); }); });
     var quiz = '';
@@ -181,9 +181,9 @@
   function viewTest(course, tp) {
     var p = cp(course.level, tp.id), run = KZ.run();
     var avail = (tp.words.length >= 4 ? 1 : 0) + (tp.grammar.some(function (g) { return g.tasks.length; }) ? 1 : 0) + (tp.texts.some(function (t) { return t.questions.length; }) ? 1 : 0);
-    if (!avail) return '<div class="block"><h3>' + T('Итоговый тест темы') + '</h3><p class="muted">' + T('Для этой темы пока нет ни слов, ни заданий — тест собрать не из чего.') + '</p></div>';
+    if (!avail) return '<div class="block"><h3>' + T('Итоговый тест темы') + '</h3><p class="muted">' + T('Для этой темы пока нет ни слов, ни заданий - тест собрать не из чего.') + '</p></div>';
     if (!run.test) {
-      return '<div class="block"><h3>' + T('Итоговый тест темы') + '</h3><p>' + T('До 15 вопросов: слова темы, окончания из грамматики урока и вопросы к текстам. Порог «тема пройдена» — 70 %.') + (p.testBest != null ? ' ' + T('Лучший результат:') + ' <b>' + Math.round(p.testBest * 100) + ' %</b>.' : '') + '</p><div class="actions"><button class="btn" data-act="c-test-start">' + T('Начать тест') + '</button></div></div>';
+      return '<div class="block"><h3>' + T('Итоговый тест темы') + '</h3><p>' + T('До 15 вопросов: слова темы, окончания из грамматики урока и вопросы к текстам. Порог «тема пройдена» - 70 %.') + (p.testBest != null ? ' ' + T('Лучший результат:') + ' <b>' + Math.round(p.testBest * 100) + ' %</b>.' : '') + '</p><div class="actions"><button class="btn" data-act="c-test-start">' + T('Начать тест') + '</button></div></div>';
     }
     var locked = run.testPhase === 'review';
     var html = '';
@@ -192,7 +192,7 @@
       html += U.renderQuestions({ questions: [q] }, run.testAnswers || {}, locked, i + 1);
     });
     return '<div class="block"><span class="setlabel">' + T('Тест') + ' · ' + run.test.length + ' ' + T('вопросов') + '</span>' + html +
-      (locked ? '<div class="score-card mt"><div class="score-big">' + run.testScore + '<small>/' + run.test.length + '</small></div><div><b>' + (run.testScore / run.test.length >= 0.7 ? T('Тема пройдена.') : T('Ниже 70 % — повторите слова и правило, затем ещё раз.')) + '</b></div></div><div class="actions"><button class="btn" data-act="c-test-start">' + T('Ещё раз') + '</button><a class="btn ghost" href="#/course/' + course.level + '">' + T('К списку тем') + '</a></div>' :
+      (locked ? '<div class="score-card mt"><div class="score-big">' + run.testScore + '<small>/' + run.test.length + '</small></div><div><b>' + (run.testScore / run.test.length >= 0.7 ? T('Тема пройдена.') : T('Ниже 70 % - повторите слова и правило, затем ещё раз.')) + '</b></div></div><div class="actions"><button class="btn" data-act="c-test-start">' + T('Ещё раз') + '</button><a class="btn ghost" href="#/course/' + course.level + '">' + T('К списку тем') + '</a></div>' :
         '<div class="actions"><button class="btn" data-act="c-test-submit">' + T('Зафиксировать ответы') + '</button></div>') + '</div>';
   }
 
@@ -207,7 +207,7 @@
     var run = KZ.run(); if (run.key !== p[1] + '/' + p[2]) { KZ.resetRun({ key: p[1] + '/' + p[2] }); }
     return viewTopic(course, tp, tab);
   });
-  // app.js уже отрисовал первый маршрут до регистрации курса — прямая ссылка #/course/... иначе открывает хаб
+  // app.js уже отрисовал первый маршрут до регистрации курса - прямая ссылка #/course/... иначе открывает хаб
   if (/^#\/?course\//.test(location.hash)) KZ.route();
 
   function score(qs, answers) { var s = 0; qs.forEach(function (q) { if (answers[q.id] === q.answer) s++; }); return s; }

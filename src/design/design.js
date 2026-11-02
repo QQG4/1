@@ -134,11 +134,10 @@
   function split() {
     var pass = $$(':scope > .block', app).filter(function (b) { return $('.passage', b); })[0];
     if (!pass || !pass.nextElementSibling || !pass.nextElementSibling.classList.contains('block')) return;
-    var box = el('div', 'dz-split'), q = pass.nextElementSibling;
+    var box = el('div', 'dz-split'), q = pass.nextElementSibling, col = el('div', 'dz-pass-col');
     app.insertBefore(box, pass);
-    move(box, [pass, q]);
-    /* обе карточки одной высоты, а текст внутри левой едет за прокруткой: низ у них общий (просьба владельца 01.11.2026) */
-    var inner = el('div', 'dz-pass-in'); move(inner, Array.prototype.slice.call(pass.childNodes)); pass.appendChild(inner);
+    move(box, [col, q]); col.appendChild(pass);
+    /* колонка слева растянута на высоту вопросов, карточка с текстом плавает внутри неё и в конце страницы встаёт вровень с правой (просьба владельца 02.11.2026) */
   }
 
   /* ---------- результат: счёт, «Насколько трудно?», «Что дальше» и кнопки на первом экране, разбор ниже ---------- */

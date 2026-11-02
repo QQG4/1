@@ -474,3 +474,15 @@
 [data-design=d1] .dz-end .btn.icon{width:44px;min-width:44px;padding:0}
 [data-design=d1] .legal-row{font-size:.875rem;color:var(--ink-muted)}
 [data-design=d1] .sub{max-width:none}
+
+/* правки владельца 02.11.2026 */
+[data-design=d1] .topbar .btn.ghost{background:var(--navy-2);border-color:rgba(255,255,255,.35)}
+[data-design=d1] .topbar .btn.ghost:hover{background:var(--sun);border-color:var(--sun)}
+@media (min-width:561px){
+  [data-design=d1] .topbar{flex-wrap:nowrap}
+  [data-design=d1] .topbar nav{flex:1 1 0;min-width:0;flex-wrap:nowrap}
+  [data-design=d1] .topbar .crumbs{flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow:hidden}
+  [data-design=d1] .topbar .crumbs>*{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  [data-design=d1] .topbar .crumbs>.sep{flex:none}
+  [data-design=d1] .topbar>.row{flex-wrap:nowrap;flex:none}
+}

@@ -899,7 +899,7 @@
       var num = startNum ? startNum : (ctx && ctx.offset || 0) + i + 1;
       var opts = q.kind === 'tf' ? ['Дұрыс', 'Бұрыс'] : q.options;
       var chosen = answers[q.id];
-      var html = '<div class="q"><p class="q-text"><span class="qn">' + num + '.</span>' + (q.tag ? '<span class="badge muted qtag">' + esc(q.tag) + '</span>' : '') + '<span lang="kk">' + esc(q.text) + '</span>' +
+      var html = '<div class="q"><p class="q-text"><span class="qn">' + num + '.</span>' + '<span lang="kk">' + esc(q.text) + '</span>' +
         (locked ? (chosen === q.answer ? '<span class="verdict ok">✓ ' + T('верно') + '</span>' : '<span class="verdict no">✗ ' + T('неверно') + '</span>') : '') + '</p><ul class="opts" lang="kk">';
       opts.forEach(function (o, j) {
         var cls = 'opt';

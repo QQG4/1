@@ -59,6 +59,15 @@ def step_scene(v, st):
     # история про героиню: те же сцены с девушкой (суффикс _w, 03.11.2026)
     she = re.search(r'\b(она|её|ей)\b', v['hook']['ru'] + ' ' + ' '.join(x['say'] for x in v['steps']), re.I)
     return sc and sc + '_w' if she else sc
+# Больше кубиковой графики (04.11.2026, владелец: «привлекает людей с СДВГ и держит у просмотра»): сцена встаёт
+# в свободное место кадра — под карточкой «Языка», под вопросом квиза, под опросом и под призывом в конце.
+CARD_SCENES = ['qt_read', 'qt_type', 'qt_listen', 'qt_search']
+def gap_scene(overlays, name, at, end, top, bottom=BOTTOM - 10, wmax=490):
+    """Клип 1080×864 (высота 0,8 ширины) по центру свободной полосы top…bottom; узкая полоса — без сцены."""
+    w = min(wmax, int((bottom - top) / 0.8)) // 2 * 2
+    if not FX3D or w < 300: return
+    overlays.append((name, at, (W - w) // 2, int(top + (bottom - top - w * 0.8) / 2), w, end))
+
 # На стыке языков голос спотыкается (замечание владельца 10.10.2026: «КАЗТЕСТ или КазРесми Тест», «к Болашаку» резали
 # слух). Правило: в голосе только слова языка этого голоса, названия на чужом языке — только на экране (поле text).
 # Список пополнять, когда голос споткнётся на новом слове.
@@ -244,7 +253,7 @@ def frame_card(v, c, idx, n, path):
         parts.append((h + 20, lambda y: ms.text_block(d, c['ru'], fr, 80, y + 20, W - 160, ms.PALE, center=True)))
     top = header(d, topic(v), 54, ms.PALE) + 20 if topic(v) else 300
     total = sum(h for h, _ in parts)
-    y = top + (BOTTOM - top - total) / 2
+    y = top + 40 if FX3D else top + (BOTTOM - top - total) / 2   # при --3d место под сценой внизу
     for h, draw in parts: draw(y); y += h
     im.save(path)
     return y
@@ -512,7 +521,9 @@ def build(v, out, mute):
             p = tmp / ('c%02d.png' % i)
             bottoms.append(('карточка %d' % (i + 1), frame_card(v, c, i + 1, len(v['cards']), p)))
             a, dur = tts(c.get('say') or c['kk'], voice, mute)
-            seg(p, max(1.7, dur + 1.1), a, key=i in (0, len(v['cards']) - 1))   # после слова ~1 с: успеть прочитать и повторить за голосом
+            t0 = sum(x[1] for x in segs)
+            seg(p, max(1.7, dur + 1.1), a, key=i in (0, len(v['cards']) - 1))
+            gap_scene(overlays, CARD_SCENES[(i + sum(map(ord, v['id']))) % len(CARD_SCENES)], t0, sum(x[1] for x in segs), bottoms[-1][1] + 30)   # после слова ~1 с: успеть прочитать и повторить за голосом
     elif v['type'] == 'quiz':
         opts = [o['t'] if isinstance(o, dict) else o for o in v['options']]
         order = list(range(len(opts))); random.Random(v['id']).shuffle(order)   # ключ не всегда на месте A
@@ -524,13 +535,14 @@ def build(v, out, mute):
         meta = {'badge': BADGE['quiz']}
         def fq(*a, **kw):   # кадр квиза; emoji у ролика — картинка внизу, под отсчётом (слон, стетоскоп, корзина)
             y = ms.frame_question(*a, **kw)
-            if v.get('emoji'):
+            if v.get('emoji') and not FX3D:
                 im = Image.open(a[2]); e = emoji(v['emoji'], 200)
                 im.paste(e, (int((W - e.size[0]) / 2), 1490), e); im.save(a[2])
             return y
         a, dur = tts(v['q']['say'], voice, mute)
         bottoms.append(('вопрос', fq(meta, q, tmp / 'q.png')))
         seg(tmp / 'q.png', max(3.0, dur + 0.7), a, key=True)
+        gap_scene(overlays, 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30)
         if FX3D:   # клип 640 px, центр там же, где был плоский кружок отсчёта
             cy = max(bottoms[-1][1] + 240, 1350)
             overlays.append(('count', sum(x[1] for x in segs), (W - 560) // 2, min(cy - 280, 1770 - 570), 560))
@@ -543,11 +555,14 @@ def build(v, out, mute):
         if MOTION:   # звук ответа в момент открытия, голос вступает за ним
             seg(tmp / 'ans.png', 0.45, sfx('chime')); seg(tmp / 'ans.png', max(2.6, dur + 1.2) , a, key=True)
         else: seg(tmp / 'ans.png', max(3.0, dur + 1.2), a, key=True)
+        t_ans = sum(x[1] for x in segs[:-2 if MOTION else -1])
+        gap_scene(overlays, 'qt_win', t_ans, sum(x[1] for x in segs), bottoms[-1][1] + 30)
     elif v['type'] == 'poll':
         bottoms.append(('опрос', frame_poll(v, tmp / 'poll.png')))
         a, dur = tts(v['q']['say'], voice, mute)
         # время прочитать каждый вариант; вместе с призывом не короче DUR
         seg(tmp / 'poll.png', max(dur + 3.0 + 1.3 * len(v['poll']), DUR['poll'][0] + 0.2 - d_cta), a, key=True)
+        gap_scene(overlays, 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30)
     elif v['type'] in RU_TYPES:
         for i, st in enumerate(v['steps']):
             last = i == len(v['steps']) - 1
@@ -567,6 +582,7 @@ def build(v, out, mute):
             bottoms.append(('шаг %d' % (i + 1), b))
     bottoms.append(('призыв', frame_cta(v, tmp / 'cta.png')))
     if FX3D: overlays.append(('mark', sum(x[1] for x in segs), (W - 420) // 2, 400, 420))
+    gap_scene(overlays, 'qt_win', sum(x[1] for x in segs), sum(x[1] for x in segs) + d_cta + 1, bottoms[-1][1] + 30)
     seg(tmp / 'cta.png', d_cta, cta_a, key=True)
 
     mp4 = out / (v['id'] + '.mp4')

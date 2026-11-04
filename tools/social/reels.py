@@ -18,7 +18,7 @@ story — «История»: «типичная ситуация» фразам
 Перед сборкой они проходят kk_check.py; SWAP и RARE вне kk_allow.txt останавливают сборку. Варианты, которые
 неверны намеренно (wrong_ok), не проверяются, но попадают в список для носителя отдельной пометкой.
 Рядом с роликами кладутся: <id>.txt (подписи), обзор-N.png (кадры всех роликов), казахский-на-проверку.md."""
-import difflib, hashlib, json, pathlib, re, shutil, random, subprocess, sys, tempfile
+import difflib, hashlib, time, json, pathlib, re, shutil, random, subprocess, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import make_short as ms, kk_check
@@ -41,15 +41,24 @@ RU_TYPES = ('tip', 'story')
 RU_VOICE = {ms.DAULET: 'ru-RU-DmitryNeural', ms.AIGUL: 'ru-RU-SvetlanaNeural'}
 KK_LETTERS = set('әғқңөұүһіӘҒҚҢӨҰҮҺІ')
 MOTION = '--motion' in sys.argv
-FX3D = '--3d' in sys.argv   # объёмный отсчёт, знак и кубиковые сцены из Blender, проба 31.10.2026
+FX3D = '--3d' in sys.argv
+# --eco (03.11.2026, ноутбук сильно грелся): кодировщик в один поток и быстрее, пауза между роликами, чтобы остывал
+ECO = '--eco' in sys.argv   # объёмный отсчёт, знак и кубиковые сцены из Blender, проба 31.10.2026
 # Кубиковые сцены вместо смайликов в «Истории» (решение владельца 31.10.2026): vox_scenes.py в проекте НАУАН, клипы в соцсети/_3d.
 # Герой-мужчина; у историй про героиню сцены пока не подставляем. Смайлика нет в таблице — остаётся смайлик.
-EMOJI_SCENE = {'🎓': 'qt_read', '❌': 'qt_read', '📖': 'qt_read', '📚': 'qt_read', '🧩': 'qt_puzzled', '❓': 'qt_puzzled', '🤔': 'qt_puzzled',
-               '🔍': 'qt_search', '🙈': 'qt_type', '📝': 'qt_type', '🏃': 'qt_rush', '💨': 'qt_rush', '👂': 'qt_listen', '🎧': 'qt_listen', '🎯': 'qt_win'}
+EMOJI_SCENE = {'🎓': 'qt_read', '❌': 'qt_read', '📖': 'qt_read', '📚': 'qt_read', '💼': 'qt_read', '🧩': 'qt_puzzled', '❓': 'qt_puzzled',
+               '🤔': 'qt_puzzled', '😟': 'qt_puzzled', '😬': 'qt_puzzled', '😶': 'qt_puzzled', '😵': 'qt_puzzled', '🧱': 'qt_puzzled',
+               '🔍': 'qt_search', '🧭': 'qt_search', '🙈': 'qt_type', '📝': 'qt_type', '✍': 'qt_type', '📋': 'qt_type', '📱': 'qt_type',
+               '🔧': 'qt_type', '🔁': 'qt_type', '🏃': 'qt_rush', '💨': 'qt_rush', '👂': 'qt_listen', '🎧': 'qt_listen', '🚇': 'qt_listen',
+               '🔊': 'qt_listen', '🤫': 'qt_listen', '🎯': 'qt_win', '🙂': 'qt_win', '✅': 'qt_win', '😮': 'qt_win',
+               '📊': 'qt_result', '📈': 'qt_result', '📉': 'qt_result', '🗓': 'qt_time', '⏳': 'qt_time', '⏱': 'qt_time', '⏰': 'qt_time'}
 def step_scene(v, st):
     if st.get('scene'): return st['scene']
-    if not FX3D or re.search(r'\b(она|её|ей)\b', v['hook']['ru'] + ' ' + st['say'], re.I): return None
-    return EMOJI_SCENE.get(st.get('emoji') or v.get('emoji'))
+    if not FX3D: return None
+    sc = EMOJI_SCENE.get(st.get('emoji') or v.get('emoji'))
+    # история про героиню: те же сцены с девушкой (суффикс _w, 03.11.2026)
+    she = re.search(r'\b(она|её|ей)\b', v['hook']['ru'] + ' ' + ' '.join(x['say'] for x in v['steps']), re.I)
+    return sc and sc + '_w' if she else sc
 # На стыке языков голос спотыкается (замечание владельца 10.10.2026: «КАЗТЕСТ или КазРесми Тест», «к Болашаку» резали
 # слух). Правило: в голосе только слова языка этого голоса, названия на чужом языке — только на экране (поле text).
 # Список пополнять, когда голос споткнётся на новом слове.
@@ -128,6 +137,7 @@ def plain_checks(v):
     blob = json.dumps(v, ensure_ascii=False)
     if '—' in blob: errs.append('длинное тире в сценарии')
     if 'в профиле' in blob: errs.append('«ссылка в профиле»: в TikTok не кликается, писать адрес или звать в Телеграм')
+    if re.search('[→←✓]', blob): errs.append('стрелка или галочка: этих знаков нет в шрифтах роликов, на экране будут квадраты')
     if '📅' in blob: errs.append('эмодзи 📅: у Apple на нём дата «JUL 17», брать 🗓')
     return errs
 
@@ -480,8 +490,8 @@ def assemble(segs, mp4, music_start=None, overlays=()):
     graph += ';[%s]null[v]' % last
     # потоки фильтров ограничены отдельно от кодировщика: иначе склейка кадров занимала 3+ ядра и грела ноутбук
     cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-filter_complex_threads', '1', '-threads', '1'] + vin + sum((['-i', str(a)] for a in ain), []) + extra + ov_in + [
-        '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % t, '-r', '30', '-c:v', 'libx264', '-threads', '2',   # 2 потока: меньше греется
-        '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '20', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(mp4)]
+        '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % t, '-r', '30', '-c:v', 'libx264', '-threads', '1' if ECO else '2',   # 2 потока: меньше греется
+        '-pix_fmt', 'yuv420p', '-preset', 'faster' if ECO else 'medium', '-crf', '20', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(mp4)]
     subprocess.run(cmd, check=True)
     return t
 
@@ -649,6 +659,7 @@ def main():
         kd = out / '_обзор'; kd.mkdir(exist_ok=True)
         for old in kd.glob(v['id'] + '__*.png'): old.unlink()
         for i, k in enumerate(keys): shutil.copy(k, kd / ('%s__%d.png' % (v['id'], i)))
+        if ECO: time.sleep(45)
         print('%-22s %5.1f с  %-6s %s' % (v['id'], total, voice.split('-')[2].replace('Neural', ''), '; '.join(problems) or 'ок'))
     kd = out / '_обзор'
     rows = [(v['id'], sorted(kd.glob(v['id'] + '__*.png'), key=lambda p: int(p.stem.split('__')[1])))

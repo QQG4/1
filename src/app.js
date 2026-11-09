@@ -738,6 +738,7 @@
     var ex = KZ.exams[t.exam];
     var es = examSection(ex, type) || {};
     var saved = sp(t.id, type);
+    if (run && run.phase === 'review' && !(saved && saved.status === 'done')) run.phase = 'ready';   // результат стёрли в другой вкладке
     if (!run || run.testId !== t.id || run.type !== type) {
       run = { testId: t.id, type: type, phase: saved && saved.status === 'done' ? 'review' : 'ready', answers: {}, sub: 'script' };
       if (saved && saved.status === 'draft') { run.phase = 'run'; run.resume = true; if (saved.answers) run.answers = Object.assign({}, saved.answers); if (saved.playsUsed != null) run.playsUsed = saved.playsUsed; }
@@ -1014,12 +1015,13 @@
     var pb = document.getElementById('au-pause' + sfx); if (pb) { pb.hidden = false; pb.textContent = '⏸ ' + T('Пауза'); }
     a.currentTime = 0;
     a.ontimeupdate = function () { var bar = document.getElementById('aubar' + sfx); if (bar && a.duration) bar.style.width = (100 * a.currentTime / a.duration) + '%'; };
-    var finished = false;
-    function finish() { if (finished) return; finished = true; run.playing = false; run.playsUsed++; quizDraft(); route(); }
+    var finished = false, r0 = run;   // колбэки плеера могут сработать, когда посетитель уже ушёл из раздела и run обнулён
+    function finish() { if (finished || run !== r0) return; finished = true; run.playing = false; run.playsUsed++; quizDraft(); route(); }
     a.onended = finish;
     a.onpause = function () { if (!finished && a.duration && a.currentTime >= a.duration - 0.75) finish(); };
-    a.onerror = function () { run.playing = false; var m = document.getElementById('tts-msg' + sfx); if (m) m.textContent = T('Не удалось воспроизвести аудио.'); btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); };
+    a.onerror = function () { if (run !== r0) return; run.playing = false; var m = document.getElementById('tts-msg' + sfx); if (m) m.textContent = T('Не удалось воспроизвести аудио.'); btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести'); };
     var pr = a.play(); if (pr && pr.catch) pr.catch(function (e) {
+      if (run !== r0) return;
       run.playing = false; btn.disabled = false; btn.textContent = '▶ ' + T('Воспроизвести');
       if (!run.audioRetried) { // вторая попытка с абсолютным адресом и явной загрузкой (Safari иногда отвечает NotSupportedError на первый play())
         run.audioRetried = true; try { a.src = new URL(a.getAttribute('src'), location.href).href; a.load(); } catch (x) {}
@@ -1032,7 +1034,8 @@
     var plays = sec.plays || Infinity; // повтор не ограничен, пока идёт время раздела (ҚАЗТЕСТ: «мәтін бірнеше рет тыңдалады»; QRT: видео в пределах 10 минут)
     if (run.playsUsed >= plays || run.playing) return;
     run.playing = true;
-    var ok = speak(sec.script.text, function () { run.playing = false; run.playsUsed++; route(); });
+    var r1 = run;
+    var ok = speak(sec.script.text, function () { if (run !== r1) return; run.playing = false; run.playsUsed++; route(); });
     if (!ok) { run.playing = false; route(); return; }
     route();
   }

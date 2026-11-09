@@ -10,6 +10,7 @@
 текста здесь только крючок и концовка (HOOKS, OUTRO) — их стоит показать носителю.
 Нужны: ffmpeg, PIL, ключ Azure в ~/.config/qazaq-trainer/azure.env (тот же, что у tools/tts_azure.py).
 Музыку не добавляем: её берут из библиотеки площадки при загрузке, так нет вопросов с авторскими правами."""
+import urllib.error
 import json, os, pathlib, random, re, subprocess, sys, tempfile, urllib.request, http.client, time
 from PIL import Image, ImageDraw, ImageFont
 
@@ -84,7 +85,7 @@ def tts(text, voice, path, rate='-5%', sentence_pause=None, fmt='audio-24khz-96k
     for attempt in range(4):
         try:
             with urllib.request.urlopen(req, timeout=120) as r: path.write_bytes(r.read()); return
-        except (http.client.IncompleteRead, ConnectionError, TimeoutError):
+        except (http.client.IncompleteRead, ConnectionError, TimeoutError, urllib.error.URLError):   # обрыв связи с Azure — повтор (04.11.2026)
             if attempt == 3: raise
             time.sleep(5 * (attempt + 1))
 def duration(path):

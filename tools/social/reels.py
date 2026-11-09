@@ -25,6 +25,8 @@ import make_short as ms, kk_check
 
 W, H = ms.W, ms.H
 TTS_CACHE = ms.ROOT.parent / 'соцсети' / '_tts'
+TTS_HZ = 48000      # 04.11.2026: голос от Azure в 48 кГц (в 24 кГц звучал сухо и с хрипотцой)
+SHORT_WORDS, SHORT_RATE = 3, '+0%'   # до трёх слов — без ускорения: слово выговаривается целиком, а растяжение темпа даёт металл в голосе
 RATE = '+12%'   # 11.10.2026 владелец: «медленно, можно быстрее на 15–20 %»; было -5 %, стало +12 %. Темп утверждён
 SENT_GAP = 0.15       # пауза между предложениями внутри фразы: «миллисекунды и сразу дальше, не терять внимание» (11.10.2026)
 STEP_GAP = 0.25        # пауза между шагами «Разбора» и «Истории» (было 0,5 с)
@@ -38,14 +40,17 @@ BADGE = {'cards': 'Qazaq Trainer · Тіл сабағы', 'quiz': 'Qazaq Trainer
          'tip': 'Qazaq Trainer · Талдау', 'story': 'Qazaq Trainer · Оқиға'}
 RU_TYPES = ('tip', 'story')
 # русские голоса в той же пропорции, что Daulet и Aigul: мужской в двух роликах из трёх
+KK_VOICE = ms.DAULET   # 04.11.2026 владелец: казахский голос только Даулет (у Айгуль слышалась «электронность»)
 RU_VOICE = {ms.DAULET: 'ru-RU-DmitryNeural', ms.AIGUL: 'ru-RU-SvetlanaNeural'}
 KK_LETTERS = set('әғқңөұүһіӘҒҚҢӨҰҮҺІ')
 MOTION = '--motion' in sys.argv
-FX3D = '--3d' in sys.argv
+FX3D = '--3d' in sys.argv   # объёмный отсчёт, знак и кубиковые сцены из Blender, проба 31.10.2026
 # --eco (03.11.2026, ноутбук сильно грелся): кодировщик в один поток и быстрее, пауза между роликами, чтобы остывал
-ECO = '--eco' in sys.argv   # объёмный отсчёт, знак и кубиковые сцены из Blender, проба 31.10.2026
+ECO = '--eco' in sys.argv
+# --mid (04.11.2026, владелец: «где-то на 70 % мощности»): кодировщик в 4 потока, без пауз между роликами
+MID = '--mid' in sys.argv
 # Кубиковые сцены вместо смайликов в «Истории» (решение владельца 31.10.2026): vox_scenes.py в проекте НАУАН, клипы в соцсети/_3d.
-# Герой-мужчина; у историй про героиню сцены пока не подставляем. Смайлика нет в таблице — остаётся смайлик.
+# Герой-мужчина; у историй про героиню — те же сцены с девушкой (_w, 03.11.2026). Смайлика нет в таблице — остаётся смайлик.
 EMOJI_SCENE = {'🎓': 'qt_read', '❌': 'qt_read', '📖': 'qt_read', '📚': 'qt_read', '💼': 'qt_read', '🧩': 'qt_puzzled', '❓': 'qt_puzzled',
                '🤔': 'qt_puzzled', '😟': 'qt_puzzled', '😬': 'qt_puzzled', '😶': 'qt_puzzled', '😵': 'qt_puzzled', '🧱': 'qt_puzzled',
                '🔍': 'qt_search', '🧭': 'qt_search', '🙈': 'qt_type', '📝': 'qt_type', '✍': 'qt_type', '📋': 'qt_type', '📱': 'qt_type',
@@ -157,33 +162,46 @@ def tts(text, voice, mute):
     if mute:
         sec = 0.8 + len(text) / 14
         path = pathlib.Path(tempfile.mkdtemp()) / 'mute.mp3'
-        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', '%.2f' % sec, str(path)], check=True)
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=%d:cl=mono' % TTS_HZ, '-t', '%.2f' % sec, str(path)], check=True)
         return path, ms.duration(path)
     # Несколько предложений озвучиваем по отдельности и склеиваем с паузой SENT_GAP: Azure держит на точке ~1 с,
     # а точная пауза в SSML ужимает её только до ~0,5 с (замер 11.10.2026). Интонация конца сохраняется:
     # каждое предложение синтезируется целиком, со своей точкой или вопросом.
     # С 31.10.2026 кэш в WAV без потерь: от Azure PCM, никакого повторного MP3 (двойное кодирование и задержка кодера).
     parts = [x for x in re.split(r'(?<=[.?!…])\s+', text.strip()) if x]
-    path = TTS_CACHE / (hashlib.sha1(('v5|%s|%s|%s|%s' % (RATE, SENT_GAP, voice, text)).encode()).hexdigest()[:16] + '.wav')
+    short = len(text.split()) <= SHORT_WORDS
+    # v9: у длинных фраз хвост 0,15 с (с 0,25 «Разборы» выросли на секунду), у коротких прежний v8 с хвостом 0,25
+    path = TTS_CACHE / (hashlib.sha1(('%s|%s|%s|%s|%s' % ('v8' if short else 'v9', RATE, SENT_GAP, voice, text)).encode()).hexdigest()[:16] + '.wav')
     if path.exists(): return path, ms.duration(path)
     if len(parts) > 1:
         files = [tts(x, voice, mute)[0] for x in parts]
-        gap = TTS_CACHE / ('gap-%d.wav' % int(SENT_GAP * 1000))
+        gap = TTS_CACHE / ('gap-%d-%d.wav' % (int(SENT_GAP * 1000), TTS_HZ))
         if not gap.exists():
-            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', str(SENT_GAP), '-c:a', 'pcm_s16le', str(gap)], check=True)
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=%d:cl=mono' % TTS_HZ, '-t', str(SENT_GAP), '-c:a', 'pcm_s16le', str(gap)], check=True)
         seq = [f for x in files for f in (x, gap)][:-1]
         inputs = sum((['-i', str(f)] for f in seq), [])
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error'] + inputs + ['-filter_complex', ''.join('[%d:a]' % i for i in range(len(seq))) +
                         'concat=n=%d:v=0:a=1[a]' % len(seq), '-map', '[a]', '-c:a', 'pcm_s16le', str(path)], check=True)
         return path, ms.duration(path)
-    raw = path.with_suffix('.raw.wav'); ms.tts(text, voice, raw, rate=RATE, fmt='riff-24khz-16bit-mono-pcm')
+    # Отдельное слово или короткая фраза (карточки «Языка», варианты) — без ускорения: на +12 % «өтініш» звучало
+    # 0,56 с и глоталось (замечание владельца 04.11.2026: «слова обрываются, окончания не слышно»)
+    rate = RATE if len(text.split()) > SHORT_WORDS else SHORT_RATE
+    raw = path.with_suffix('.raw.wav'); ms.tts(text, voice, raw, rate=rate, fmt='riff-%dkhz-16bit-mono-pcm' % (TTS_HZ // 1000))
     # Azure оставляет ~0,5 с тишины по краям: на карточках из одного слова это треть кадра, темп проседал.
-    # Порог -55 дБ, запас 0,03 с спереди и 0,08 с сзади: хвосты слов целы (замечание владельца 11.10.2026)
-    head = 'silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.03:window=0.005'
-    tail = 'silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.08:window=0.005'
-    trim = ','.join([head, 'areverse', tail, 'areverse'])
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(raw), '-af', trim, '-c:a', 'pcm_s16le', str(path)], check=True)
-    raw.unlink()
+    # Порог -50 дБ, запас 0,05 с спереди и 0,25 с сзади: тихие конечные согласные (ш, с, т) не срезаются (04.11.2026;
+    # было 0,08 с — хвост «өтініш» обрезало)
+    head = 'silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05:window=0.005'
+    tail = 'silenceremove=start_periods=1:start_threshold=-50dB:start_silence=%.2f:window=0.005' % (0.25 if short else 0.15)
+    trim = ','.join([head, 'areverse', tail, 'areverse'])   # без компрессора: он добавлял «электронность» (04.11.2026)
+    cut = path.with_suffix('.cut.wav')
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(raw), '-af', trim, '-c:a', 'pcm_s16le', str(cut)], check=True)
+    # Ровная громкость каждого куска простым усилением: средняя -15 дБ, пик не выше -1 дБ. Раньше слова шли с разницей до 7 дБ,
+    # а общее усиление +5 дБ загоняло громкие в ограничитель — отсюда «хрип» (04.11.2026)
+    o = subprocess.run(['ffmpeg', '-i', str(cut), '-af', 'volumedetect', '-f', 'null', '-'], capture_output=True, text=True).stderr
+    mean = float(re.search(r'mean_volume: (-?[\d.]+)', o).group(1)); peak = float(re.search(r'max_volume: (-?[\d.]+)', o).group(1))
+    gain = min(-15 - mean, -1 - peak)
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(cut), '-af', 'volume=%.2fdB' % gain, '-c:a', 'pcm_s16le', str(path)], check=True)
+    raw.unlink(); cut.unlink()
     return path, ms.duration(path)
 
 # ---------- рисование ----------
@@ -237,7 +255,7 @@ def frame_card(v, c, idx, n, path):
     if c.get('big'):
         fb = fit(d, c['big'], 'Arial Bold.ttf', 300, W - 160)
         parts.append((330, lambda y, fb=fb: d.text((W / 2, y + 165), c['big'], font=fb, fill=ms.SUN if c.get('mark') else ms.WHITE, anchor='mm')))
-    if c.get('emoji'):
+    if c.get('emoji') and not (FX3D and EMOJI_SCENE.get(c['emoji'])):   # при --3d смайлик заменяет сцена под карточкой
         e = emoji(c['emoji'], 230 if c.get('big') else 300)
         parts.append((e.size[1] + 40, lambda y, e=e: im.paste(e, (int((W - e.size[0]) / 2), int(y + 20)), e)))
     fk = fit(d, c['kk'], 'Arial Bold.ttf', 130, W - 160)
@@ -449,7 +467,7 @@ def sfx(name):
 # соцсети/музыка/ИСТОЧНИКИ.txt. Ролики 1–14 очереди одобрены без музыки и не пересобираются.
 MUSIC = ms.ROOT.parent / 'соцсети' / 'музыка' / 'atlas-kazakhstan.mp3'
 MUSIC_GAIN = -22      # дБ: та же пропорция к голосу, что была при -18 и усилении +9 (31.10.2026 голос +5)
-VOICE_GAIN = 5        # ровное усиление голоса. Было +9 с alimiter: ограничитель на первом пике давил голос на 3–5 дБ и
+VOICE_GAIN = 4        # 04.11.2026: громкость выравнивается в tts() по каждому куску; +4 дБ поднимают Даулета до ~-15,5 LUFS, пик остаётся ниже ограничителя. До этого: ровное усиление голоса. Было +9 с alimiter: ограничитель на первом пике давил голос на 3–5 дБ и
                       # медленно отпускал, первые 0,2 с фразы проседали и «лагали» (замер 31.10.2026). Теперь он только страховка
 LIMITER = 'alimiter=limit=0.95:attack=2:release=200:level=false'
 AUDIO_OUT = 'aresample=44100,aformat=channel_layouts=stereo'   # 24 кГц моно Instagram пережимал до ~27 кбит/с
@@ -476,14 +494,14 @@ def assemble(segs, mp4, music_start=None, overlays=()):
         ov_in += ['-i', str(ms.ROOT.parent / 'соцсети' / '_3d' / (name + '.mov'))]
     graph += ''.join('[%d:a]adelay=%d|%d[a%d];' % (n + i, ms_, ms_, i) for i, ms_ in enumerate(delays))
     # громкость как в make_short: ровное усиление и ограничитель, без loudnorm (решение владельца 10.10.2026)
-    vox = ''.join('[a%d]' % i for i in range(len(ain))) + 'amix=inputs=%d:normalize=0,volume=%ddB,apad' % (len(ain), VOICE_GAIN)
+    vox = ''.join('[a%d]' % i for i in range(len(ain))) + 'amix=inputs=%d:normalize=0,volume=%.1fdB,apad' % (len(ain), VOICE_GAIN)
     extra = []
     use_music = music_start is not None and MUSIC.exists()
     if use_music:
         m = n + len(ain)
         extra = ['-stream_loop', '-1', '-ss', str(music_start), '-i', str(MUSIC)]
         graph += vox + ',asplit=2[vx][sc];'
-        graph += ('[%d:a]aformat=sample_rates=24000:channel_layouts=mono,volume=%ddB,afade=t=in:d=0.8,'
+        graph += ('[%d:a]aformat=sample_rates=48000:channel_layouts=mono,volume=%ddB,afade=t=in:d=0.8,'
                   'afade=t=out:st=%.2f:d=1.5[mu];' % (m, MUSIC_GAIN, max(t - 1.5, 0)))
         graph += '[mu][sc]sidechaincompress=threshold=0.02:ratio=6:attack=20:release=400[mud];'
         graph += '[vx][mud]amix=inputs=2:normalize=0:duration=first,%s,%s[aud]' % (LIMITER, AUDIO_OUT)
@@ -498,8 +516,8 @@ def assemble(segs, mp4, music_start=None, overlays=()):
         last = 'n%d' % j
     graph += ';[%s]null[v]' % last
     # потоки фильтров ограничены отдельно от кодировщика: иначе склейка кадров занимала 3+ ядра и грела ноутбук
-    cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-filter_complex_threads', '1', '-threads', '1'] + vin + sum((['-i', str(a)] for a in ain), []) + extra + ov_in + [
-        '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % t, '-r', '30', '-c:v', 'libx264', '-threads', '1' if ECO else '2',   # 2 потока: меньше греется
+    cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-filter_complex_threads', '2' if MID else '1', '-threads', '1'] + vin + sum((['-i', str(a)] for a in ain), []) + extra + ov_in + [
+        '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % t, '-r', '30', '-c:v', 'libx264', '-threads', '4' if MID else '1' if ECO else '2',   # 2 потока: меньше греется
         '-pix_fmt', 'yuv420p', '-preset', 'faster' if ECO else 'medium', '-crf', '20', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(mp4)]
     subprocess.run(cmd, check=True)
     return t
@@ -507,6 +525,7 @@ def assemble(segs, mp4, music_start=None, overlays=()):
 def build(v, out, mute):
     voice = v.get('voice') or ms.voice_for(v['id'], '')
     if v['type'] in RU_TYPES: voice = RU_VOICE[voice]
+    else: voice = KK_VOICE
     tmp = pathlib.Path(tempfile.mkdtemp(prefix='reel-'))
     segs, bottoms, keys, overlays = [], [], [], []   # overlays — 3D-клипы поверх кадров; keys — кадры для обзорного листа
     def seg(png, dur, mp3=None, key=False):
@@ -523,7 +542,7 @@ def build(v, out, mute):
             a, dur = tts(c.get('say') or c['kk'], voice, mute)
             t0 = sum(x[1] for x in segs)
             seg(p, max(1.7, dur + 1.1), a, key=i in (0, len(v['cards']) - 1))
-            gap_scene(overlays, CARD_SCENES[(i + sum(map(ord, v['id']))) % len(CARD_SCENES)], t0, sum(x[1] for x in segs), bottoms[-1][1] + 30)   # после слова ~1 с: успеть прочитать и повторить за голосом
+            gap_scene(overlays, EMOJI_SCENE.get(c.get('emoji')) or CARD_SCENES[(i + sum(map(ord, v['id']))) % len(CARD_SCENES)], t0, sum(x[1] for x in segs), bottoms[-1][1] + 30, wmax=640)   # после слова ~1 с: успеть прочитать и повторить за голосом
     elif v['type'] == 'quiz':
         opts = [o['t'] if isinstance(o, dict) else o for o in v['options']]
         order = list(range(len(opts))); random.Random(v['id']).shuffle(order)   # ключ не всегда на месте A
@@ -542,7 +561,7 @@ def build(v, out, mute):
         a, dur = tts(v['q']['say'], voice, mute)
         bottoms.append(('вопрос', fq(meta, q, tmp / 'q.png')))
         seg(tmp / 'q.png', max(3.0, dur + 0.7), a, key=True)
-        gap_scene(overlays, 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30)
+        gap_scene(overlays, 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30, wmax=640)
         if FX3D:   # клип 640 px, центр там же, где был плоский кружок отсчёта
             cy = max(bottoms[-1][1] + 240, 1350)
             overlays.append(('count', sum(x[1] for x in segs), (W - 560) // 2, min(cy - 280, 1770 - 570), 560))

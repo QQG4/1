@@ -184,10 +184,10 @@
 
   /* ---------------- настройки интерфейса: язык, размер текста, шрифт, подсказки, транскрипт ---------------- */
   var UI_KEY = 'kz-trainer:ui';
-  var ui = { size: 'm', font: 'std', hints: false, transcript: false, practice: false };
+  var ui = { size: 'm', font: 'std', hints: false, transcript: false, practice: false, motion: 'auto' };   // motion: 'auto' - как в системе («меньше движения»), true / false - выбор в настройках сильнее системы
   try { var u0 = JSON.parse(localStorage.getItem(UI_KEY)); if (u0) Object.keys(ui).forEach(function (k) { if (u0[k] != null) ui[k] = u0[k]; }); } catch (e) {}
   function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} applyUi(); }
-  function applyUi() { var h = document.documentElement; h.setAttribute('data-size', ui.size); h.setAttribute('data-font', ui.font); h.classList.toggle('hints', !!ui.hints); h.lang = KZ.lang; }
+  function applyUi() { var h = document.documentElement; h.setAttribute('data-size', ui.size); h.setAttribute('data-font', ui.font); h.classList.toggle('hints', !!ui.hints); h.setAttribute('data-motion', ui.motion === false ? 'off' : ui.motion === true ? 'on' : 'auto'); h.lang = KZ.lang; }
   applyUi();
   function uiPanel() {
     function seg(act, key, vals, labels) { return '<span class="seg" role="group">' + vals.map(function (v, i) { return '<button class="cb' + (ui[key] === v ? ' on' : '') + '" data-act="' + act + '" data-v="' + v + '" aria-pressed="' + (ui[key] === v) + '">' + labels[i] + '</button>'; }).join('') + '</span>'; }
@@ -197,6 +197,7 @@
       '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Транскрипт аудирования') + '</span>' + seg('ui-transcript', 'transcript', [false, true], [T('скрыт'), T('показан')]) + '<span class="hint">' + T('для слабослышащих: текст виден во время звучания') + '</span></div>' +
       '<div class="row"><span class="lbl">' + T('Таймер') + '</span>' + seg('ui-practice', 'practice', [false, true], [T('как на экзамене'), T('тренировка')]) + '<span class="hint">' + T('тренировка: время показывается, но раздел не закрывается; уровень в этом режиме не подтверждается') + '</span></div>' +
+      '<div class="row"><span class="lbl">' + T('Анимация') + '</span>' + (function () { var on = ui.motion === 'auto' ? !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) : !!ui.motion; return '<span class="seg" role="group">' + [true, false].map(function (v) { return '<button class="cb' + (on === v ? ' on' : '') + '" data-act="ui-motion" data-v="' + v + '" aria-pressed="' + (on === v) + '">' + (v ? T('включена') : T('выключена')) + '</button>'; }).join('') + '</span>'; })() + '</div>' +
       '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + '</p></div>';
   }
   function uiButtons() {
@@ -454,8 +455,45 @@
   KZ.shuffleQuestion = shuffleQuestion;
   /* Полный блок аудирования (t.block, 10.10.2026): в разделе несколько текстов - sec.parts[{label, script, questions}].
      Для подсчёта, разбора и статистики вопросы частей собираются в общий sec.questions (те же объекты, нумерация 1…N). */
-  KZ.tests.forEach(function (t) { t.sections.forEach(function (sec) { if (sec.parts && !sec.questions) { sec.questions = []; sec.parts.forEach(function (pt) { pt.questions.forEach(function (q) { sec.questions.push(q); }); }); } }); });
-  KZ.tests.forEach(function (t) { t.sections.forEach(function (sec) { (sec.questions || []).forEach(function (q) { shuffleQuestion(q, t.id + '/' + sec.type + '/' + q.id); }); }); });
+  function prepTest(t) {
+    t.sections.forEach(function (sec) {
+      if (sec.parts && !sec.questions) { sec.questions = []; sec.parts.forEach(function (pt) { pt.questions.forEach(function (q) { sec.questions.push(q); }); }); }
+      if (!t._lite) (sec.questions || []).forEach(function (q) { shuffleQuestion(q, t.id + '/' + sec.type + '/' + q.id); });
+    });
+  }
+  KZ.tests.forEach(prepTest);
+  /* Подгрузка заданий по требованию (12.11.2026). На публичном сайте KZ.tests несёт каркасы тестов (_lite: true, tools/dump_lite.js):
+     их хватает главной, странице теста и прогрессу. Полный файл tests/<id>.js вызывает KZ.testLoaded и подменяет каркас
+     в том же объекте, поэтому ссылки на тест остаются верными. В лаборатории и автономной сборке каркасов нет. */
+  KZ.testLoaded = function (full) {
+    prepTest(full);
+    var old = findTest(full.id);
+    if (!old) { KZ.tests.push(full); return; }
+    Object.keys(old).forEach(function (k) { delete old[k]; });
+    Object.keys(full).forEach(function (k) { old[k] = full[k]; });
+  };
+  function loadTests(ids, cb) {
+    ids = ids.filter(function (id) { var t = findTest(id); return t && t._lite; });
+    var left = ids.length, ok = true;
+    if (!left) return cb(true);
+    function done() { if (--left === 0) cb(ok); }
+    ids.forEach(function (id) {
+      var s = document.createElement('script');
+      s.src = 'tests/' + id + '.js?v=' + (KZ.testsRev || '');
+      s.onload = function () { var t = findTest(id); if (!t || t._lite) ok = false; done(); };
+      s.onerror = function () { ok = false; done(); };
+      document.head.appendChild(s);
+    });
+  }
+  KZ.loadTests = loadTests;
+  /* что нужно загрузить для страницы: раздел теста - сам тест, экспресс-тест - варианты 04-05 экзамена (из них он берёт вопросы) */
+  function lazyNeed(p) {
+    var t = p[0] === 'test' && p[2] ? findTest(p[1]) : null;
+    if (t) return t._lite ? [t.id] : [];
+    if (p[0] === 'express' && KZ.exams[p[1]]) return KZ.tests.filter(function (x) { return x._lite && x.exam === p[1] && !x.block && /-0[45]$/.test(x.id); }).map(function (x) { return x.id; });
+    return [];
+  }
+  var lazyFail = null;
   if (KZ.courses) Object.keys(KZ.courses).forEach(function (lv) { KZ.courses[lv].topics.forEach(function (tp) {
     tp.grammar.forEach(function (g) { g.tasks.forEach(function (x, i) { shuffleQuestion(x, lv + '/' + g.id + '/' + i); }); });
     tp.texts.forEach(function (tx) { tx.questions.forEach(function (x, i) { shuffleQuestion(x, lv + '/' + tx.id + '/' + i); }); });
@@ -489,6 +527,14 @@
     var samePage = lastHash === h; lastHash = h;
     var sameSection = run && p[0] === 'test' && p[1] === run.testId && p[2] === run.type;
     if (!sameSection) { stopTimer(); if (qTimer) clearInterval(qTimer); if (tkTimer) clearInterval(tkTimer); run = null; stopSpeak(); stopRec(); }
+    var need = lazyNeed(p);
+    if (need.length) {
+      var box = document.getElementById('app'), bar = topbar([{ label: T('Хаб'), href: '#/' }]);
+      if (lazyFail === h) box.innerHTML = bar + '<h1>' + T('Не удалось загрузить задания') + '</h1><p class="lede">' + T('Проверьте соединение и попробуйте ещё раз.') + '</p><div class="actions"><button class="btn" data-act="lazy-retry">' + T('Повторить') + '</button></div>';
+      else { box.innerHTML = bar + '<p class="lede" role="status">' + T('Загружаем задания…') + '</p>'; loadTests(need, function (ok) { lazyFail = ok ? null : h; if (lastHash === h) route(); }); }
+      if (!samePage) window.scrollTo(0, 0);
+      return;
+    }
     var app = document.getElementById('app');
     var html;
     var extHtml = null;
@@ -510,7 +556,14 @@
     else window.scrollTo(0, 0);
     if (run && run.afterRender) run.afterRender();
     fillRecSlots();
+    pageTitle(p);
     trackPage(h || '');
+  }
+  /* заголовок вкладки по странице (12.11.2026): в истории и закладках страницы различаются; на главной остаётся заголовок из <head> */
+  var baseTitle = document.title;
+  function pageTitle(p) {
+    var h1 = document.querySelector('#app h1'), t = h1 && h1.textContent.trim();
+    document.title = p.length && p[0] !== 'main' && t ? t + ' · Qazaq Trainer' : baseTitle;
   }
   window.addEventListener('hashchange', function () { if (location.hash === '#main') return; route(); });
   /* ссылка «К содержимому»: фокус на начало контента без смены маршрута (иначе роутер перерисовал бы хаб и сбросил раздел) */
@@ -1789,6 +1842,7 @@
     var t = run && findTest(run.testId), sec = null;
     if (t) t.sections.forEach(function (s) { if (s.type === run.type) sec = s; });
 
+    if (act === 'lazy-retry') { lazyFail = null; route(); return; }
     if (act === 'fb-open' || act === 'fb-close') {
       var fb = document.getElementById('fb'); if (!fb) return;
       var panel = fb.querySelector('.fb-panel'), tab = fb.querySelector('.fb-tab'), open = act === 'fb-open';
@@ -1842,7 +1896,7 @@
     else if (act === 'story-close') { var sc = document.getElementById('story-card'); if (sc) sc.remove(); return; }
     else if (act === 'to-top') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
-    else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
+    else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice' || act === 'ui-motion') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
     if (act === 'sync-make' || act === 'sync-use') {
       var sm = document.getElementById('sync-msg'), url = KZ.site && KZ.site.eventsUrl;
       if (!url) return;

@@ -35,6 +35,112 @@
     [/Мок-теста/g, 'Пробного теста'], [/мок-теста/g, 'пробного теста'], [/Мок-тест/g, 'Пробный тест'], [/мок-тест/g, 'пробный тест']];
   var EXAM_SHORT = 60;
   var RENAME_KK = [[/Мок-тест/g, 'Сынақ тест'], [/мок-тест/g, 'сынақ тест']];
+  /* ---------- кубиковые сцены (12.11.2026): ролики из соцсетей, пережатые tools/make_scenes.py в анимированный WebP ----------
+     Сцена стоит на верхней кромке плиты и заменяет на этой странице большой знак в шапке. Во время заданий сцен нет.
+     Настройка «Анимация» и системное «меньше движения» оставляют неподвижный кадр. Размеры - из вывода make_scenes.py. */
+  var SCENES = { read: [338, 216], time: [338, 221], listen: [338, 224], search: [338, 221], type: [338, 302], puzzled: [338, 303], win: [338, 300], result: [338, 222], rush: [338, 217] };
+  var SCENE_BASE = ((document.currentScript && document.currentScript.src) || '/design/design.js').replace(/design\.js.*$/, 'scenes/');
+  function moving() {   // выбор в настройках сайта сильнее системного «меньше движения»; пока не выбирали - как в системе
+    var m = root.getAttribute('data-motion');
+    return m === 'on' ? true : m === 'off' ? false : !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+  function scene(name, cls) {
+    var s = SCENES[name]; if (!s) return null;
+    var img = el('img', 'dz-scene ' + cls);
+    img.alt = ''; img.setAttribute('aria-hidden', 'true'); img.width = s[0]; img.height = s[1];
+    img.decoding = 'async'; img.loading = 'lazy'; img.draggable = false;
+    img.setAttribute('data-scene-name', name + (moving() ? '' : '-still'));
+    img.src = SCENE_BASE + img.getAttribute('data-scene-name') + '.webp';
+    return img;
+  }
+  function perch(host, name) {
+    if (!host) return false;
+    if ($(':scope > .dz-perch', host)) return true;
+    var s = scene(name, 'dz-perch'); if (!s) return false;
+    host.classList.add('dz-perch-host'); host.appendChild(s);
+    return true;
+  }
+  /* широкий экран: одна сцена в левом поле, не на страницах заданий (стили показывают её от 1640 px) */
+  function sideScene(name) {
+    var x = $('body > .dz-side'), want = name ? name + (moving() ? '' : '-still') : '';
+    if (x && x.getAttribute('data-scene-name') === want) return;
+    if (x) x.parentNode.removeChild(x);
+    if (name) { var s = scene(name, 'dz-side'); if (s) document.body.appendChild(s); }
+  }
+  var SECTION_SCENE = { listening: 'listen', reading: 'read', lexis: 'search', writing: 'type', speaking: 'puzzled' };
+  function scenes(route, p) {
+    var on = false, side = null;
+    if (root.getAttribute('data-phase') !== 'run') {
+      var card = $(':scope > .score-card', app), band = card && card.getAttribute('data-band');
+      if (route === 'hub') { on = perch($('.dz-express', app), 'read'); side = 'listen'; }
+      else if (route === 'section') {
+        var st = $('[data-act=start]', app);
+        if (st) on = perch(st.closest('.block'), SECTION_SCENE[p[2]] || 'read');
+        else if (card) on = perch(card, band === 'good' ? 'win' : band === 'bad' ? 'puzzled' : 'result');
+      } else if (route === 'express') {
+        var xs = $('[data-act=x-start]', app);
+        if (xs) on = perch(xs.closest('.block'), 'time'); else if (card) on = perch(card, 'win');
+      } else if (route === 'progress') {
+        var empty = $(':scope > .notice.info', app);
+        if (empty && !$('table, .pg-chart', app)) on = perch(empty, 'result'); else side = 'result';
+      } else if (route === 'exam' || route === 'test') side = 'type';
+      else if (route === 'sources') side = 'search';
+    }
+    if (on) root.setAttribute('data-scene', '1'); else root.removeAttribute('data-scene');
+    sideScene(side);
+  }
+  /* ---------- человечек на шкале прокрутки (12.11.2026) ----------
+     Пока идут задания, сбоку шкала: деление на вопрос (жёлтое - ответ дан) и человечек, который идёт по ней вместе с прокруткой.
+     Он шагает только от прокрутки и стоит, когда посетитель читает; в конце страницы поднимает руку. На узком экране шкалы нет,
+     человечек идёт вдоль правого края. Лента кадров - tools/make_walker.py (0-7 шаг, 8 стойка, 9-11 рука вверх).
+     «Анимация: выключена» убирает шкалу целиком. */
+  var railEl = null, railQs = [], railNames = [], walkStop = null, walkY = 0, walkDist = 0;
+  function railBuild() {
+    var names = [], qs = [];
+    if (root.getAttribute('data-phase') === 'run' && root.getAttribute('data-motion') !== 'off') $$('.opts input:not([disabled])', app).forEach(function (i) {
+      if (names.indexOf(i.name) < 0) { names.push(i.name); qs.push(i.closest('.q') || i.closest('.opts')); }
+    });
+    railQs = qs; railNames = names;
+    if (!qs.length) { if (railEl) { railEl.parentNode.removeChild(railEl); railEl = null; } return; }
+    if (!railEl) { railEl = el('div', 'dz-rail'); railEl.setAttribute('aria-hidden', 'true'); document.body.appendChild(railEl); walkY = window.scrollY; }
+    if (railEl.querySelectorAll('.dz-tick').length !== qs.length)
+      railEl.innerHTML = '<i class="dz-rail-line"></i>' + qs.map(function () { return '<i class="dz-tick"></i>'; }).join('') + '<b class="dz-walker" style="background-image:url(' + SCENE_BASE + 'walker.webp)"></b>';
+    railMove(true);
+  }
+  function railMove(still) {
+    if (!railEl) return;
+    var wrap = $('.wrap'), r = wrap ? wrap.getBoundingClientRect() : { right: window.innerWidth };
+    var side = window.innerWidth >= 1000 && window.innerWidth - r.right >= 64;
+    railEl.classList.toggle('side', side);
+    railEl.style.left = side ? Math.round(r.right + 8) + 'px' : '';
+    var H = railEl.clientHeight, docH = Math.max(1, document.documentElement.scrollHeight), y = window.scrollY, ticks = railEl.querySelectorAll('.dz-tick');
+    if (side) railQs.forEach(function (q, i) {
+      var b = q.getBoundingClientRect(), t = ticks[i]; if (!t) return;
+      t.style.top = Math.round((b.top + y + b.height / 2) / docH * H) + 'px';
+      t.classList.toggle('on', !!$('.opts input[name="' + railNames[i].replace(/"/g, '\\"') + '"]:checked', app));
+    });
+    var w = railEl.querySelector('.dz-walker'); if (!w) return;
+    var fw = w.offsetWidth, fh = w.offsetHeight, pos = Math.min(1, Math.max(0, (y + window.innerHeight / 2) / docH));
+    var end = y + window.innerHeight >= docH - 30, frame;
+    walkDist += Math.abs(y - walkY); walkY = y;
+    if (still) frame = end ? 11 : 8;
+    else frame = end ? 9 + Math.min(2, Math.floor(walkDist / 40) % 3) : Math.floor(walkDist / 22) % 8;
+    w.style.top = Math.round(pos * H - fh / 2) + 'px';
+    w.style.backgroundPosition = (-frame * fw) + 'px 0';
+  }
+  window.addEventListener('scroll', function () {
+    if (!railEl) return;
+    railMove(false);
+    clearTimeout(walkStop); walkStop = setTimeout(function () { railMove(true); }, 170);
+  }, { passive: true });
+  window.addEventListener('resize', function () { railMove(true); });
+
+  function tabTitle(route) {   // после замены слов заголовок вкладки берём из уже исправленного h1, без подписи кнопки-стрелки
+    var h1 = $('h1', app); if (route === 'hub' || !h1) return;
+    var c = h1.cloneNode(true); $$('button, .sr', c).forEach(function (x) { x.parentNode.removeChild(x); });
+    var t = c.textContent.trim(); if (t) document.title = t + ' · Qazaq Trainer';
+  }
+
   var app = document.getElementById('app');
   if (!app) { page(); return; }
 
@@ -113,6 +219,7 @@
     });
     var sum = $('.dz-progress-sum', bar); if (sum) sum.textContent = done + '/' + names.length;
     bar.style.setProperty('--f', names.length ? done / names.length : 0);
+    railMove(true);
   }
   function progress() {
     if (!$('.opts input:not([disabled])', app)) return;
@@ -407,7 +514,7 @@
     split();
     progress();
     result();
-    if (D === 'd1') { calm(route, p); calmSeoNav(); sentences(app); }
+    if (D === 'd1') { calm(route, p); calmSeoNav(); sentences(app); scenes(route, p); railBuild(); tabTitle(route); }
     if (keep && keep !== document.activeElement && document.contains(keep)) try { keep.focus({ preventScroll: true }); } catch (e) {}
   }
   enhance();
@@ -460,6 +567,7 @@
     var top = el('div', 'dz-top', '<a class="dz-brand" href="/">' + mark('dz-mark') + '<span>Qazaq Trainer</span></a>');
     m.insertBefore(top, hero);
     if (D === 'd1' && /^\/(ru|kk)\/(kaztest|qrt)\/[a-z]\d\/$/.test(location.pathname)) calmLanding(m, hero);
+    if (D === 'd1' && /не найдена|табылмады/i.test(document.title)) { var lost = scene('puzzled', 'dz-lost'); if (lost) { hero.appendChild(lost); root.setAttribute('data-scene', '1'); } }
     if (D === 'd1') $$('h2', m).forEach(function (h) { if (/официально не уточнено/.test(h.textContent)) { var nx = h.nextElementSibling; if (nx) nx.remove(); h.remove(); } });
     if (D === 'd1') $$('a[href$="#/exam/kaztest"]', m).forEach(function (a) { if (/аудирован|тыңдал/i.test(a.textContent)) a.setAttribute('href', a.getAttribute('href').replace(/#\/exam\/kaztest$/, '#/test/kaztest-listen-01')); });
     if (D === 'd1') rename(m);

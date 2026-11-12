@@ -27,7 +27,21 @@ def put_fonts(dest):
 
 def read(p): return pathlib.Path(p).read_text(encoding='utf-8')
 data = [read(src / 'data' / 'exams.js'), read(src / 'data' / 'site.js')]
-for f in sorted(glob.glob(str(src / 'data' / 'tests' / '*.js'))): data.append(read(f))
+# Тесты: в лаборатории и автономной сборке вшиты целиком; на публичном сайте (12.11.2026) в главную идут только каркасы
+# (tools/dump_lite.js), а полный файл теста браузер берёт из docs/tests/<id>.js, когда открывают раздел. Главная была 3,3 МБ.
+tests_data = [(pathlib.Path(f).stem, read(f)) for f in sorted(glob.glob(str(src / 'data' / 'tests' / '*.js')))]
+LITE = None
+if shutil.which('node'):
+    import subprocess as _sp
+    _r = _sp.run(['node', str(root / 'tools' / 'dump_lite.js')], capture_output=True, text=True, encoding='utf-8')
+    if _r.returncode == 0 and all(t.count('KZ.tests.push(') == 1 for _, t in tests_data): LITE = _r.stdout
+    else: print('ВНИМАНИЕ: каркасы тестов не собраны, главная сайта несёт тесты целиком:', _r.stderr.strip()[-300:])
+else: print('ВНИМАНИЕ: node не найден, главная сайта несёт тесты целиком')
+def tests_js(mode):
+    if mode == 'site' and LITE:
+        import hashlib
+        return [LITE, "KZ.testsRev = '" + hashlib.md5(''.join(t for _, t in tests_data).encode('utf-8')).hexdigest()[:8] + "';"]
+    return [t for _, t in tests_data]
 course_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'course' / '*.js')))]
 paid_data = [read(f) for f in sorted(glob.glob(str(src / 'data' / 'paid' / '*.js')))]   # платные моки и прочее «в разработке» - только лаборатория
 
@@ -763,7 +777,7 @@ def body(mode):
     flag = ["KZ.site.build = '" + mode + "';"]
     # сайт и лаборатория берут шрифты со своего сервера (src/fonts → fonts/), автономный dist - по-прежнему с Google Fonts
     return (tpl.replace('/*STYLES*/', local_fonts(css) if mode in ('site', 'lab') else css)
-               .replace('/*DATA*/', '\n'.join(data + flag + extra + [audio_js(mode)]))
+               .replace('/*DATA*/', '\n'.join(data + tests_js(mode) + flag + extra + [audio_js(mode)]))
                .replace('/*APP*/', app)
                .replace('/*SEONAV*/', seo_nav() if mode == 'site' else ''))
 SITE_NAME = 'Qazaq Trainer'
@@ -837,6 +851,11 @@ def _re_fonts(html):
 docs = root / 'docs'; docs.mkdir(exist_ok=True)
 (docs / 'index.html').write_text(full('site', site_cfg['analytics']), encoding='utf-8')
 (docs / '.nojekyll').write_text('', encoding='utf-8')
+# полные файлы тестов для подгрузки по требованию: тот же текст, только вместо добавления в список - замена каркаса (KZ.testLoaded в app.js)
+shutil.rmtree(docs / 'tests', ignore_errors=True)
+if LITE:
+    (docs / 'tests').mkdir()
+    for _id, _t in tests_data: (docs / 'tests' / (_id + '.js')).write_text(_t.replace('KZ.tests.push(', 'KZ.testLoaded(', 1), encoding='utf-8')
 # Вопросы для «задания дня» в Telegram: файл читает воркер tools/events-worker (раз в сутки).
 # Ссылку на тест он строит сам из exam/level, поэтому здесь только вопросы.
 if META and META.get('quiz'):

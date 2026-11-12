@@ -486,3 +486,63 @@
   [data-design=d1] .topbar .crumbs>.sep{flex:none}
   [data-design=d1] .topbar>.row{flex-wrap:nowrap;flex:none}
 }
+
+/* ---- кубиковые сцены (12.11.2026): стоят на верхней кромке плиты, на этой странице заменяют большой знак ---- */
+[data-design=d1] .dz-scene{display:block;height:auto;pointer-events:none;user-select:none;-webkit-user-select:none}
+[data-design=d1] .dz-perch-host{position:relative}
+[data-design=d1] .dz-perch{position:absolute;right:20px;bottom:calc(100% - 13px);width:210px;z-index:1}
+[data-design=d1][data-route=hub] .dz-perch{width:300px;bottom:calc(100% - 18px);right:max(24px,calc(50vw - 556px))}   /* плита экспресс-теста во всю ширину окна: сцену держим у правого края колонки */
+[data-design=d1][data-scene] .dz-hero>.dz-horn,[data-design=d1][data-scene] .dz-head>.dz-horn{display:none}
+[data-design=d1] .dz-lost{position:absolute!important;right:max(16px,calc(50vw - 23rem + 16px));bottom:0;width:190px}
+[data-design=d1] .dz-side{display:none}
+@media (min-width:1640px){
+  [data-design=d1][data-phase=view] .dz-side{display:block;position:fixed;left:calc((100vw - 1160px)/4 - 100px);bottom:96px;width:200px;z-index:1}
+}
+@media (max-width:900px){
+  [data-design=d1][data-route=hub] .dz-perch{width:190px;bottom:calc(100% - 12px)}
+  [data-design=d1] .dz-perch{width:160px;bottom:calc(100% - 10px)}
+}
+@media (max-width:560px){
+  [data-design=d1] .dz-perch{width:92px;right:10px;bottom:calc(100% - 6px)}
+  [data-design=d1][data-route=hub] .dz-perch{width:92px;right:16px;bottom:calc(100% - 6px)}
+  [data-design=d1][data-scene]:not([data-route=hub]) .dz-head{margin-bottom:52px}
+  [data-design=d1] .dz-lost{width:110px}
+}
+@media print{[data-design=d1] .dz-scene{display:none!important}}
+
+/* ---- телефон (12.11.2026): шапка в одну строку, кнопка отзыва значком, номера вариантов под палец ---- */
+[data-design=d1][data-route=hub] .topbar .crumbs{display:none}
+@media (max-width:560px){
+  [data-design=d1] .topbar{flex-wrap:nowrap}
+  [data-design=d1] .topbar nav{flex:1 1 0;min-width:0}
+  [data-design=d1] .topbar>.row{flex:none;flex-wrap:nowrap;gap:8px}
+  [data-design=d1] .topbar .hintbtn,[data-design=d1] .topbar>.row>[data-act=lang]{display:none}   /* язык и подсказки на телефоне - в настройках под шестерёнкой */
+  [data-design=d1] .topbar .crumbs{flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow:hidden;font-size:.8125rem}
+  [data-design=d1] .topbar .crumbs>*{display:none}
+  [data-design=d1] .topbar .crumbs>a:last-of-type{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:8px 0}
+  [data-design=d1] .topbar .crumbs>a:last-of-type::before{content:"\2039\00a0"}
+  [data-design=d1] .vchip,[data-design=d1] .hub-st .vchip{min-width:42px;height:42px;font-size:.9375rem}
+  [data-design=d1] .hub-st .variants,[data-design=d1] .variants{gap:6px}
+  [data-design=d1] .fb{bottom:16px}
+  [data-design=d1] .fb-tab{width:40px;height:40px;min-height:40px!important;padding:0!important;border-radius:50%;font-size:0!important;display:flex;align-items:center;justify-content:center}
+  [data-design=d1] .fb-tab::before{content:"!";font:800 18px/1 var(--head)}
+  [data-design=d1][data-phase=run] .fb-tab{opacity:.75}
+}
+@media (min-width:561px){[data-design=d1][data-scene]:not([data-route=hub]) .dz-head>:not(.dz-horn){max-width:calc(100% - 240px)}}
+@media (min-width:561px) and (max-width:900px){[data-design=d1][data-scene]:not([data-route=hub]) .dz-head>:not(.dz-horn){max-width:calc(100% - 180px)}}
+@media (max-width:560px){[data-design=d1][data-scene]:not([data-route=hub]) .dz-head{margin-bottom:62px}}
+@media (max-width:560px){[data-design=d1][data-scene][data-route=hub] .dz-hero .dz-punch{margin-bottom:34px}}
+[data-design=d1] .score-card.dz-perch-host{overflow:visible}
+[data-design=d1][data-scene] body>main .dz-hero>:not(.dz-scene):not(.dz-horn){max-width:calc(100% - 210px)}
+@media (max-width:560px){[data-design=d1][data-scene] body>main .dz-hero>:not(.dz-scene):not(.dz-horn):not(h1){max-width:calc(100% - 116px)}[data-design=d1][data-scene] body>main .dz-hero>h1{max-width:none}}
+
+/* ---- человечек на шкале прокрутки во время заданий (12.11.2026) ---- */
+[data-design=d1] .dz-rail{position:fixed;top:140px;bottom:84px;right:1px;width:32px;z-index:5;pointer-events:none}
+[data-design=d1] .dz-rail-line,[data-design=d1] .dz-tick{display:none}
+[data-design=d1] .dz-walker{position:absolute;left:0;top:0;width:32px;height:30px;background-repeat:no-repeat;background-size:1200% 100%;transition:top .1s linear}
+[data-design=d1] .dz-rail.side{right:auto;top:150px;bottom:110px;width:50px}
+[data-design=d1] .dz-rail.side .dz-rail-line{display:block;position:absolute;left:23px;top:-14px;bottom:-14px;width:4px;border-radius:2px;background:var(--navy)}
+[data-design=d1] .dz-rail.side .dz-tick{display:block;position:absolute;left:16px;width:18px;height:4px;margin-top:-2px;border-radius:2px;background:#4a5b8c}
+[data-design=d1] .dz-rail.side .dz-tick.on{background:var(--sun)}
+[data-design=d1] .dz-rail.side .dz-walker{width:48px;height:46px;left:1px}
+@media print{[data-design=d1] .dz-rail{display:none}}

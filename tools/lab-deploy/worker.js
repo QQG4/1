@@ -91,7 +91,7 @@ async function stats(url, env) {
 /* Переключатель «Обучение · Новый сайт» (29.10.2026): в лаборатории лежат две сборки — обучалка (корень) и новая
    версия публичного сайта (/_site, собирает build.py). Выбор хранится в куке qt_view, ссылки /?view=site и /?view=lab.
    Обучалку не трогаем: кнопку переключателя дописываем в HTML на лету. Аудио, шрифты и статистика — общие. */
-const SHARED = /^\/(audio|fonts|api|stats|_site)(\/|$)/;
+const SHARED = /^\/(audio|fonts|api|stats|sheet|_site)(\/|$)/;
 const VIEWS = [['lab', 'Обучение'], ['site', 'Новый сайт']];
 const SWITCH = (view) => '<div id="qt-view-switch" style="position:fixed;left:12px;bottom:12px;z-index:2147483647;display:flex;gap:2px;' +
   'padding:3px;border-radius:999px;background:#10171b;box-shadow:0 2px 10px rgba(0,0,0,.25);font:600 13px/1 system-ui,-apple-system,sans-serif;white-space:nowrap">' +

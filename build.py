@@ -735,11 +735,14 @@ def landing_script(lang, eid=None, lv=None, path=None):
     return ('<script>(function(){var sp=new URLSearchParams(location.search),q=new URLSearchParams(),ref="";'
             'try{ref=document.referrer?new URL(document.referrer).hostname:""}catch(e){}'
             'if(ref===location.hostname)ref="";'
+            'var me=false;try{var mm=/[?&]me=([01])/.exec(location.search);if(mm)localStorage.setItem("kz-trainer:me",mm[1]);me=localStorage.getItem("kz-trainer:me")==="1"}catch(e){}'
+            'var ua=navigator.userAgent||"",skip=me||navigator.webdriver||/bot|crawl|spider|slurp|headless|lighthouse/i.test(ua),'
+            'dv=/iPad|Tablet/.test(ua)||(/Android/.test(ua)&&!/Mobile/.test(ua))?"tablet":/Mobi|iPhone|Android/.test(ua)?"mobile":"desktop";'
             '["utm_source","utm_medium","utm_campaign"].forEach(function(k){if(sp.get(k))q.set(k,sp.get(k).slice(0,40))});'
             'if(ref)q.set("ref",ref.replace(/^www\\./,"").slice(0,80));'
             'var qs=q.toString();if(qs)document.querySelectorAll(\'a[href^="/#"]\').forEach(function(a){a.href="/?"+qs+a.getAttribute("href").slice(1)});'
-            + ('var u=' + json.dumps(ev) + ';if(u&&navigator.sendBeacon){var p={path:' + json.dumps(path or 'lp/' + lang + '/' + eid + '/' + lv.lower()) + '};'
-               'if(ref)p.ref=ref.replace(/^www\\./,"").slice(0,80);var m=["utm_source","utm_medium","utm_campaign"].map(function(k){return(sp.get(k)||"").slice(0,40)});'
+            + ('var u=' + json.dumps(ev) + ';if(u&&navigator.sendBeacon&&!skip){var p={path:' + json.dumps(path or 'lp/' + lang + '/' + eid + '/' + lv.lower()) + '};'
+               'p.ua=dv;if(ref)p.ref=ref.replace(/^www\\./,"").slice(0,80);var m=["utm_source","utm_medium","utm_campaign"].map(function(k){return(sp.get(k)||"").slice(0,40)});'
                'if(m.join(""))p.utm=m.join("/");'
                'var sid;try{sid=sessionStorage.getItem("kz-trainer:sid");if(!sid){sid=Date.now().toString(36)+Math.random().toString(36).slice(2,10);sessionStorage.setItem("kz-trainer:sid",sid)}}catch(e){sid=Math.random().toString(36).slice(2,12)}var send=function(n,pp){try{navigator.sendBeacon(u,new Blob([JSON.stringify({e:n,sid:sid,lang:' + json.dumps(lang) + ',ts:Date.now(),p:pp})],{type:"text/plain;charset=UTF-8"}))}catch(e){}};'
                'send("pageview",p);document.addEventListener("click",function(ev){var a=ev.target.closest&&ev.target.closest("a[data-remind]");if(a)send("remind",{where:a.getAttribute("data-remind"),path:p.path})})}'
@@ -985,6 +988,9 @@ _tests_js = '\n'.join(read(f) for f in sorted(glob.glob(str(src / 'data' / 'test
 assert '</script' not in _tests_js.lower(), 'в данных тестов есть </script> - страница статистики сломается'
 (lab / 'stats').mkdir(exist_ok=True)
 (lab / 'stats' / 'index.html').write_text(read(src / 'stats' / 'index.html').replace('/*TESTS*/', _tests_js), encoding='utf-8')
+# образец оценочного листа для пилота проверки письма (14.11.2026): только лаборатория, адрес /sheet/ (в SHARED воркера лаборатории)
+(lab / 'sheet').mkdir(exist_ok=True)
+(lab / 'sheet' / 'index.html').write_text(read(src / 'sheet' / 'index.html'), encoding='utf-8')
 
 # новая версия публичного сайта внутри лаборатории - на оценку владельцу до выкладки (29.10.2026): переключатель
 # «Обучение · Новый сайт» добавляет воркер лаборатории (tools/lab-deploy/worker.js), сама обучалка не меняется.

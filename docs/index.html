@@ -1078,7 +1078,11 @@ window.KZ = window.KZ || {};
      Два приёмника, оба необязательные: KZ.site.eventsUrl (свой endpoint - POST JSON, шлём sendBeacon,
      чтобы уход со страницы не терял событие) и счётчик из analyticsSnippet (GoatCounter / Umami / Plausible —
      что подключено, то и используется). Не настроено ничего → все вызовы молча ничего не делают. */
-  var TRACK_ON = !!(KZ.site && KZ.site.build === 'site') && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);   // локальный просмотр docs/ цифры не пачкает
+  /* «Не считать мой браузер»: адрес с ?me=1 ставит метку в localStorage, ?me=0 снимает. Роботы и автоматизированные браузеры тоже не считаются (13.11.2026) */
+  var ME = false; try { var mm = /[?&]me=([01])/.exec(location.search); if (mm) localStorage.setItem('kz-trainer:me', mm[1]); ME = localStorage.getItem('kz-trainer:me') === '1'; } catch (e) {}
+  var UA = navigator.userAgent || '', ROBOT = !!navigator.webdriver || /bot|crawl|spider|slurp|headless|lighthouse/i.test(UA);
+  var DEVICE = /iPad|Tablet/.test(UA) || (/Android/.test(UA) && !/Mobile/.test(UA)) ? 'tablet' : /Mobi|iPhone|Android/.test(UA) ? 'mobile' : 'desktop';   // только класс устройства, строку браузера не храним
+  var TRACK_ON = !!(KZ.site && KZ.site.build === 'site') && !ME && !ROBOT && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);   // локальный просмотр docs/ цифры не пачкает
   var SID = (function () {
     if (!TRACK_ON) return '';
     try {
@@ -1121,7 +1125,7 @@ window.KZ = window.KZ || {};
   /* Откуда пришли - только при первом просмотре во вкладке: домен сайта-источника (без адреса страницы)
      и utm-метки из ссылки (?utm_source=telegram&utm_campaign=…). Нужны, чтобы понять, какой канал продвижения работает. */
   function landing(path) {
-    var p = { path: path }, ref = '';
+    var p = { path: path, ua: DEVICE }, ref = '';
     try { ref = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
     if (ref && ref !== location.hostname) p.ref = ref.replace(/^www\./, '').slice(0, 80);
     try {
@@ -1442,6 +1446,20 @@ window.KZ = window.KZ || {};
     var el = document.getElementById('live'); if (!el) { el = document.createElement('div'); el.id = 'live'; el.className = 'sr'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'assertive'); document.body.appendChild(el); }
     el.textContent = ''; setTimeout(function () { el.textContent = msg; }, 50);
   }
+  /* Уход из раздела до его завершения: сколько секунд провёл и сколько заданий сделал (13.11.2026). Событие section-exit:
+     seconds, pct (доля заданий с ответом) и why вида «7/10»; для письма «слов N», для говорения «отвечено k/m». Раз на заход в раздел. */
+  function sendExit() {
+    var r = run; if (!r || r.phase !== 'run' || r.exitSent) return;
+    var t = findTest(r.testId); if (!t) return;
+    var sec = (t.sections || []).filter(function (x) { return x.type === r.type; })[0]; if (!sec) return;
+    var total = sec.questions ? sec.questions.length : 0, ans = r.answers ? Object.keys(r.answers).length : 0, why = '';
+    if (total) why = ans + '/' + total;
+    else if (r.type === 'writing') why = 'слов ' + wordCount(r.text || '');
+    else if (r.type === 'speaking') why = 'отвечено ' + Object.keys(r.qdone || {}).length;
+    r.exitSent = true;
+    track('section-exit', { test: t.id, exam: t.exam, level: t.level, section: r.type, seconds: Math.round(elapsed()), pct: total ? Math.round(100 * ans / total) : null, why: why });
+  }
+  addEventListener('pagehide', sendExit);
   function elapsed() { return timer.start ? (Date.now() - timer.start) / 1000 : 0; }
   function tick() {
     var el = document.getElementById('clock'); if (!el) return;
@@ -1586,7 +1604,7 @@ window.KZ = window.KZ || {};
     var p = h.split('/').filter(Boolean);
     var samePage = lastHash === h; lastHash = h;
     var sameSection = run && p[0] === 'test' && p[1] === run.testId && p[2] === run.type;
-    if (!sameSection) { stopTimer(); if (qTimer) clearInterval(qTimer); if (tkTimer) clearInterval(tkTimer); run = null; stopSpeak(); stopRec(); }
+    if (!sameSection) { sendExit(); stopTimer(); if (qTimer) clearInterval(qTimer); if (tkTimer) clearInterval(tkTimer); run = null; stopSpeak(); stopRec(); }
     var need = lazyNeed(p);
     if (need.length) {
       var box = document.getElementById('app'), bar = topbar([{ label: T('Хаб'), href: '#/' }]);

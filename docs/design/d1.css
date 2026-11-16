@@ -15,7 +15,7 @@
   /* посадочные */
   --fg:var(--ink); --mut:var(--ink-muted); --acc:var(--accent); --line:var(--border); --card:var(--surface);
 }
-@media (prefers-color-scheme:dark){:root[data-design=d1]:not([data-theme="light"]){
+@media (prefers-color-scheme:dark){:root[data-design=d1][data-theme="dark"]{
   --navy:#34497a; --navy-2:#40578d;
   --bg:#1b2233; --surface:#252e43; --surface-raised:#2f3951;
   --ink:#eef0f4; --ink-muted:#c0c6d3; --ink-faint:#adb4c4;
@@ -215,11 +215,11 @@
 [data-design=d1] .tile-big{font-weight:900}
 
 /* тёмная тема: синие плиты остаются, поверхности темнее, границы плит заметнее */
-@media (prefers-color-scheme:dark){:root[data-design=d1]:not([data-theme="light"]) .opt.selected{background:var(--sun);border-color:var(--sun);color:var(--on-sun)}
-  :root[data-design=d1]:not([data-theme="light"]) .opt.selected .k{color:var(--on-sun)}
-  :root[data-design=d1]:not([data-theme="light"]) .vchip.ok{color:#232d45}
-  :root[data-design=d1]:not([data-theme="light"]) .dz-express .exam-card:hover{background:var(--navy-2)}
-  :root[data-design=d1]:not([data-theme="light"]) footer{border-top-color:var(--sun)}
+@media (prefers-color-scheme:dark){:root[data-design=d1][data-theme="dark"] .opt.selected{background:var(--sun);border-color:var(--sun);color:var(--on-sun)}
+  :root[data-design=d1][data-theme="dark"] .opt.selected .k{color:var(--on-sun)}
+  :root[data-design=d1][data-theme="dark"] .vchip.ok{color:#232d45}
+  :root[data-design=d1][data-theme="dark"] .dz-express .exam-card:hover{background:var(--navy-2)}
+  :root[data-design=d1][data-theme="dark"] footer{border-top-color:var(--sun)}
 }
 :root[data-design=d1][data-theme="dark"] .opt.selected{background:var(--sun);border-color:var(--sun);color:var(--on-sun)}
 :root[data-design=d1][data-theme="dark"] .opt.selected .k{color:var(--on-sun)}
@@ -365,7 +365,7 @@
   [data-design=d1] .dz-variant{flex:1 1 40%;text-align:center}
 }
 @media (prefers-color-scheme:dark){
-  :root[data-design=d1]:not([data-theme="light"]) .dz-variant:hover{color:var(--accent-ink)}
+  :root[data-design=d1][data-theme="dark"] .dz-variant:hover{color:var(--accent-ink)}
 }
 [data-design=d1]:not([data-route=hub]) .seo-nav{display:none}
 
@@ -539,10 +539,76 @@
 /* ---- человечек на шкале прокрутки во время заданий (12.11.2026) ---- */
 [data-design=d1] .dz-rail{position:fixed;top:140px;bottom:84px;right:1px;width:32px;z-index:5;pointer-events:none}
 [data-design=d1] .dz-rail-line,[data-design=d1] .dz-tick{display:none}
-[data-design=d1] .dz-walker{position:absolute;left:0;top:0;width:32px;height:30px;background-repeat:no-repeat;background-size:1200% 100%;transition:top .1s linear}
+[data-design=d1] .dz-walker{position:absolute;left:0;top:0;width:32px;height:30px;background-repeat:no-repeat;background-size:1800% 100%;transition:top .1s linear}
 [data-design=d1] .dz-rail.side{right:auto;top:150px;bottom:110px;width:50px}
 [data-design=d1] .dz-rail.side .dz-rail-line{display:block;position:absolute;left:23px;top:-14px;bottom:-14px;width:4px;border-radius:2px;background:var(--navy)}
 [data-design=d1] .dz-rail.side .dz-tick{display:block;position:absolute;left:16px;width:18px;height:4px;margin-top:-2px;border-radius:2px;background:#4a5b8c}
 [data-design=d1] .dz-rail.side .dz-tick.on{background:var(--sun)}
 [data-design=d1] .dz-rail.side .dz-walker{width:48px;height:46px;left:1px}
 @media print{[data-design=d1] .dz-rail{display:none}}
+
+/* правки владельца 16.11.2026 */
+[data-design=d1] footer .seo-nav{margin:0;padding:10px 0 0;max-width:none;font-size:.875rem;opacity:1}
+[data-design=d1] footer .seo-body{padding-top:4px}
+[data-design=d1] footer .seo-link{cursor:pointer}
+[data-design=d1] footer>p+p,[data-design=d1] footer .seo-nav p{text-align:justify;hyphens:auto}
+
+/* ---- оформление (16.11.2026): светлое по умолчанию у всех, остальное по выбору в настройках ----
+   Мягкое: кремовый фон и тёмно-серый текст без чистого чёрного на белом (рекомендации для дислексии и светочувствительности), контраст текста не ниже 7:1.
+   Контрастное: чёрное на белом, тёмные границы, контраст не ниже 7:1 (WCAG AAA).
+   Для дальтоников: верно синим, неверно оранжевым вместо зелёного и красного, неверный ответ ещё и пунктиром, плюс значки ✓ ✗ и слова. */
+:root[data-theme="light"],:root[data-theme="soft"],:root[data-theme="contrast"],:root[data-theme="cb"]{color-scheme:only light}
+:root[data-theme="dark"]{color-scheme:dark}
+:root[data-design=d1][data-theme="soft"]{
+  --bg:#f3ead6; --surface:#fbf5e6; --surface-raised:#ece1c8;
+  --ink:#2a2a2e; --ink-muted:#44444a; --ink-faint:#4d4d54;
+  --accent:#34497a; --accent-ink:#fbf5e6; --accent-soft:#e6dfcb;
+  --gold:#6b4f12; --gold-soft:#efe3bb;
+  --good:#2f5f46; --good-soft:#dfe9d6;
+  --bad:#8a3b30; --bad-soft:#f1ddd2;
+  --border:#d8ccae; --border-strong:#a89a72;
+}
+:root[data-design=d1][data-theme="contrast"]{
+  --navy:#14214d; --navy-2:#1f3070; --sun:#ffe08a; --sun-2:#ffeaa8; --on-sun:#000;
+  --bg:#ffffff; --surface:#ffffff; --surface-raised:#eceff5;
+  --ink:#000000; --ink-muted:#1a1f2b; --ink-faint:#262c3a;
+  --accent:#0a2a8a; --accent-ink:#ffffff; --accent-soft:#e1e7fb;
+  --gold:#4a3500; --gold-soft:#fff0b8;
+  --good:#004a24; --good-soft:#d4f0df;
+  --bad:#8a1200; --bad-soft:#fddcd5;
+  --border:#2b3140; --border-strong:#000000;
+}
+:root[data-theme="contrast"] .opt,:root[data-theme="contrast"] .block,:root[data-theme="contrast"] .notice,:root[data-theme="contrast"] .btn,:root[data-theme="contrast"] .exam-card,:root[data-theme="contrast"] .tile{border-width:2px;border-color:#000}
+:root[data-design=d1][data-theme="cb"]{
+  --good:#00507a; --good-soft:#d6e8f6;
+  --bad:#8a3a00; --bad-soft:#fde4cf;
+}
+:root[data-theme="cb"] .opt.wrong{border-style:dashed}
+[data-design=d1] footer .seo-nav p{max-width:none!important}
+
+/* весь текст по ширине, кроме заголовков, кнопок и подписей (просьба владельца 16.11.2026) */
+[data-design=d1] :is(p,li,dd,blockquote):not(.kicker,.tag,.setlabel,.hint,.badge,.dz-punch,.row){text-align:justify;text-justify:inter-word;hyphens:auto;-webkit-hyphens:auto}
+[data-design=d1] :is(.btn,button,summary,.badge,.exam-card,.topbar,.tile,.score-card,.stage,.level-row,.crumbs,.opt,.pg-chart,.stages,.dz-top,.share-icons) :is(p,li){text-align:left;hyphens:manual}
+[data-design=d1] [style*="text-align:center"]{text-align:center}
+
+/* универсальный доступ в настройках и его параметры (16.11.2026) */
+[data-design=d1] .uigrp{margin-top:6px;padding-top:12px;border-top:2px solid var(--border-strong);display:flex;flex-direction:column;gap:10px}
+[data-design=d1] .uigrp-t{font-family:var(--head);font-weight:800;font-size:1rem}
+[data-design=d1][data-align=left] :is(p,li,dd,blockquote){text-align:left!important;hyphens:manual!important}
+html[data-lh=wide] body{letter-spacing:.02em;word-spacing:.08em}
+html[data-lh=wide] #app :is(p,li,.opt,.lede,.sub,.hint,.passage,.script,.essay,textarea){line-height:1.9}
+[data-design=d1] .uigrp{border-top:0;padding-top:0}
+[data-design=d1] .uigrp-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 14px;background:var(--surface-raised);color:var(--ink);border:2px solid var(--border-strong);border-radius:2px;cursor:pointer;font:inherit;font-family:var(--head);font-weight:800;text-align:left}
+[data-design=d1] .uigrp-btn:hover{border-color:var(--accent)}
+[data-design=d1] .uigrp-ar{transition:transform .15s}
+[data-design=d1] .uigrp-btn[aria-expanded=true] .uigrp-ar{transform:rotate(180deg)}
+[data-design=d1] .uigrp-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}
+[data-design=d1] .uigrp-body[hidden]{display:none}
+
+/* настройки: небольшое окно под шестерёнкой (16.11.2026) */
+[data-design=d1] .uipanel{position:fixed;z-index:60;width:min(360px,calc(100vw - 16px));max-height:calc(100vh - 100px);overflow:auto;margin:0;padding:14px;gap:12px;border:2px solid var(--border-strong);box-shadow:0 12px 32px -12px rgba(20,28,48,.35);background:var(--surface);color:var(--ink)}
+[data-design=d1] .uipanel[hidden]{display:none}
+[data-design=d1] .uipanel .row{flex-direction:column;align-items:flex-start;gap:6px}
+[data-design=d1] .uipanel .lbl{min-width:0;font-size:.8438rem;color:var(--ink-muted)}
+[data-design=d1] .uipanel .seg{flex-wrap:wrap}
+[data-design=d1] .uipanel p{font-size:.8438rem;line-height:1.45;color:var(--ink-muted);text-align:left;hyphens:manual;margin:0}

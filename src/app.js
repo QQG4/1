@@ -188,25 +188,51 @@
 
   /* ---------------- настройки интерфейса: язык, размер текста, шрифт, подсказки, транскрипт ---------------- */
   var UI_KEY = 'kz-trainer:ui';
-  var ui = { size: 'm', font: 'std', hints: false, transcript: false, practice: false, motion: 'auto' };   // motion: 'auto' - как в системе («меньше движения»), true / false - выбор в настройках сильнее системы
+  var THEMES = ['light', 'soft', 'contrast', 'cb', 'dark'];   // оформление: по умолчанию светлое у всех, тёмное и особые схемы - только по выбору (16.11.2026)
+  var a11yOpen = false;   // блок «Универсальный доступ» в настройках свёрнут, пока посетитель его не откроет
+  var ui = { size: 'm', font: 'std', theme: 'light', lh: 'std', align: 'justify', rate: '1', hints: false, transcript: false, practice: false, motion: true };   // motion: 'auto' - как в системе («меньше движения»), true / false - выбор в настройках сильнее системы
   try { var u0 = JSON.parse(localStorage.getItem(UI_KEY)); if (u0) Object.keys(ui).forEach(function (k) { if (u0[k] != null) ui[k] = u0[k]; }); } catch (e) {}
+  if (ui.motion !== false) ui.motion = true;   // анимация включена у всех, выключить можно только кнопкой в настройках (16.11.2026)
+  if (THEMES.indexOf(ui.theme) < 0) ui.theme = 'light';
+  if (['std', 'wide'].indexOf(ui.lh) < 0) ui.lh = 'std';
+  if (['justify', 'left'].indexOf(ui.align) < 0) ui.align = 'justify';
+  if (['1', '0.85', '0.7'].indexOf(String(ui.rate)) < 0) ui.rate = '1';
   function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} applyUi(); }
-  function applyUi() { var h = document.documentElement; h.setAttribute('data-size', ui.size); h.setAttribute('data-font', ui.font); h.classList.toggle('hints', !!ui.hints); h.setAttribute('data-motion', ui.motion === false ? 'off' : ui.motion === true ? 'on' : 'auto'); h.lang = KZ.lang; }
+  function applyUi() { var h = document.documentElement; h.setAttribute('data-size', ui.size); h.setAttribute('data-font', ui.font); h.setAttribute('data-theme', ui.theme); h.setAttribute('data-lh', ui.lh); h.setAttribute('data-align', ui.align); var cs = document.querySelector('meta[name="color-scheme"]'); if (cs) cs.setAttribute('content', ui.theme === 'dark' ? 'dark' : 'only light'); h.classList.toggle('hints', !!ui.hints); h.setAttribute('data-motion', ui.motion === false ? 'off' : 'on'); h.lang = KZ.lang; }
   applyUi();
   function uiPanel() {
     function seg(act, key, vals, labels) { return '<span class="seg" role="group">' + vals.map(function (v, i) { return '<button class="cb' + (ui[key] === v ? ' on' : '') + '" data-act="' + act + '" data-v="' + v + '" aria-pressed="' + (ui[key] === v) + '">' + labels[i] + '</button>'; }).join('') + '</span>'; }
     return '<div class="uipanel" id="ui-panel" hidden><div class="row"><span class="lbl">' + T('Язык интерфейса') + '</span><span class="seg">' + ['ru', 'kk'].map(function (l) { return '<button class="cb' + (KZ.lang === l ? ' on' : '') + '" data-act="lang" data-v="' + l + '" aria-pressed="' + (KZ.lang === l) + '">' + l.toUpperCase() + '</button>'; }).join('') + '</span></div>' +
+      '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
+      '<div class="row"><span class="lbl">' + T('Таймер') + '</span>' + seg('ui-practice', 'practice', [false, true], [T('как на экзамене'), T('тренировка')]) + '</div>' +
+      '<div class="row"><span class="lbl">' + T('Анимация') + '</span>' + (function () { var on = ui.motion !== false; return '<span class="seg" role="group">' + [true, false].map(function (v) { return '<button class="cb' + (on === v ? ' on' : '') + '" data-act="ui-motion" data-v="' + v + '" aria-pressed="' + (on === v) + '">' + (v ? T('включена') : T('выключена')) + '</button>'; }).join('') + '</span>'; })() + '</div>' +
+      '<div class="uigrp"><button class="uigrp-t uigrp-btn" data-act="ui-a11y" aria-expanded="' + a11yOpen + '">' + T('Универсальный доступ') + '<span class="uigrp-ar" aria-hidden="true">▾</span></button><div class="uigrp-body"' + (a11yOpen ? '' : ' hidden') + '>' +
+      '<div class="row"><span class="lbl">' + T('Оформление') + '</span>' + seg('ui-theme', 'theme', THEMES, [T('Светлое'), T('Мягкое'), T('Контрастное'), T('Для дальтоников'), T('Тёмное')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Размер текста') + '</span>' + seg('ui-size', 'size', ['s', 'm', 'l', 'xl'], ['A−', 'A', 'A+', 'A++']) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Шрифт') + '</span>' + seg('ui-font', 'font', ['std', 'dys'], [T('обычный'), T('для дислексии')]) + '</div>' +
-      '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
-      '<div class="row"><span class="lbl">' + T('Транскрипт аудирования') + '</span>' + seg('ui-transcript', 'transcript', [false, true], [T('скрыт'), T('показан')]) + '<span class="hint">' + T('для слабослышащих: текст виден во время звучания') + '</span></div>' +
-      '<div class="row"><span class="lbl">' + T('Таймер') + '</span>' + seg('ui-practice', 'practice', [false, true], [T('как на экзамене'), T('тренировка')]) + '<span class="hint">' + T('тренировка: время показывается, но раздел не закрывается; уровень в этом режиме не подтверждается') + '</span></div>' +
-      '<div class="row"><span class="lbl">' + T('Анимация') + '</span>' + (function () { var on = ui.motion === 'auto' ? !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) : !!ui.motion; return '<span class="seg" role="group">' + [true, false].map(function (v) { return '<button class="cb' + (on === v ? ' on' : '') + '" data-act="ui-motion" data-v="' + v + '" aria-pressed="' + (on === v) + '">' + (v ? T('включена') : T('выключена')) + '</button>'; }).join('') + '</span>'; })() + '</div>' +
+      '<div class="row"><span class="lbl">' + T('Интервалы') + '</span>' + seg('ui-lh', 'lh', ['std', 'wide'], [T('обычные'), T('увеличенные')]) + '</div>' +
+      '<div class="row"><span class="lbl">' + T('Выравнивание текста') + '</span>' + seg('ui-align', 'align', ['justify', 'left'], [T('по ширине'), T('по левому краю')]) + '</div>' +
+      '<div class="row"><span class="lbl">' + T('Транскрипт аудирования') + '</span>' + seg('ui-transcript', 'transcript', [false, true], [T('скрыт'), T('показан')]) + '</div>' +
+      '<div class="row"><span class="lbl">' + T('Скорость аудио') + '</span>' + seg('ui-rate', 'rate', ['1', '0.85', '0.7'], ['1×', '0.85×', '0.7×']) + '</div></div></div>' +
       '<p class="small muted">' + T('Содержание заданий всегда на казахском языке; переключается только интерфейс.') + '</p></div>';
   }
-  function uiButtons() {
-    return '<button class="btn ghost small hintbtn' + (ui.hints ? ' on' : '') + '" data-act="ui-hints" data-v="' + (ui.hints ? 'false' : 'true') + '" aria-pressed="' + !!ui.hints + '" title="' + T('Подсказки') + '">' + T('Подсказки') + '<span class="sw" aria-hidden="true"></span></button>' +
-      '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
+  /* настройки - небольшое окно под шестерёнкой, а не панель на всю ширину (16.11.2026) */
+  function placePanel() {
+    var up = document.getElementById('ui-panel'), g = document.querySelector('[data-act="ui-panel"]'); if (!up || !g || up.hidden) return;
+    var r = g.getBoundingClientRect();
+    up.style.top = Math.round(r.bottom + 8) + 'px'; up.style.right = Math.max(8, Math.round(window.innerWidth - r.right)) + 'px';
+  }
+  window.addEventListener('resize', placePanel);
+  document.addEventListener('click', function (e) {   // клик мимо окна настроек закрывает его
+    var up = document.getElementById('ui-panel'); if (!up || up.hidden) return;
+    if (e.target.closest && (e.target.closest('#ui-panel') || e.target.closest('[data-act="ui-panel"]'))) return;
+    up.hidden = true; var g = document.querySelector('[data-act="ui-panel"]'); if (g) g.setAttribute('aria-expanded', 'false');
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return; var up = document.getElementById('ui-panel'); if (up && !up.hidden) { up.hidden = true; var g = document.querySelector('[data-act="ui-panel"]'); if (g) { g.setAttribute('aria-expanded', 'false'); g.focus(); } }
+  });
+  function uiButtons() {   // подсказки включаются только в настройках (решение владельца 16.11.2026)
+    return '<button class="btn ghost small" data-act="lang" data-v="' + (KZ.lang === 'ru' ? 'kk' : 'ru') + '" aria-label="' + T('Язык интерфейса') + '">' + (KZ.lang === 'ru' ? 'KK' : 'RU') + '</button>' +
       '<button class="btn ghost small gear" data-act="ui-panel" aria-expanded="false" aria-controls="ui-panel" title="' + T('Настройки') + '">⚙<span class="sr">' + T('Настройки') + '</span></button>';
   }
 
@@ -1084,7 +1110,7 @@
     var a = document.getElementById('au' + sfx); if (!a) return;
     run.playing = part == null ? true : 'p' + part; btn.disabled = true; btn.textContent = '▶ ' + T('Звучит…');
     var pb = document.getElementById('au-pause' + sfx); if (pb) { pb.hidden = false; pb.textContent = '⏸ ' + T('Пауза'); }
-    a.currentTime = 0;
+    a.currentTime = 0; a.playbackRate = parseFloat(ui.rate) || 1;   // скорость из настроек доступа
     a.ontimeupdate = function () { var bar = document.getElementById('aubar' + sfx); if (bar && a.duration) bar.style.width = (100 * a.currentTime / a.duration) + '%'; };
     var finished = false, r0 = run;   // колбэки плеера могут сработать, когда посетитель уже ушёл из раздела и run обнулён
     function finish() { if (finished || run !== r0) return; finished = true; run.playing = false; run.playsUsed++; quizDraft(); route(); }
@@ -1913,8 +1939,9 @@
     else if (act === 'share-toggle') { var si = b.parentNode.querySelector('.share-icons'); if (si) { si.hidden = !si.hidden; b.setAttribute('aria-expanded', String(!si.hidden)); } return; }
     else if (act === 'story-close') { var sc = document.getElementById('story-card'); if (sc) sc.remove(); return; }
     else if (act === 'to-top') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-    else if (act === 'ui-panel') { var up = document.getElementById('ui-panel'); if (up) { up.hidden = !up.hidden; b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
-    else if (act === 'ui-size' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice' || act === 'ui-motion') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) up2.hidden = false; } return; }
+    else if (act === 'ui-a11y') { a11yOpen = !a11yOpen; b.setAttribute('aria-expanded', String(a11yOpen)); var gb = b.parentNode.querySelector('.uigrp-body'); if (gb) gb.hidden = !a11yOpen; return; }
+    else if (act === 'ui-panel') { a11yOpen = false; var up = document.getElementById('ui-panel'); if (up) { var gb2 = up.querySelector('.uigrp-body'); if (gb2) gb2.hidden = true; var ab = up.querySelector('.uigrp-btn'); if (ab) ab.setAttribute('aria-expanded', 'false'); up.hidden = !up.hidden; placePanel(); b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
+    else if (act === 'ui-size' || act === 'ui-theme' || act === 'ui-lh' || act === 'ui-align' || act === 'ui-rate' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice' || act === 'ui-motion') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) { up2.hidden = false; placePanel(); } } return; }
     if (act === 'sync-make' || act === 'sync-use') {
       var sm = document.getElementById('sync-msg'), url = KZ.site && KZ.site.eventsUrl;
       if (!url) return;

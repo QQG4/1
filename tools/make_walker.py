@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Лента кадров человечка для шкалы прокрутки в тесте (12.11.2026) → src/design/scenes/walker.webp.
-Рендерит 12 кадров в Blender (tools/social/blender/walker.py), обрезает по общему контуру и склеивает в одну строку.
-Кадры: 0-7 шаг, 8 стойка, 9-11 рука вверх. Размер кадра печатается в конце: его соотношение сторон стоит в d1.css (.dz-walker).
+Рендерит 18 кадров в Blender (tools/social/blender/walker.py), обрезает по общему контуру и склеивает в одну строку.
+Кадры: 0-7 шаг, 8 стойка, 9-11 рука вверх, 12-15 радуется, 16-17 думает. Размер кадра печатается в конце: его соотношение сторон стоит в d1.css (.dz-walker).
 Нужны Blender, cwebp и Pillow."""
 import pathlib, subprocess, tempfile
 from PIL import Image
@@ -15,7 +15,7 @@ with tempfile.TemporaryDirectory() as tmp:
     subprocess.run([BLENDER, '-b', '--factory-startup', '--python', str(ROOT / 'tools' / 'social' / 'blender' / 'walker.py'), '--', '--draft', '--out', str(tmp)],
                    check=True, stdout=subprocess.DEVNULL)
     ims = [Image.open(f).convert('RGBA') for f in sorted((tmp / 'walker').glob('f_*.png'))]
-    assert len(ims) == 12, len(ims)
+    assert len(ims) == 18, len(ims)
     box = None
     for im in ims:
         b = im.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox()

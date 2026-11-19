@@ -1759,7 +1759,7 @@
   }
   function kbdBox(text) { var w = kbdWarn(text); return '<div class="kbd-warn" id="kbd-warn" role="status" aria-live="polite"' + (w ? '' : ' hidden') + '>' + esc(w) + '</div>'; }
   function kbdSync(text) { var el = document.getElementById('kbd-warn'); if (!el) return; var w = kbdWarn(text); el.textContent = w; el.hidden = !w; }
-  var WR_MIN = 30, WR_MAX = 8000, WR_KEEP = 50;   // слов не меньше, знаков не больше (как на сервере), сколько работ помним
+  var WR_MIN = 50, WR_MAX = 8000, WR_KEEP = 50;   // слов не меньше, знаков не больше (как на сервере), сколько работ помним
   var WR_WAIT = 20;   // секунд над заданием до отправки (как WR_LIMITS.minSeconds на сервере); считаем здесь, сервер проверяет присланное t
   var wrUi = {};     // по ключу «тест|задание»: consent (галочка), busy, msg, t0 (когда блок впервые показан) - живёт до перезагрузки, галочку каждый раз ставят заново
   var wrStat = {};   // код → {status: 'new' | 'ready' | 'none' | 'err', at, busy} - ответы /api/writing/status
@@ -1800,7 +1800,7 @@
   function wrHint(n, text, ui) {
     if (ui.msg) return ui.msg;
     if (!n) return T('Текст пустой: сначала напишите его.');
-    if (n < WR_MIN) return T('Для проверки нужно не меньше 30 слов, сейчас:') + ' ' + n;
+    if (n < WR_MIN) return T('Для проверки нужно не меньше 50 слов, сейчас:') + ' ' + n;
     if (Array.from(text).length > WR_MAX) return T('Текст слишком длинный: допустимо до 8000 знаков.');
     return '';
   }
@@ -1830,7 +1830,7 @@
           '<p class="small muted">' + T('Отправленные работы можно найти и удалить на странице «Мой прогресс».') + ' <a href="#/progress">' + T('Мой прогресс') + '</a></p></div>';
       }
       return '<div class="wr ok" tabindex="-1"' + at + '><b class="t">' + T('Проверка письма командой') + '</b>' +
-        '<p role="status">' + T('Текст получен. Когда отчёт будет готов, он появится на этой странице') + '</p>' +
+        '<p role="status">' + T('Текст получен. Наша команда проверит его в течение суток, отчёт появится на этой странице.') + '</p>' +
         '<p>' + T('Код работы:') + ' <b class="code-out">' + esc(wrLabel(sent.code)) + '</b></p>' +
         '<p class="row"><a class="btn small" href="https://t.me/' + esc(bot) + '?start=w_' + esc(sent.code) + '" target="_blank" rel="noopener">' + T('Получить уведомление в Telegram') + '</a></p>' +
         '<p class="small muted">' + T('Отправленные работы можно найти и удалить на странице «Мой прогресс».') + ' <a href="#/progress">' + T('Мой прогресс') + '</a></p></div>';
@@ -1889,7 +1889,7 @@
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d || {} }; }); })
       .then(function (x) {
         var code = String(x.d.code || '');
-        if (!x.ok || !/^[2-9A-HJ-NP-Z]{8}$/.test(code)) return fail(x.d.error === 'too_long' ? T('Текст слишком длинный: допустимо до 8000 знаков.') : x.d.error === 'too_short' ? T('Для проверки нужно не меньше 30 слов, сейчас:') + ' ' + n
+        if (!x.ok || !/^[2-9A-HJ-NP-Z]{8}$/.test(code)) return fail(x.d.error === 'too_long' ? T('Текст слишком длинный: допустимо до 8000 знаков.') : x.d.error === 'too_short' ? T('Для проверки нужно не меньше 50 слов, сейчас:') + ' ' + n
           : x.d.error === 'too_fast' ? T('Слишком быстро. Подождите несколько секунд и нажмите ещё раз.') : x.d.error === 'busy' ? T('Сейчас мы получаем очень много работ. Попробуйте отправить текст чуть позже.') : '');
         ui.busy = false; ui.msg = '';
         state.writing = (state.writing || []).filter(function (e) { return e.code !== code; });

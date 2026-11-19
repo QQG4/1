@@ -7,6 +7,9 @@
 
 import { SESSIONS } from './sessions.js';
 import { VIDEO_UTC, NUDGE_UTC, previewNext, onCallback, onOwnerText, publishVideo, queueStatus, queue } from './videos.js';
+import { tgBase } from './tgapi.js';
+import { handleWriting, purgeWritingRate } from '../writing-api.js';   // проверка письма командой: приём работ посетителей и служебные запросы (17.11.2026)
+import { wStart, wCallback, wMy, wDelete, notifyWritingReady } from './writing-bot.js';
 import { IG_PREP_UTC, IG_PUB_UTC, igPrepare, igPublish, igRefresh, saveToken } from './ig.js';
 
 const ALLOWED = [                      // откуда принимаем события (CORS + защита от чужих сайтов)
@@ -18,8 +21,11 @@ const ALLOWED = [                      // откуда принимаем соб
 const EVENTS = ['pageview', 'section-start', 'section-done', 'test-done', 'audio-play', 'lang', 'setting', 'answers', 'report', 'feedback', 'expert_review', 'remind', 'js-error', 'share', 'sync', 'difficulty', 'express-start', 'express-done', 'section-exit'];   // section-exit - ушёл из раздела до конца: seconds, pct заданий с ответом, why вида 7/10 (13.11.2026). У pageview в ua теперь класс устройства mobile | desktop | tablet   // express-* — экспресс-тест: найденный уровень в level, ступени в note (29.10.2026); difficulty — «Насколько трудно?» после раздела: easy | ok | hard в note (29.10.2026)
 const MAX_BODY = 64 * 1024;   // анкета эксперта бывает длинной
 
-function cors(origin) {
-  const ok = ALLOWED.indexOf(origin) >= 0;
+/* Для проверки на своём компьютере: переменная ALLOWED_EXTRA (через запятую) добавляет источники к ALLOWED. На боевом воркере её нет. */
+const originOk = (origin, env) => ALLOWED.indexOf(origin) >= 0 || (!!origin && !!env && String(env.ALLOWED_EXTRA || '').split(',').map((x) => x.trim()).indexOf(origin) >= 0);
+
+function cors(origin, env) {
+  const ok = originOk(origin, env);
   return {
     'Access-Control-Allow-Origin': ok ? origin : ALLOWED[0],
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -37,7 +43,9 @@ export default {
     if (path === '/tg/webhook') return tgWebhook(request, env, ctx);
     if (path === '/tg/setup') return tgSetup(request, env);
     if (path === '/agent/report') return agentReport(request, env);
+    if (path === '/writing/notify') return writingNotify(request, env);   // пилот проверки письма: рассылка «отчёт готов» сразу
     if (path === '/sync/put' || path === '/sync/get') return transfer(request, env, path);
+    if (path.startsWith('/api/writing/')) return writing(request, env);
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (request.method !== 'POST') return new Response('POST only', { status: 405, headers: cors(origin) });
@@ -99,6 +107,7 @@ export default {
      (09:00 и 19:00 по Алматы, то есть 04 и 14 UTC). Часы держим в одном месте — TASKS. */
   async scheduled(event, env) {
     if (event.cron !== HOURLY_CRON) { await igRefresh(env); return purge(env); }   // ночью — и продление токена Instagram
+    await notifyWritingReady(env).catch((e) => console.log('writing notify: ' + e));   // «отчёт готов» (writing-bot.js); до заданий дня, чтобы ранние return их не обходили
     const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
     if (IG_PREP_UTC.includes(h)) await igPrepare(env, queue);   // Instagram: контейнер за час до эфира (ig.js)
     if (IG_PUB_UTC.includes(h)) await igPublish(env);           // Instagram: эфир 19:00 по Алматы
@@ -142,7 +151,7 @@ const ALERTS = ['feedback', 'report', 'js-error'];
 const SITE = 'https://qazaqtrainer.com/';
 
 async function tg(env, method, body) {
-  const r = await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/' + method, {
+  const r = await fetch(tgBase(env) + '/bot' + env.TG_BOT_TOKEN + '/' + method, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
   if (!r.ok) { console.log('telegram ' + method + ' → ' + r.status + ' ' + (await r.text()).slice(0, 300)); return null; }
@@ -202,8 +211,12 @@ const ASKS = [
   { q: 'Емтиханды қашан тапсырасыз? / Когда сдаёте экзамен?', o: ['Бір ай ішінде / В течение месяца', '2–3 ай ішінде / Через 2–3 месяца', 'Биыл / В этом году', 'Әлі белгісіз / Пока не знаю'] },
   { q: 'Арнада не көбірек керек? / Чего не хватает в канале?', o: ['Тыңдалым / Аудирование', 'Жазылым үлгілері / Образцы письма', 'Грамматика түсіндірмесі / Разбор грамматики', 'Сөздік / Лексика', 'Бәрі жеткілікті / Всего хватает'] },
 ];
+/* Опрос на конкретную пятницу вместо очередного из ASKS (прогрев проверки письма, 19.11.2026). Ключ — дата по UTC. */
+const ASK_ON = {
+  '2026-11-20': { q: 'Жазылымда сізге не қиын? / Что труднее всего в письме?', o: ['Септіктер / Падежи', 'Сөз тәртібі / Порядок слов', '250 сөз жазу / Набрать 250 слов', 'Неден бастарын білмеймін / Не знаю, с чего начать', 'Мақал-мәтел мен дәйексөз / Пословицы и цитаты'] },
+};
 async function postAsk(env) {
-  const a = ASKS[Math.floor(dayNo() / 7) % ASKS.length];
+  const a = ASK_ON[new Date().toISOString().slice(0, 10)] || ASKS[Math.floor(dayNo() / 7) % ASKS.length];
   const sent = await tg(env, 'sendPoll', { chat_id: env.TG_CHANNEL, question: a.q.slice(0, 300), options: a.o, is_anonymous: true });
   if (sent) await env.DB.prepare(`INSERT INTO events (day, ts, name, section) VALUES (?,?,?,?)`)
     .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', 'ask').run();
@@ -256,7 +269,7 @@ async function postReminders(env) {
   }
 }
 
-/* ---------- Бот @qazaqtrainer_bot: ответы на сообщения (webhook) ----------
+/* ---------- Бот @qzqtrainer_bot: ответы на сообщения (webhook) ----------
    Telegram присылает сюда каждое сообщение боту. Подлинность — по заголовку X-Telegram-Bot-Api-Secret-Token,
    который задаётся при регистрации webhook (секрет TG_WEBHOOK_SECRET). Регистрация: GET /tg/setup?key=<тот же секрет>.
    Команды: /start [qrt_b1] — приветствие и кнопки уровней (с параметром — сразу нужный уровень), /id — id чата
@@ -269,7 +282,7 @@ const EXAM_NAME = { kaztest: 'ҚАЗТЕСТ', qrt: 'QazResmiTest' };
 async function tgSetup(request, env) {
   const key = new URL(request.url).searchParams.get('key') || '';
   if (!env.TG_WEBHOOK_SECRET || !env.TG_BOT_TOKEN || key !== env.TG_WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
-  const r = await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/setWebhook', {
+  const r = await fetch(tgBase(env) + '/bot' + env.TG_BOT_TOKEN + '/setWebhook', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url: new URL('/tg/webhook', request.url).href, secret_token: env.TG_WEBHOOK_SECRET, allowed_updates: ['message', 'poll', 'callback_query'], drop_pending_updates: true }),
   });
@@ -302,7 +315,12 @@ async function tgWebhook(request, env, ctx) {
     await env.DB.prepare(`UPDATE tg_polls SET votes = ?, right_votes = ? WHERE poll_id = ?`).bind(votes, right, String(p.id)).run();
     return new Response('ok');
   }
-  if (u && u.callback_query) { await onCallback(env, u.callback_query); return new Response('ok'); }   // кнопки под роликами
+  if (u && u.callback_query) {
+    const cb = u.callback_query;
+    if (String(cb.data || '').startsWith('w:')) await wCallback(env, cb);   // «Я подписался» (проверка письма)
+    else await onCallback(env, cb);                                           // кнопки под роликами
+    return new Response('ok');
+  }
   const m = u && u.message;
   if (!m || !m.chat || typeof m.text !== 'string') return new Response('ok');
   const owner = env.TG_OWNER_CHAT && String(m.chat.id) === String(env.TG_OWNER_CHAT);
@@ -326,7 +344,13 @@ async function tgWebhook(request, env, ctx) {
   }
   if (owner && !cmd && await onOwnerText(env, text)) return new Response('ok');   // записка «что поменять в ролике»
 
-  if (cmd === '/start') {
+  if (cmd === '/start' && /^w_/i.test(text.split(/\s+/).slice(1).join(' '))) {   // привязка работы по коду: /start w_<код> (writing-bot.js)
+    await wStart(env, m, text.split(/\s+/).slice(1).join(' ').slice(2));
+  } else if (cmd === '/my') {
+    await wMy(env, m);
+  } else if (cmd === '/delete') {   // удалить свою работу по коду: /delete QT-XXXX-XXXX (writing-bot.js)
+    await wDelete(env, m, text.split(/\s+/).slice(1).join(' '));
+  } else if (cmd === '/start') {
     const arg = (text.split(/\s+/)[1] || '').toLowerCase(), am = /^(kaztest|qrt)_(a1|a2|b1|b2|c1|c2)$/.exec(arg);
     const only = am && LEVELS[am[1]].indexOf(am[2].toUpperCase()) >= 0 ? { exam: am[1], level: am[2].toUpperCase() } : null;
     await say(only
@@ -344,7 +368,7 @@ async function tgWebhook(request, env, ctx) {
   } else if (cmd === '/feedback') {
     await say('Не дұрыс емес немесе нені жақсартуға болады — бір хабарламамен осында жазыңыз.\nЧто не так или что улучшить — напишите одним сообщением сюда.');
   } else if (cmd) {
-    await say('/start — деңгейлер / уровни\n/dates — шағым мерзімі / сроки апелляции\n/feedback — қате туралы / сообщить об ошибке');
+    await say('/start — деңгейлер / уровни\n/dates — шағым мерзімі / сроки апелляции\n/feedback — қате туралы / сообщить об ошибке\n/my — жұмыстарым / мои работы\n/delete — жұмысты өшіру / удалить работу');
   } else {
     const body = text.slice(0, 1000);
     await env.DB.prepare(`INSERT INTO events (day, ts, name, path, text) VALUES (?,?,?,?,?)`)
@@ -369,9 +393,9 @@ function newCode() {
 }
 async function transfer(request, env, path) {
   const origin = request.headers.get('Origin') || '';
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
-  if (origin && ALLOWED.indexOf(origin) < 0) return new Response('forbidden origin', { status: 403, headers: cors(origin) });
-  const json = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: Object.assign({ 'Content-Type': 'application/json' }, cors(origin)) });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin, env) });
+  if (origin && !originOk(origin, env)) return new Response('forbidden origin', { status: 403, headers: cors(origin, env) });
+  const json = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: Object.assign({ 'Content-Type': 'application/json' }, cors(origin, env)) });
 
   if (path === '/sync/put') {
     if (request.method !== 'POST') return json({ error: 'post only' }, 405);
@@ -386,7 +410,7 @@ async function transfer(request, env, path) {
   if (code.length !== 8) return json({ error: 'bad code' }, 400);
   const row = await env.DB.prepare(`SELECT data, ts FROM transfers WHERE code = ?`).bind(code).first();
   if (!row || Date.now() - row.ts > SYNC_TTL) return json({ error: 'not found' }, 404);
-  return new Response(row.data, { headers: Object.assign({ 'Content-Type': 'application/json' }, cors(origin)) });
+  return new Response(row.data, { headers: Object.assign({ 'Content-Type': 'application/json' }, cors(origin, env)) });
 }
 
 /* Утренний отчёт дежурного агента (задача Claude на Mac владельца) → личный чат владельца.
@@ -405,12 +429,41 @@ async function agentReport(request, env) {
   return new Response(ok ? 'sent' : 'telegram error', { status: ok ? 200 : 502 });
 }
 
+/* Проверка письма командой на публичном адресе (17.11.2026): модуль ../writing-api.js, тот же, что у воркера лаборатории.
+   Посетителю - /api/writing/submit, /status, /report (GET), /delete; служебные /list и /report (POST) только с заголовком X-Writing-Key
+   (env.WRITING_KEY; нет переменной - всегда 403: проверка ключа внутри модуля). CORS - только источники из ALLOWED: запрос с чужим Origin
+   получает 403 до любой работы с базой, а ответ не содержит разрешающего заголовка. Тела запросов посетителя - text/plain, поэтому
+   предварительного запроса CORS нет (как у событий); OPTIONS всё равно отвечает, на случай клиентов, которые его пришлют.
+   Запрос без Origin (скрипт конвейера, curl) проходит так же, как у событий: служебное закрыто ключом, посетительское защищено потолком. */
+async function writing(request, env) {
+  const origin = request.headers.get('Origin') || '';
+  const h = Object.assign(cors(origin, env), { 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Accept' });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+  if (origin && !originOk(origin, env)) return new Response('forbidden origin', { status: 403, headers: h });
+  return (await handleWriting(request, env, h)) || new Response('not found', { status: 404, headers: h });
+}
+
+/* Рассылка «отчёт готов» по требованию: тот же код, что в ежечасном расписании (writing-bot.js). Заголовок X-Agent-Key, как у /agent/report.
+   Ответ: JSON {sent, failed, blocked}. Повторный запуск второго сообщения по той же работе не шлёт. */
+async function writingNotify(request, env) {
+  if (request.method !== 'POST' || !env.AGENT_KEY || request.headers.get('X-Agent-Key') !== env.AGENT_KEY) return new Response('forbidden', { status: 403 });
+  if (!env.TG_BOT_TOKEN) return new Response('telegram not configured', { status: 503 });
+  return new Response(JSON.stringify(await notifyWritingReady(env)), { headers: { 'Content-Type': 'application/json' } });
+}
+
 // Срок хранения — 12 месяцев (обещан на странице /privacy/). Раз в сутки по расписанию из wrangler.toml
   // удаляются события и ответы старше года, включая тексты обратной связи и анкеты экспертов.
+const WRITING_KEEP_DAYS = 365;   // работы на проверку (текст, отчёт, привязка к чату Telegram): 365 дней с отправки, как у событий; тот же срок назван на /privacy/
 async function purge(env) {
   await env.DB.batch([
     env.DB.prepare(`DELETE FROM events WHERE day < date('now', '-365 day')`),
     env.DB.prepare(`DELETE FROM answers WHERE day < date('now', '-365 day')`),
     env.DB.prepare(`DELETE FROM transfers WHERE ts < ?`).bind(Date.now() - SYNC_TTL),
   ]);
+  // Пилот проверки письма: отдельным запросом, чтобы сбой (например, миграция ещё не применена) не мешал чистке событий.
+  // Возраст - по времени отправки (ts, мс), строка уходит целиком: текст, отчёт, id чата.
+  try {
+    await env.DB.prepare(`DELETE FROM writing_submissions WHERE ts < ?`).bind(Date.now() - WRITING_KEEP_DAYS * 86400e3).run();
+  } catch (e) { console.log('purge writing: ' + String(e && e.message || e).slice(0, 200)); }
+  try { await purgeWritingRate(env); } catch (e) { console.log('purge writing rate: ' + String(e && e.message || e).slice(0, 200)); }   // счётчики потолка приёма: старше 3 суток не нужны
 }

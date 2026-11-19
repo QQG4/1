@@ -1,4 +1,5 @@
 import { igReady, igBacklog, igStatus } from './ig.js';
+import { tgBase } from './tgapi.js';
 
 /* Ролики в канал с одобрением владельца (13.10.2026).
    Очередь — queue.json из статических файлов воркера (собирает tools/social/publish_tg.py, папка соцсети/_publish).
@@ -13,13 +14,15 @@ export const VIDEO_UTC = 12;     // 17:00 по Алматы — публикац
 /* С 27.10.2026 ролик в канал выходит 3 раза в неделю, а не каждый день: при 7 постах в день охват канала упал
    с 33 до 8 просмотров на пост (аналитика 26.10). Дни недели по UTC: вторник, четверг, суббота. */
 export const VIDEO_DAYS = [2, 4, 6];
+/* Прогрев конкурса эссе (19.11.2026, владелец: «каждый день»): до 27.11 ролик выходит ежедневно. */
+const DAILY_UNTIL = Date.UTC(2026, 10, 27);
 export const NUDGE_UTC = 15;     // 20:00 по Алматы — напомнить и прислать следующий на одобрение
 const VIDEO_LAST = 78;           // до какого номера очередь собрана в новом виде сайта (31.10.2026: 38, 03.11.2026: 48, 04.11.2026: 78); после пересборки поднять
 const VIDEO_BUFFER = 6;          // запас одобренных на две недели: Telegram берёт 3 в неделю (Instagram на паузе, ig.js)
 const SELF = 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev/';   // отсюда Telegram забирает mp4
 
 async function api(env, method, body) {
-  const r = await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/' + method, {
+  const r = await fetch(tgBase(env) + '/bot' + env.TG_BOT_TOKEN + '/' + method, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
   const j = await r.json().catch(() => ({}));
@@ -97,8 +100,9 @@ export async function onOwnerText(env, text) {
 /* 17:00 по Алматы: один одобренный ролик в канал. Если одобренных нет — напомнить владельцу. */
 export async function publishVideo(env) {
   if (!env.TG_BOT_TOKEN || !env.TG_CHANNEL) return;
-  if (!VIDEO_DAYS.includes(new Date().getUTCDay())) return;
-  const next = await rows(env, `SELECT n, file_id FROM tg_videos WHERE status = 'approved' ORDER BY n LIMIT 1`);
+  if (Date.now() >= DAILY_UNTIL && !VIDEO_DAYS.includes(new Date().getUTCDay())) return;
+  // номера от 1000 — ролики вне банка (прогрев): выходят раньше очереди
+  const next = await rows(env, `SELECT n, file_id FROM tg_videos WHERE status = 'approved' ORDER BY (n < 1000), n LIMIT 1`);
   if (!next.length) {
     if (env.TG_OWNER_CHAT) await api(env, 'sendMessage', { chat_id: env.TG_OWNER_CHAT, text: 'Сегодня ролик в канал не вышел: одобренных нет. Нажмите ✅ под роликом выше.' });
     return previewNext(env);

@@ -158,6 +158,11 @@
 [data-design=d1] .notice.info{border-left-color:var(--accent)}
 [data-design=d1] .notice.good{border-left-color:var(--good)}
 [data-design=d1] .notice b.t{font-family:var(--head);font-size:1.0625rem;font-weight:800;margin-bottom:6px}
+/* проверка письма командой (пилот 15.11.2026): рамка как у .notice, но без сворачивания */
+[data-design=d1] .wr{border:0;border-left:6px solid var(--accent);border-radius:0;padding:16px 20px;font-size:.9688rem}
+[data-design=d1] .wr.ok{border-left-color:var(--good)}
+[data-design=d1] .wr b.t{font-family:var(--head);font-size:1.0625rem;font-weight:800;margin-bottom:6px}
+[data-design=d1] .wr-confirm{border:0;border-left:6px solid var(--bad);border-radius:0;padding:14px 18px}
 [data-design=d1] .setlabel{border-radius:2px;font-size:.875rem}
 [data-design=d1] .passage-title{font-size:.9375rem;font-weight:700;color:var(--ink-muted)}
 [data-design=d1] .passage{font-size:1.0625rem;line-height:1.72}

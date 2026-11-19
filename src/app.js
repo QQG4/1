@@ -153,9 +153,30 @@
       out.express = out.express || {};
       out.express[eid] = { level: r.level, at: +r.at || 0, ok: +r.ok || 0, n: +r.n || 0, seconds: +r.seconds || 0, steps: (Array.isArray(r.steps) ? r.steps : []).map(row).filter(Boolean).slice(0, 8), listen: row(r.listen) };
     });
+    /* отправленные на проверку работы (пилот «проверка письма командой»): код, дата, тест и задание, отпечаток текста и начало условия */
+    if (Array.isArray(s.writing)) out.writing = s.writing.filter(function (x) { return x && /^[2-9A-HJ-NP-Z]{8}$/.test(String(x.code)) && findTest(x.test) && typeof x.task === 'string'; })
+      .map(function (x) { return { code: String(x.code), ts: +x.ts || 0, test: String(x.test), task: String(x.task).slice(0, 40), h: String(x.h || '').slice(0, 20), w: +x.w || 0, p: String(x.p || '').slice(0, 100) }; }).slice(-WR_KEEP);
     out.history = Array.isArray(s.history) ? s.history.filter(function (x) { return x && findTest(x.t) && KZ.sectionTypes[x.s] && +x.tot > 0; })
       .map(function (x) { return { t: String(x.t), s: String(x.s), sc: +x.sc || 0, tot: +x.tot, at: +x.at || 0, pr: !!x.pr }; }).slice(-HIST_MAX) : seedHistory(out);
     return out;
+  }
+
+  /* Импорт JSON и «Перенести сюда» заменяют прогресс целиком, но коды отправленных на проверку работ не теряем (решение 17.11.2026): код - единственное,
+     чем человек открывает отчёт и удаляет работу, а сама работа остаётся у нас до года. Поэтому коды текущего прогресса, которых нет во входящем,
+     вливаются в него (по коду, без повторов, не больше WR_KEEP свежих), а перед заменой человеку говорят, сколько кодов останется на этом устройстве.
+     Сброс прогресса устроен иначе: там человек сам просит всё стереть, поэтому панель предупреждает (wrResetAsk). */
+  function wrExtra(incoming) {   // работы текущего прогресса, которых нет в cleanState-версии входящего
+    var have = {}; (incoming.writing || []).forEach(function (e) { have[e.code] = 1; });
+    return (state.writing || []).filter(function (e) { return !have[e.code]; });
+  }
+  function wrMerge(incoming) {
+    var extra = wrExtra(incoming);
+    if (extra.length) incoming.writing = (incoming.writing || []).concat(extra).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); }).slice(-WR_KEEP);
+    return incoming;
+  }
+  function wrKeepNote(incoming) {   // строка в подтверждение импорта; пусто, если сохранять нечего
+    var n = wrExtra(incoming).length;
+    return n ? '\n\n' + T('Коды отправленных на проверку работ останутся на этом устройстве:') + ' ' + n : '';
   }
 
   function tp(testId) { return state.tests[testId] || (state.tests[testId] = { sections: {} }); }
@@ -574,6 +595,7 @@
     else window.scrollTo(0, 0);
     if (run && run.afterRender) run.afterRender();
     fillRecSlots();
+    if (p[0] === 'progress') wrFill();
     pageTitle(p);
     trackPage(h || '');
   }
@@ -723,7 +745,7 @@
     return '<div class="block io"><h3>' + T('Экспорт и импорт прогресса') + '</h3>' +
       '<p class="small muted">' + T('Скопируйте JSON и сохраните где удобно; на другом устройстве вставьте его в поле и нажмите «Импортировать». Импорт заменяет текущий прогресс.') + '</p>' +
       '<textarea id="io-text">' + esc(JSON.stringify(state)) + '</textarea>' +
-      '<div class="actions"><button class="btn small" data-act="io-copy">' + T('Скопировать') + '</button><button class="btn secondary small" data-act="io-import">' + T('Импортировать из поля') + '</button><button class="btn danger small" data-act="io-reset">' + T('Сбросить весь прогресс') + '</button><span class="hint" id="io-msg" role="status" aria-live="polite"></span></div></div>';
+      '<div class="actions"><button class="btn small" data-act="io-copy">' + T('Скопировать') + '</button><button class="btn secondary small" data-act="io-import">' + T('Импортировать из поля') + '</button><button class="btn danger small" data-act="io-reset">' + T('Сбросить весь прогресс') + '</button><span class="hint" id="io-msg" role="status" aria-live="polite"></span></div>' + (WR_ON ? '<div id="io-ask"></div>' : '') + '</div>';
   }
 
   /* ---------------- views: exam ---------------- */
@@ -1161,7 +1183,7 @@
         '<div class="skeleton hintx" id="skel">' + skel + '</div>' +
         '<div class="tags hintx">' + sec.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
         (sec.sample ? '<details class="sample hintx"><summary>' + T('Образец текста (структура, не копируйте)') + '</summary><div lang="kk" class="script">' + esc(sec.sample) + '</div></details>' : '') +
-        '<textarea class="essay" id="essay" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(run.text) + '</textarea><div class="wc" id="wc">' + wordCount(run.text) + ' ' + T('слов') + '</div>' +
+        '<textarea class="essay" id="essay" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(run.text) + '</textarea><div class="wc" id="wc">' + wordCount(run.text) + ' ' + T('слов') + '</div>' + kbdBox(run.text) +
         '<div class="actions"><button class="btn" data-act="finish-writing">' + T('Завершить и перейти к самопроверке') + '</button><span class="hint">' + T('Черновик сохраняется автоматически.') + '</span></div></div>';
       run.afterRender = function () {
         var startAt = run.secondsUsed || saved.secondsUsed || 0;
@@ -1371,7 +1393,7 @@
         '<p class="prompt-text">' + esc(task.prompt) + '</p>' + (task.targetNote ? '<p class="small muted">' + esc(LK(task, 'targetNote')) + '</p>' : '') +
         taskSkeleton(task) +
         (task.connectors ? '<div class="tags hintx">' + task.connectors.map(function (c) { return '<span class="tag-chip">' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
-        '<textarea class="essay" id="essay" data-task="' + task.id + '" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(txt) + '</textarea><div class="wc" id="wc">' + wordCount(txt) + ' ' + T('слов · для максимума от') + ' ' + task.minWords + '</div>' +
+        '<textarea class="essay" id="essay" data-task="' + task.id + '" lang="kk" spellcheck="false" placeholder="Жазыңыз…">' + esc(txt) + '</textarea><div class="wc" id="wc">' + wordCount(txt) + ' ' + T('слов · для максимума от') + ' ' + task.minWords + '</div>' + kbdBox(txt) +
         '<div class="actions"><button class="btn" data-act="next-task">' + (last ? T('Завершить письмо → самооценка') : T('Завершить задание →') + ' ' + esc(sec.tasks[run.taskIdx + 1].title)) + '</button><span class="hint">' + T('Черновик сохраняется автоматически.') + '</span></div></div>';
       run.afterRender = function () {
         var onTick = function () { updateTask(task); };
@@ -1382,7 +1404,7 @@
       return timerBar(sec, '<span class="tclock" id="tclock"></span>') + body;
     }
     body = sec.tasks.map(function (task) {
-      return '<div class="block"><span class="setlabel">' + esc(task.title) + ' · ' + task.points + ' ' + T('баллов') + '</span><p class="small muted">' + esc(task.prompt) + '</p><div class="essay-view">' + esc(run.texts[task.id] || '') + '</div><div class="wc">' + wordCount(run.texts[task.id]) + ' ' + T('слов') + ' · ' + mmss(run.taskSec[task.id] || 0) + '</div>' + capNote(task, run.texts[task.id]) + critScorer(task.id, task.criteria, run.crit[task.id] = run.crit[task.id] || [], critCaps(task, run.texts[task.id])) + '</div>';
+      return '<div class="block"><span class="setlabel">' + esc(task.title) + ' · ' + task.points + ' ' + T('баллов') + '</span><p class="small muted">' + esc(task.prompt) + '</p><div class="essay-view">' + esc(run.texts[task.id] || '') + '</div><div class="wc">' + wordCount(run.texts[task.id]) + ' ' + T('слов') + ' · ' + mmss(run.taskSec[task.id] || 0) + '</div>' + capNote(task, run.texts[task.id]) + critScorer(task.id, task.criteria, run.crit[task.id] = run.crit[task.id] || [], critCaps(task, run.texts[task.id])) + wrBox(t, task) + '</div>';
     }).join('') + '<div class="actions"><button class="btn" data-act="save-tasks">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-tasks">' + T('Вернуться к тексту') + '</button>') + '</div>';
     run.afterRender = null;
     return body;
@@ -1543,7 +1565,7 @@
         var crit = x.criteria || sec.criteria;
         return '<div class="block"><span class="setlabel">' + esc(LK(x, 'title')) + ' · ' + x.points + ' ' + T('баллов') + '</span>' +
           (sec.type === 'writing' ? '<p class="small muted">' + esc(x.prompt) + '</p><div class="essay-view">' + esc((saved.texts || {})[x.id] || '') + '</div><div class="wc">' + wordCount((saved.texts || {})[x.id]) + ' ' + T('слов') + '</div>' : speakTaskHtml(x) + '<div class="row mt"><span class="rec-slot" data-rec-key="' + esc(t.id + '/speaking/' + x.id) + '"></span></div>') +
-          critView(crit, (saved.crit || {})[x.id]) + '</div>';
+          critView(crit, (saved.crit || {})[x.id]) + (sec.type === 'writing' ? wrBox(t, x) : '') + '</div>';
       }).join('');
     } else if (sec.type === 'writing') {
       var prompt = sec.prompts.filter(function (p) { return p.id === saved.promptId; })[0] || {};
@@ -1686,6 +1708,288 @@
     var ctx = (t ? t.id : '') + (sec ? '/' + sec.type : '') + (saved && saved.total ? ' ' + saved.score + '/' + saved.total : '');
     return '<a class="btn ghost" target="_blank" rel="noopener" href="https://t.me/' + esc(KZ.site.feedbackTelegram) + '" data-ctx="' + esc(ctx) + '">' + T('Написать в Telegram') + '</a><span class="hint">' + T('Отзыв о тесте') + ': ' + esc(ctx) + '</span>';
   }
+  /* ---------------- проверка письма командой (пилот, 15.11.2026) ----------------
+     Кнопка «Отправить на проверку команде» у эссе ҚАЗТЕСТ (kind: 'essay') после того, как текст зафиксирован: на экране самооценки и в разборе.
+     Где включено, решает KZ.site.writingReview (src/data/site.js): 'lab' - только лаборатория (build === 'lab'), 'all' - ещё и публичный сайт
+     (в том числе «Новый сайт» внутри лаборатории), false - нигде. Без включения блока нет, запросов нет и в sessionStorage ничего не пишется.
+     Текст уходит POST на /api/writing/submit (tools/writing-api.js) телом text/plain: в лаборатории на тот же origin (воркер лаборатории,
+     вход уже пройден), на публичном сайте - на KZ.site.eventsUrl (публичный воркер, CORS пускает только наши домены); ответ - код работы из 8 знаков
+     (алфавит как у кода переноса), который сохраняется в state.writing и переживает экспорт/импорт и код переноса через cleanState.
+     Имени, почты и идентификаторов не передаётся. Перед отправкой обязательна галочка согласия. */
+  var WR_FLAG = KZ.site && KZ.site.writingReview, WR_BUILD = KZ.site && KZ.site.build;
+  var WR_LABHOST = WR_BUILD === 'lab' || /^lab\./i.test(location.hostname);   // лаборатория (и её «Новый сайт»): запросы на свой origin, за Cloudflare Access
+  var WR_API = WR_LABHOST ? '' : String((KZ.site && KZ.site.eventsUrl) || '').replace(/\/$/, '');   // публичный сайт: eventsUrl; пусто - отправлять некуда
+  var WR_ON = (WR_FLAG === 'all' && (WR_BUILD === 'lab' || (WR_BUILD === 'site' && (WR_LABHOST || !!WR_API)))) || (WR_FLAG === 'lab' && WR_BUILD === 'lab');
+  /* Раскладка (16.11.2026, решение владельца): буква не та - это ошибка, поэтому предупреждаем заранее, прямо под полем.
+     Срабатывает от 12 слов: казахских букв нет совсем или текст в основном латиницей. Отправке не мешает. Показывается там же, где блок отправки (WR_ON). */
+  function kbdWarn(text) {
+    if (!WR_ON) return '';
+    text = String(text || '');
+    if (wordCount(text) < 12) return '';
+    var lat = (text.match(/[A-Za-z]/g) || []).length, cyr = (text.match(/[\u0400-\u04FF]/g) || []).length;
+    if (lat > cyr) return T('Текст набран латиницей. Пишите казахской кириллицей, иначе слова будут считаться ошибками.');
+    if (!/[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/.test(text)) return T('В тексте нет казахских букв: ә, ғ, қ, ң, ө, ұ, ү, і. При проверке каждое такое слово считается ошибкой. Включите казахскую раскладку.');
+    return '';
+  }
+  function kbdBox(text) { var w = kbdWarn(text); return '<div class="kbd-warn" id="kbd-warn" role="status" aria-live="polite"' + (w ? '' : ' hidden') + '>' + esc(w) + '</div>'; }
+  function kbdSync(text) { var el = document.getElementById('kbd-warn'); if (!el) return; var w = kbdWarn(text); el.textContent = w; el.hidden = !w; }
+  var WR_MIN = 30, WR_MAX = 8000, WR_KEEP = 50;   // слов не меньше, знаков не больше (как на сервере), сколько работ помним
+  var WR_WAIT = 20;   // секунд над заданием до отправки (как WR_LIMITS.minSeconds на сервере); считаем здесь, сервер проверяет присланное t
+  var wrUi = {};     // по ключу «тест|задание»: consent (галочка), busy, msg, t0 (когда блок впервые показан) - живёт до перезагрузки, галочку каждый раз ставят заново
+  var wrStat = {};   // код → {status: 'new' | 'ready' | 'none' | 'err', at, busy} - ответы /api/writing/status
+  /* utm и источник первого просмотра вкладки: в лаборатории статистика выключена, поэтому считаем сами и запоминаем на вкладку */
+  var WR_LAND = (function () {
+    if (!WR_ON) return { ref: '', utm: '' };
+    try {
+      var k = 'kz-trainer:land', v = sessionStorage.getItem(k);
+      if (v) return JSON.parse(v);
+      var l = landing(''), o = { ref: l.ref || '', utm: l.utm || '' };
+      sessionStorage.setItem(k, JSON.stringify(o)); return o;
+    } catch (e) { return { ref: '', utm: '' }; }
+  })();
+  function wrKey(tid, taskId) { return tid + '|' + taskId; }
+  function wrTask(t, taskId) {   // задание раздела письма по id: в разделе говорения тоже есть t1/t2, поэтому только writing
+    var r = null;
+    (t ? t.sections : []).forEach(function (s) { if (s.type === 'writing') (s.tasks || []).forEach(function (x) { if (x.id === taskId) r = x; }); });
+    return r;
+  }
+  function wrText(t, taskId) {
+    var v = run && run.testId === t.id && run.texts && run.texts[taskId] != null ? run.texts[taskId] : ((sp(t.id, 'writing') || {}).texts || {})[taskId];
+    return String(v || '');
+  }
+  function wrHash(t, taskId, text) {   // cyrb53: короткий отпечаток «тест + задание + текст», чтобы узнать повторную отправку без хранения текста
+    var s = t.id + '\n' + taskId + '\n' + text.replace(/\s+/g, ' ').trim(), h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (var i = 0, ch; i < s.length; i++) { ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+  function wrFind(tid, taskId, h) {
+    var l = state.writing || [];
+    for (var i = l.length - 1; i >= 0; i--) if (l[i].test === tid && l[i].task === taskId && l[i].h === h) return l[i];
+    return null;
+  }
+  function wrLabel(code) { return 'QT-' + code.slice(0, 4) + '-' + code.slice(4); }
+  /* подсказка под кнопкой и признак «можно отправлять» считаются в одном месте: и для вёрстки, и для обновления на месте */
+  function wrHint(n, text, ui) {
+    if (ui.msg) return ui.msg;
+    if (!n) return T('Текст пустой: сначала напишите его.');
+    if (n < WR_MIN) return T('Для проверки нужно не меньше 30 слов, сейчас:') + ' ' + n;
+    if (Array.from(text).length > WR_MAX) return T('Текст слишком длинный: допустимо до 8000 знаков.');
+    return '';
+  }
+  function wrCan(n, text, ui) { return !!ui.consent && !ui.busy && n >= WR_MIN && Array.from(text).length <= WR_MAX; }
+  /* Сколько секунд человек провёл над этим заданием: время письма из прогресса (taskSec, пишется при переходе к самопроверке) или время с тех пор,
+     как блок отправки впервые показан на этой странице, смотря что больше. Так тот, кто писал текст в тренажёре, не ждёт ни секунды, а тот, кто
+     вставил готовый текст и сразу нажал, ждёт WR_WAIT секунд. Число уходит на сервер в t; сервер сам отказывает, если t меньше своего минимума. */
+  function wrSpent(t, taskId, ui) {
+    var saved = sp(t.id, 'writing') || {}, ts = (run && run.testId === t.id && run.taskSec) ? run.taskSec : (saved.taskSec || {});
+    var here = ui.t0 ? (Date.now() - ui.t0) / 1000 : 0;
+    return Math.floor(Math.max(+ts[taskId] || 0, here));
+  }
+  function wrBox(t, task) {
+    if (!WR_ON || !task || task.kind !== 'essay') return '';
+    var key = wrKey(t.id, task.id), text = wrText(t, task.id), n = wordCount(text), ui = wrUi[key] || (wrUi[key] = {});
+    if (!ui.t0) ui.t0 = Date.now();
+    var at = ' data-wr="' + esc(key) + '" data-test="' + esc(t.id) + '" data-task="' + esc(task.id) + '"';
+    var sent = wrFind(t.id, task.id, wrHash(t, task.id, text));
+    if (sent) {
+      var bot = (KZ.site && KZ.site.writingBot) || 'qzqtrainer_bot';
+      wrWatch(sent.code, key);   // узнать, не готов ли отчёт: тогда блок перерисуется со ссылкой «Открыть отчёт»
+      if ((wrStat[sent.code] || {}).status === 'ready') {
+        return '<div class="wr ok" tabindex="-1"' + at + '><b class="t">' + T('Проверка письма командой') + '</b>' +
+          '<p role="status">' + T('Отчёт готов.') + '</p>' +
+          '<p>' + T('Код работы:') + ' <b class="code-out">' + esc(wrLabel(sent.code)) + '</b></p>' +
+          '<p class="row">' + wrOpenLink(sent.code, 'btn small') + '</p>' +
+          '<p class="small muted">' + T('Отправленные работы можно найти и удалить на странице «Мой прогресс».') + ' <a href="#/progress">' + T('Мой прогресс') + '</a></p></div>';
+      }
+      return '<div class="wr ok" tabindex="-1"' + at + '><b class="t">' + T('Проверка письма командой') + '</b>' +
+        '<p role="status">' + T('Текст получен. Когда отчёт будет готов, он появится на этой странице') + '</p>' +
+        '<p>' + T('Код работы:') + ' <b class="code-out">' + esc(wrLabel(sent.code)) + '</b></p>' +
+        '<p class="row"><a class="btn small" href="https://t.me/' + esc(bot) + '?start=w_' + esc(sent.code) + '" target="_blank" rel="noopener">' + T('Получить уведомление в Telegram') + '</a></p>' +
+        '<p class="small muted">' + T('Отправленные работы можно найти и удалить на странице «Мой прогресс».') + ' <a href="#/progress">' + T('Мой прогресс') + '</a></p></div>';
+    }
+    return '<div class="wr"' + at + '><b class="t">' + T('Проверка письма командой') + '</b>' +
+      '<p>' + T('Отправьте этот текст нашей команде: мы прочитаем его и подготовим отчёт.') + '</p>' +
+      /* поле-ловушка: человек его не видит (скрыто со всех сторон, в порядок Tab не входит), бот, заполняющий все поля, заполнит - тогда работа не сохранится */
+      '<div class="wr-hp" aria-hidden="true"><input type="text" name="wr_extra" data-wr-hp tabindex="-1" autocomplete="off" value=""></div>' +
+      '<div class="wr-consent"><label><input type="checkbox" data-wr-consent' + (ui.consent ? ' checked' : '') + '><span>' + T('Я даю согласие на отправку и хранение текста.') + '</span></label>' + (privacyLink() ? '<span class="small">' + privacyLink() + '</span>' : '') + '</div>' +
+      '<div class="actions"><button class="btn small" data-act="wr-send" data-test="' + esc(t.id) + '" data-task="' + esc(task.id) + '"' + (wrCan(n, text, ui) ? '' : ' disabled') + '>' + T('Отправить на проверку команде') + '</button>' +
+      '<span class="hint" role="status" aria-live="polite">' + esc(wrHint(n, text, ui)) + '</span></div></div>';
+  }
+  /* обновить кнопку и подсказку на месте, не пересобирая блок: иначе при клике по галочке с клавиатуры пропадает фокус */
+  function wrSync(box) {
+    var t = findTest(box.getAttribute('data-test')), taskId = box.getAttribute('data-task'), ui = wrUi[box.getAttribute('data-wr')] || {};
+    if (!t) return;
+    var text = wrText(t, taskId), n = wordCount(text), btn = box.querySelector('[data-act="wr-send"]'), hint = box.querySelector('.hint');
+    if (btn) btn.disabled = !wrCan(n, text, ui);
+    if (hint) hint.textContent = wrHint(n, text, ui);
+  }
+  function wrReplace(key, focus) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-wr]'), function (el) {
+      if (el.getAttribute('data-wr') !== key) return;
+      var t = findTest(el.getAttribute('data-test')), task = wrTask(t, el.getAttribute('data-task'));
+      if (!t || !task) return;
+      var d = document.createElement('div'); d.innerHTML = wrBox(t, task);
+      var nb = d.firstChild; if (!nb) return;
+      el.parentNode.replaceChild(nb, el);
+      if (focus) try { nb.focus(); } catch (e) {}
+    });
+  }
+  function wrSend(b) {
+    var tid = b.getAttribute('data-test'), taskId = b.getAttribute('data-task'), t = findTest(tid), key = wrKey(tid, taskId), ui = wrUi[key] || (wrUi[key] = {});
+    if (!WR_ON || !t || ui.busy) return;
+    var task = wrTask(t, taskId);
+    if (!task || task.kind !== 'essay') return;
+    var text = wrText(t, taskId), n = wordCount(text), h = wrHash(t, taskId, text);
+    if (wrFind(tid, taskId, h)) { wrReplace(key, true); return; }   // тот же текст того же задания: второй работы не создаём, показываем прежний код
+    ui.msg = '';
+    if (!wrCan(n, text, ui)) { var box0 = b.closest('[data-wr]'); if (box0) wrSync(box0); return; }
+    var box = b.closest('[data-wr]');
+    var fail = function (m) { ui.busy = false; ui.msg = m || T('Не удалось отправить, попробуйте ещё раз.'); var bx = document.querySelector('[data-wr="' + key.replace(/"/g, '') + '"]'); if (bx) wrSync(bx); };
+    var spent = wrSpent(t, taskId, ui);
+    if (spent < WR_WAIT) {   // слишком рано: без запроса (сервер всё равно проверит присланное t); подсказка сама исчезнет, когда можно будет отправлять
+      var early = T('Слишком быстро. Подождите несколько секунд и нажмите ещё раз.');
+      fail(early);
+      setTimeout(function () { if (ui.msg === early) { ui.msg = ''; var bx = document.querySelector('[data-wr="' + key.replace(/"/g, '') + '"]'); if (bx) wrSync(bx); } }, (WR_WAIT - spent) * 1000);
+      return;
+    }
+    ui.busy = true; ui.msg = T('Отправляем…');
+    if (box) wrSync(box);
+    var hpEl = box && box.querySelector('[data-wr-hp]');
+    fetch(WR_API + '/api/writing/submit', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({
+      text: text, prompt: task.prompt || '', test: t.id, task: taskId, level: t.level, lang: KZ.lang, words: n, utm: WR_LAND.utm || undefined, ref: WR_LAND.ref || undefined,
+      t: spent, hp: hpEl ? hpEl.value : '' }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d || {} }; }); })
+      .then(function (x) {
+        var code = String(x.d.code || '');
+        if (!x.ok || !/^[2-9A-HJ-NP-Z]{8}$/.test(code)) return fail(x.d.error === 'too_long' ? T('Текст слишком длинный: допустимо до 8000 знаков.') : x.d.error === 'too_short' ? T('Для проверки нужно не меньше 30 слов, сейчас:') + ' ' + n
+          : x.d.error === 'too_fast' ? T('Слишком быстро. Подождите несколько секунд и нажмите ещё раз.') : x.d.error === 'busy' ? T('Сейчас мы получаем очень много работ. Попробуйте отправить текст чуть позже.') : '');
+        ui.busy = false; ui.msg = '';
+        state.writing = (state.writing || []).filter(function (e) { return e.code !== code; });
+        state.writing.push({ code: code, ts: Date.now(), test: t.id, task: taskId, h: h, w: n, p: String(task.prompt || '').replace(/\s+/g, ' ').slice(0, 100) });
+        if (state.writing.length > WR_KEEP) state.writing.splice(0, state.writing.length - WR_KEEP);
+        saveState();
+        wrReplace(key, true);
+      })
+      .catch(function () { fail(); });
+  }
+  /* страница «Мой прогресс»: блок «Мои работы на проверке» - код, тема, дата, статус (получен / готов) */
+  function wrOpenLink(code, cls) {   // страница листа на том же сайте, где человек работает (/sheet/ есть и в лаборатории, и в docs/); код в адресе, поэтому в новой вкладке и без реферера (страница сама ставит no-referrer)
+    return '<a class="' + (cls || '') + '" href="/sheet/?c=' + esc(code) + '" target="_blank" rel="noopener noreferrer">' + T('Открыть отчёт') + '</a>';
+  }
+  function wrBadge(code) {
+    var s = wrStat[code] || {}, st = s.status;
+    var cls = st === 'ready' ? 'ok' : 'muted', txt = st === 'ready' ? T('готов') : st === 'new' ? T('получен') : st === 'none' ? T('не найден') : st === 'err' ? T('статус неизвестен') : '…';
+    return '<span class="wr-st" data-wr-st><span class="badge ' + cls + '">' + txt + '</span>' + (st === 'ready' ? wrOpenLink(code, 'wr-open small') : '') + '</span>';
+  }
+  function wrProgress() {
+    var list = WR_ON ? (state.writing || []).slice().sort(function (a, b) { return b.ts - a.ts; }) : [];
+    if (!list.length) return '';
+    var rows = list.map(function (e) {
+      var t = findTest(e.test), task = wrTask(t, e.task);
+      var prompt = e.p || (task && task.prompt) || '';
+      return '<li class="wr-row" data-wr-code="' + esc(e.code) + '"><b class="code-out wr-code">' + esc(wrLabel(e.code)) + '</b>' +
+        '<span class="wr-topic"><span lang="kk">' + esc(prompt.length > 90 ? prompt.slice(0, 90).replace(/\s+\S*$/, '') + '…' : prompt) + '</span><br><span class="small muted">' + esc(t ? testName(t) : e.test) + (task ? ' · ' + esc(LK(task, 'title')) : '') + '</span></span>' +
+        '<span class="wr-date small muted"><span>' + esc(e.ts ? new Date(e.ts).toLocaleDateString('ru-RU') : '') + '</span>' +
+        '<button type="button" class="wr-link" data-act="wr-del" data-code="' + esc(e.code) + '">' + T('Удалить работу') + '</button></span>' + wrBadge(e.code) + '</li>';
+    }).join('');
+    return '<section id="wr-works"><h2 tabindex="-1">' + T('Мои работы на проверке') + '</h2><p class="sub">' + T('Код нужен, чтобы найти работу. Отчёт появится здесь, когда будет готов. Работу можно удалить в любой момент.') + '</p><div class="block"><ul class="wr-list">' + rows + '</ul></div></section>';
+  }
+  /* статус работы по коду: свежий ответ (60 с) не перезапрашиваем, параллельный запрос не дублируем; after(status) вызывается по ответу */
+  function wrQuery(code, after) {
+    var s = wrStat[code];
+    if (s && (s.busy || Date.now() - s.at < 60000)) return false;
+    wrStat[code] = { status: s && s.status, at: s ? s.at : 0, busy: true };
+    var done = function (st) { wrStat[code] = { status: st, at: Date.now() }; if (after) after(st); };
+    fetch(WR_API + '/api/writing/status?code=' + encodeURIComponent(code))
+      .then(function (r) { return r.status === 404 ? { status: 'none' } : r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (d) { done(d.status === 'ready' ? 'ready' : d.status === 'none' ? 'none' : 'new'); })
+      .catch(function () { done('err'); });
+    return true;
+  }
+  function wrFill() {
+    if (!WR_ON) return;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-wr-code]'), function (row) {
+      var code = row.getAttribute('data-wr-code');
+      wrQuery(code, function () {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-wr-code="' + code + '"] [data-wr-st]'), function (el) { el.outerHTML = wrBadge(code); });
+      });
+    });
+  }
+  /* блок под эссе (wrBox): после отправки спрашиваем статус и, когда он «готов», перерисовываем блок со ссылкой на отчёт */
+  function wrWatch(code, key) {
+    if (wrStat[code] && wrStat[code].status === 'ready') return;
+    setTimeout(function () { wrQuery(code, function (st) { if (st === 'ready') wrReplace(key, false); }); }, 0);
+  }
+
+  /* Удаление работы самим человеком (часть 4). Ссылка «Удалить работу» в строке → подтверждение в самой строке (не window.confirm: нужны
+     понятный текст и фокус) → POST /api/writing/delete {code} телом text/plain. 200 и 404 («работы у нас уже нет») убирают запись из прогресса;
+     сбой сети или сервера - сообщение, запись остаётся. Код в прогрессе - единственное, чем человек доказывает, что работа его. */
+  var wrDelBusy = {};
+  function wrDelAsk(btn) {
+    var row = btn.closest('.wr-row'); if (!row || row.querySelector('.wr-confirm')) return;
+    var code = btn.getAttribute('data-code');
+    var box = document.createElement('div'); box.className = 'wr-confirm'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', T('Удалить работу') + ' ' + wrLabel(code));
+    box.innerHTML = '<p>' + T('Удалить эту работу? Текст и отчёт сотрутся у нас, вернуть их будет нельзя.') + '</p>' +
+      '<div class="actions"><button type="button" class="btn danger small" data-act="wr-del-yes" data-code="' + esc(code) + '">' + T('Да, удалить') + '</button>' +
+      '<button type="button" class="btn ghost small" data-act="wr-del-no" data-code="' + esc(code) + '">' + T('Отмена') + '</button>' +
+      '<span class="hint" role="status" aria-live="polite"></span></div>';
+    row.appendChild(box);
+    var no = box.querySelector('[data-act="wr-del-no"]'); if (no) no.focus();
+  }
+  function wrDelCancel(btn) {
+    var row = btn.closest('.wr-row'); if (!row) return;
+    var box = row.querySelector('.wr-confirm'); if (box) box.remove();
+    var del = row.querySelector('[data-act="wr-del"]'); if (del) del.focus();
+  }
+  function wrDelDone(code) {
+    state.writing = (state.writing || []).filter(function (e) { return e.code !== code; });
+    delete wrStat[code];
+    saveState();
+    var ta = document.getElementById('io-text'); if (ta) ta.value = JSON.stringify(state);   // экспорт ниже на странице не должен хранить код удалённой работы
+    var row = document.querySelector('.wr-row[data-wr-code="' + code + '"]'), sec = row && row.closest('section');
+    if (row) row.remove();
+    var left = sec ? sec.querySelector('.wr-row') : null;
+    if (sec && !left) { var h1 = document.querySelector('h1'); sec.remove(); if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus(); } }
+    else if (left) { var h2 = sec.querySelector('h2'); if (h2) h2.focus(); }
+    announce(T('Работа удалена.'));
+  }
+  function wrDelGo(btn) {
+    var code = btn.getAttribute('data-code'), box = btn.closest('.wr-confirm');
+    if (!code || wrDelBusy[code]) return;
+    var hint = box && box.querySelector('.hint'), btns = box ? box.querySelectorAll('button') : [];
+    var lock = function (on) { Array.prototype.forEach.call(btns, function (x) { x.disabled = on; }); };
+    wrDelBusy[code] = true; lock(true); if (hint) hint.textContent = T('Удаляем…');
+    var fail = function () { wrDelBusy[code] = false; lock(false); if (hint) hint.textContent = T('Не удалось удалить, проверьте связь и попробуйте ещё раз.'); };
+    fetch(WR_API + '/api/writing/delete', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ code: code }) })
+      .then(function (r) {
+        wrDelBusy[code] = false;
+        if (r.ok || r.status === 404) wrDelDone(code);   // 404: работы у нас уже нет (стёрта по сроку или удалена в боте) - из списка тоже убираем
+        else fail();
+      })
+      .catch(fail);
+  }
+  /* «Сбросить весь прогресс», когда в прогрессе есть отправленные работы: сброс стирает и коды, а сами работы остаются у нас на проверке.
+     Поэтому вместо window.confirm - своё подтверждение с предупреждением и кнопкой «Сначала удалить работы», которая ведёт к блоку работ.
+     Работы на сервере сброс не трогает. */
+  function wrResetAsk() {
+    var host = document.getElementById('io-ask'); if (!host) return false;
+    host.innerHTML = '<div class="wr-confirm wr-reset" role="group" aria-label="' + T('Сбросить весь прогресс') + '">' +
+      '<p>' + T('Удалить весь сохранённый прогресс?') + '</p>' +
+      '<p>' + T('При сбросе прогресса сотрутся и коды отправленных работ с этого устройства.') + ' ' + T('Без кода отчёт не открыть и работу не удалить, а сами работы останутся у нас на проверке.') + '</p>' +
+      '<div class="actions"><button type="button" class="btn small" data-act="io-reset-works">' + T('Сначала удалить работы') + '</button>' +
+      '<button type="button" class="btn danger small" data-act="io-reset-go">' + T('Всё равно сбросить') + '</button>' +
+      '<button type="button" class="btn ghost small" data-act="io-reset-no">' + T('Отмена') + '</button></div></div>';
+    var no = host.querySelector('[data-act="io-reset-no"]'); if (no) no.focus();
+    return true;
+  }
+  function wrGoWorks() {
+    var host = document.getElementById('io-ask'); if (host) host.innerHTML = '';
+    var sec = document.getElementById('wr-works'); if (!sec) return;
+    var h = sec.querySelector('h2'); sec.scrollIntoView({ block: 'start' }); if (h) h.focus();
+  }
+
   /* ---------------- views: мой прогресс ---------------- */
   var progLv = null;   // фильтр графика: 'all' или 'exam:level'; null - пара последней попытки
   var AUTO_TYPES = ['listening', 'reading', 'lexis'];   // порядок = цвет и форма маркера на графике; цвет закреплён за разделом, не за рангом
@@ -1779,8 +2083,9 @@
     var head = topbar([{ label: T('Хаб'), href: '#/' }, { label: T('Мой прогресс') }]) +
       '<div class="kicker">' + T('Прогресс') + '</div><h1>' + T('Мой прогресс') + '</h1>' +
       '<p class="lede">' + T('Результаты хранятся только в этом браузере. Каждая завершённая попытка попадает в историю, поэтому рост виден, даже если раздел пройден заново.') + '</p>';
+    var wrs = wrProgress();
     var io = '<section><details class="io-details"><summary>' + T('Перенести прогресс на другое устройство') + '</summary>' + syncPanel() + ioPanel() + '</details></section>';
-    if (!tests.length && !hist.length) return head + '<div class="notice info"><b class="t">' + T('Пока пусто') + '</b><p>' + T('Пройдите любой раздел мок-теста - здесь появятся таблица результатов и график.') + ' <a href="#/">' + T('На хаб') + '</a></p></div>' + io;
+    if (!tests.length && !hist.length) return head + '<div class="notice info"><b class="t">' + T('Пока пусто') + '</b><p>' + T('Пройдите любой раздел мок-теста - здесь появятся таблица результатов и график.') + ' <a href="#/">' + T('На хаб') + '</a></p></div>' + wrs + io;
 
     var tiles = '<div class="tiles">' +
       tile(tests.length, plural(tests.length, T('тест начат'), T('теста начато'), T('тестов начато'))) +
@@ -1831,7 +2136,7 @@
         return '<a class="level-row" href="#/course/' + k + '"><span class="lvl">' + k + '</span><span><div class="nm">' + esc(c.title) + '</div><div class="meter" aria-hidden="true"><i style="width:' + w + '%"></i></div></span><span class="st">' + pr.done + ' / ' + pr.topics + ' ' + T('тем') + (pr.known ? ' · ' + T('выучено') + ' ' + pr.known : '') + '</span></a>';
       }).join('') + '</div></section>';
     }
-    return head + tiles + chart + table + course + io;
+    return head + tiles + chart + table + wrs + course + io;
   }
 
   function viewSources() {
@@ -1861,6 +2166,10 @@
     if (t) t.sections.forEach(function (s) { if (s.type === run.type) sec = s; });
 
     if (act === 'lazy-retry') { lazyFail = null; route(); return; }
+    if (act === 'wr-send') { wrSend(b); return; }
+    if (act === 'wr-del') { wrDelAsk(b); return; }
+    if (act === 'wr-del-no') { wrDelCancel(b); return; }
+    if (act === 'wr-del-yes') { wrDelGo(b); return; }
     if (act === 'fb-open' || act === 'fb-close') {
       var fb = document.getElementById('fb'); if (!fb) return;
       var panel = fb.querySelector('.fb-panel'), tab = fb.querySelector('.fb-tab'), open = act === 'fb-open';
@@ -1934,10 +2243,10 @@
           .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
           .then(function (s) {
             if (!s || typeof s.tests !== 'object') return Promise.reject('bad');
-            var nT = Object.keys(s.tests).length;
-            if (!confirm(T('Заменить текущий прогресс перенесённым?') + ' (' + T('тестов') + ': ' + nT + ')')) { sm.textContent = ''; return; }
+            var nT = Object.keys(s.tests).length, inc = cleanState(s);
+            if (!confirm(T('Заменить текущий прогресс перенесённым?') + ' (' + T('тестов') + ': ' + nT + ')' + wrKeepNote(inc))) { sm.textContent = ''; return; }
             track('sync', { where: 'use' });
-            state = cleanState(s); saveState(); route();
+            state = wrMerge(inc); saveState(); route();
           })
           .catch(function (e) { sm.textContent = e === 404 ? T('Код не найден или устарел.') : T('Не удалось перенести, попробуйте ещё раз.'); });
       }
@@ -1949,8 +2258,14 @@
       var pr = null; try { pr = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(ta.value) : null; } catch (x) {}
       if (pr && pr.then) pr.then(function () { im.textContent = T('Скопировано.'); }, copyFallback); else copyFallback();
     }
-    else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s || typeof s !== 'object' || typeof s.tests !== 'object' || Array.isArray(s.tests)) throw 0; var nT = Object.keys(s.tests).length, nC = s.course ? Object.keys(s.course).length : 0; if (!confirm(T('Заменить текущий прогресс импортированным?') + ' (' + T('тестов') + ': ' + nT + ', ' + T('курсов') + ': ' + nC + ')')) return; state = cleanState(s); saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
-    else if (act === 'io-reset') { if (confirm(T('Удалить весь сохранённый прогресс?'))) { state = { version: 1, tests: {}, history: [] }; saveState(); route(); } }
+    else if (act === 'io-import') { try { var s = JSON.parse(document.getElementById('io-text').value); if (!s || typeof s !== 'object' || typeof s.tests !== 'object' || Array.isArray(s.tests)) throw 0; var nT = Object.keys(s.tests).length, nC = s.course ? Object.keys(s.course).length : 0, inc = cleanState(s); if (!confirm(T('Заменить текущий прогресс импортированным?') + ' (' + T('тестов') + ': ' + nT + ', ' + T('курсов') + ': ' + nC + ')' + wrKeepNote(inc))) return; state = wrMerge(inc); saveState(); route(); } catch (x) { document.getElementById('io-msg').textContent = T('Не удалось прочитать JSON.'); } }
+    else if (act === 'io-reset') {
+      if (WR_ON && (state.writing || []).length && wrResetAsk()) return;   // есть отправленные работы: подтверждение с предупреждением про коды
+      if (confirm(T('Удалить весь сохранённый прогресс?'))) { state = { version: 1, tests: {}, history: [] }; saveState(); route(); }
+    }
+    else if (act === 'io-reset-go') { state = { version: 1, tests: {}, history: [] }; wrStat = {}; saveState(); route(); }   // работы на сервере остаются: стираются только коды на этом устройстве
+    else if (act === 'io-reset-no') { var ak = document.getElementById('io-ask'); if (ak) ak.innerHTML = ''; var rb = document.querySelector('[data-act="io-reset"]'); if (rb) rb.focus(); }
+    else if (act === 'io-reset-works') { wrGoWorks(); }
     else if (act === 'reset-test') { if (confirm(T('Сбросить результаты этого теста?'))) { var rid = b.getAttribute('data-test'); delete state.tests[rid]; if (Array.isArray(state.history)) state.history = state.history.filter(function (x) { return x.t !== rid; }); saveState(); route(); } }
     else if (act === 'start') { run.phase = 'run'; track('section-start', { test: t.id, exam: t.exam, level: t.level, section: sec.type, practice: !!ui.practice }); route(); }
     else if (act === 'tts') { playScript(t, sec); }
@@ -2000,6 +2315,7 @@
       Array.prototype.forEach.call(el.closest('.prompt-pick').querySelectorAll('.opt'), function (o) { o.classList.remove('selected'); });
       el.closest('.opt').classList.add('selected');
     }
+    if (el.type === 'checkbox' && el.hasAttribute('data-wr-consent')) { var wb = el.closest('[data-wr]'); if (wb) { (wrUi[wb.getAttribute('data-wr')] = wrUi[wb.getAttribute('data-wr')] || {}).consent = el.checked; wrSync(wb); } return; }
     if (!run) return;
     if (el.type === 'radio' && el.name && el.closest('.opts')) {
       run.answers[el.name] = +el.value;
@@ -2017,11 +2333,13 @@
         run.texts[tid] = e.target.value;
         var tk = null; findTest(run.testId).sections.forEach(function (s) { if (s.type === 'writing') s.tasks.forEach(function (x) { if (x.id === tid) tk = x; }); });
         document.getElementById('wc').textContent = wordCount(run.texts[tid]) + ' ' + T('слов · для максимума от') + ' ' + (tk ? tk.minWords : '');
+        kbdSync(run.texts[tid]);
         clearTimeout(draftTO); draftTO = setTimeout(function () { if (run && run.type === 'writing' && run.sub !== 'check') setSection(run.testId, 'writing', { status: 'draft', texts: run.texts, taskIdx: run.taskIdx, taskSec: run.taskSec, secondsUsed: Math.round(elapsed()) }); }, 800);
         return;
       }
       run.text = e.target.value;
       document.getElementById('wc').textContent = wordCount(run.text) + ' ' + T('слов');
+      kbdSync(run.text);
       clearTimeout(draftTO); draftTO = setTimeout(function () { if (run && run.type === 'writing' && run.sub === 'write') setSection(run.testId, 'writing', { status: 'draft', promptId: run.promptId, text: run.text, secondsUsed: Math.round(elapsed()) }); }, 800);
     }
   });

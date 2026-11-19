@@ -9,6 +9,8 @@
    токен (Cf-Access-Jwt-Assertion); воркер проверяет подпись ключами нашей команды Access, издателя, срок и почту
    из LAB_EMAILS. Подделать токен нельзя, а если Access снимут, токена не будет и снова спросят пароль. */
 
+import { handleWriting } from '../writing-api.js';   // пилот «проверка письма командой» (15.11.2026), общий модуль с публичным воркером
+
 const ACCESS_TEAM = 'https://square-flower-0289.cloudflareaccess.com';
 const b64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
 
@@ -114,6 +116,8 @@ export default {
     }
     const url = new URL(request.url);
     if (url.pathname === '/api/stats') return stats(url, env);
+    const wr = await handleWriting(request, env, { 'X-Robots-Tag': 'noindex, nofollow' });   // /api/writing/submit и /status — только после входа, как /api/stats
+    if (wr) return wr;
     const pick = url.searchParams.get('view');
     if (VIEWS.some(([v]) => v === pick)) {
       return new Response(null, { status: 302, headers: { Location: '/', 'Cache-Control': 'no-store',
@@ -131,6 +135,7 @@ export default {
     out.headers.set('X-Robots-Tag', 'noindex, nofollow');   // лаборатория в поиск не попадает ни при каких условиях
     if ((out.headers.get('Content-Type') || '').includes('text/html') && !url.pathname.startsWith('/stats')) {
       out.headers.set('Cache-Control', 'no-store');
+      if (url.pathname.startsWith('/sheet')) return out;   // оценочный лист (15.11.2026): без переключателя поверх страницы, лист печатают и сохраняют в PDF
       out = new HTMLRewriter().on('body', { element(el) { el.append(SWITCH(view), { html: true }); } }).transform(out);
     }
     return out;

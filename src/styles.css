@@ -419,6 +419,38 @@ table.prog .sc{display:block;font-size:0.75rem;color:var(--ink-faint);white-spac
 .meter i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .code-in{font:inherit;font-size:0.875rem;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:14rem;max-width:100%}
 .code-out{font-size:1.05rem;letter-spacing:.12em}
+/* Проверка письма командой (пилот, лаборатория, 15.11.2026): рамка в духе .notice, но свой класс - дизайн-слой (design.js, calmNotice)
+   сворачивает текст .notice под стрелку, а галочку согласия и код работы прятать нельзя. Список работ - на «Мой прогресс» */
+.wr{background:var(--accent-soft);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:14px 16px;font-size:0.9062rem;margin:20px 0 0}
+.wr.ok{background:var(--good-soft);border-left-color:var(--good)}
+.wr b.t{color:var(--accent);font-family:var(--mono);font-size:0.7188rem;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px}
+.wr.ok b.t{color:var(--good)}
+.wr p{margin:0 0 6px}.wr p:last-child{margin:0}
+.wr:focus{outline:none}
+.wr-consent{display:flex;flex-direction:column;gap:4px;margin:10px 0 2px}
+.wr-consent label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:0.9062rem}
+.wr-consent input{flex:none;width:18px;height:18px;margin:2px 0 0;accent-color:var(--accent)}
+.wr-consent .small{padding-left:28px}
+.wr-hp{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}   /* поле-ловушка: нет ни на экране, ни для скринридера, ни в порядке Tab */
+.wr-list{list-style:none;margin:0;padding:0}
+.wr-row{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content max-content;gap:4px 16px;align-items:start;padding:12px 0;border-top:1px solid var(--border)}
+.wr-row:first-child{border-top:0;padding-top:0}.wr-row:last-child{padding-bottom:0}
+.wr-code{white-space:nowrap;letter-spacing:.08em}
+.wr-topic{min-width:0;overflow-wrap:anywhere}
+.wr-date{white-space:nowrap;padding-top:2px;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+/* «Удалить работу»: неброская ссылка, не кнопка; подтверждение раскрывается под строкой (и под «Сбросить весь прогресс», если есть работы) */
+.wr-link{background:none;border:0;padding:4px 0;margin:0;font:inherit;font-size:0.8125rem;color:var(--ink-faint);text-decoration:underline;text-underline-offset:2px;cursor:pointer;text-align:left}
+.wr-link:hover,.wr-link:focus-visible{color:var(--bad)}
+.wr-confirm{grid-column:1/-1;margin-top:8px;padding:12px 14px;background:var(--bad-soft);border:1px solid var(--border);border-left:3px solid var(--bad);border-radius:8px;font-size:0.9062rem}
+.wr-confirm p{margin:0 0 8px}
+.wr-confirm .actions{margin-top:4px}
+.wr-reset{margin-top:12px}
+.wr-st{display:flex;flex-direction:column;align-items:flex-end;gap:4px;white-space:nowrap}
+.wr-open{font-weight:600;text-decoration:underline;text-underline-offset:2px}
+@media (max-width:560px){
+  .wr-row{grid-template-columns:minmax(0,1fr) max-content;grid-template-areas:"code st" "topic topic" "date date"}
+  .wr-row .wr-code{grid-area:code}.wr-row .wr-st{grid-area:st;justify-self:end}.wr-row .wr-topic{grid-area:topic}.wr-row .wr-date{grid-area:date;padding-top:0;flex-direction:row;align-items:center;gap:4px 14px;flex-wrap:wrap}
+}
 .io-details>summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:0.9375rem;margin-bottom:12px}
 /* «Что дальше» после раздела и на странице теста, вопрос «Насколько трудно?» (29.10.2026) */
 .nsteps .nstep{display:flex;gap:10px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0 0;margin-top:10px;border-top:1px solid var(--border)}
@@ -434,3 +466,7 @@ table.prog .sc{display:block;font-size:0.75rem;color:var(--ink-faint);white-spac
 .story-t{font-weight:700;margin:0 28px 14px 0}
 .story-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .story-steps .btn{width:100%;justify-content:center;text-align:center}
+
+/* предупреждение о раскладке под полем письма (16.11.2026) */
+.kbd-warn{margin-top:8px;padding:10px 12px;border-left:4px solid var(--gold);background:rgba(140,97,24,.1);font-size:.9375rem;line-height:1.45}
+.kbd-warn[hidden]{display:none}

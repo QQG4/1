@@ -886,7 +886,7 @@ if _base and not _base.endswith('/'): _base += '/'
 # _headers читает Cloudflare (статика на Workers); GitHub Pages его игнорирует. CSP не ставим: весь код и стили
 # встроены в страницу, и политика с 'unsafe-inline' почти ничего не даёт, а сломать может многое.
 # Исключение - frame-ancestors (с 21.09.2026 вместо X-Frame-Options: SAMEORIGIN): сайт открывается как Mini App бота
-# @qazaqtrainer_bot, а веб-версия Telegram показывает его во фрейме. Разрешены только свой домен и web.telegram.org;
+# @qzqtrainer_bot, а веб-версия Telegram показывает его во фрейме. Разрешены только свой домен и web.telegram.org;
 # в мобильных и настольных приложениях Telegram это обычный встроенный браузер, фрейма там нет.
 (docs / '_headers').write_text(
     '/*\n'
@@ -937,6 +937,19 @@ if _base:
     (docs / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + _urls + '</urlset>\n', encoding='utf-8')
 put_audio(docs / 'audio')
 put_fonts(docs / 'fonts')
+# открытая страница отчёта проверки письма (17.11.2026): docs/sheet/ - та же src/sheet/index.html, что в лаборатории, но отчёт она берёт у публичного
+# воркера (eventsUrl: GET /api/writing/report, CORS пускает наши домены) и подключает шрифты сайта (/design/fonts), а не /_site/. noindex, referrer
+# no-referrer и CSP внутри самой страницы; в sitemap не входит. Образец без ?c= виден и здесь: он составлен нами. Какая работа открывается и кому - решает
+# только код в адресе; включён ли приём работ на сайте, флаг KZ.site.writingReview, на эту страницу не влияет.
+_sheet = read(src / 'sheet' / 'index.html')
+for _need in ("connect-src 'self'", "var API = '';   /*API*/", '/_site/design/fonts/fonts.css'):
+    assert _sheet.count(_need) == 1, 'в src/sheet/index.html нет ровно одного «%s»: сборка публичной страницы листа сломана' % _need
+_ev = site_cfg.get('events', '').rstrip('/')
+(docs / 'sheet').mkdir(exist_ok=True)
+(docs / 'sheet' / 'index.html').write_text(
+    _sheet.replace('/_site/design/fonts/fonts.css', '/design/fonts/fonts.css')
+          .replace("connect-src 'self'", "connect-src 'self'" + (' ' + _ev if _ev else ''))
+          .replace("var API = '';   /*API*/", "var API = '" + _ev + "';"), encoding='utf-8')
 # страница «Какие данные мы собираем» (RU/KK); ссылка - в подвале приложения и в форме обратной связи
 (docs / 'privacy').mkdir(exist_ok=True)
 shutil.copyfile(src / 'privacy' / 'index.html', docs / 'privacy' / 'index.html')

@@ -4,10 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Оценочный лист · Qazaq Trainer</title>
-<!-- Образец оценочного листа для пилота проверки письма (14.11.2026). Только лаборатория: /sheet/.
-     Работа в образце составлена нами; казахский текст и правки проверены скиллом kk-master, носителем не вычитаны.
-     Данные листа лежат в разметке: фрагмент <mark data-n data-fix> и карточка .note с тем же номером. -->
+<!--@page:begin--><meta name="referrer" content="no-referrer"><!--@page:end-->
+<!--@page:begin--><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'"><!--@page:end-->
+<title data-ru="Оценочный лист · Qazaq Trainer" data-kk="Бағалау парағы · Qazaq Trainer">Оценочный лист · Qazaq Trainer</title>
+<!-- Оценочный лист для пилота проверки письма (14.11.2026, вторая часть 15.11.2026, двуязычный 16.11.2026). Только лаборатория: /sheet/.
+     Без кода в адресе - образец (работа в нём составлена нами; казахский текст и правки проверены скиллом kk-master, носителем не вычитаны).
+     С кодом (/sheet/?c=QTXXXXXXXX или QT-XXXX-XXXX) страница берёт готовый отчёт у GET /api/writing/report и вставляет его html
+     на место образца: лист рисует только qt_check.py, здесь его не собирают. Вставка идёт через DOMParser и список разрешённых тегов,
+     скрипты и обработчики событий отбрасываются. Внешних запросов нет (CSP выше, no-referrer): код в адресе никуда, кроме нашего сервера, не уходит.
+     Данные листа лежат в разметке: фрагмент <mark data-n data-fix> и карточка .note с тем же номером.
+     Языки: отчёт = {lang:{ru, kk}}. Каждый язык - своя обёртка <div class="ver" data-lang>, видна одна; переключатель RU / KK (#sheet-lang) в полосе-шапке
+     виден, только если версий две. Надписи страницы (не листа) двуязычны через data-ver.
+     Конвейер (пилот-проверки/конвейер/qt_check.py) связан с этим файлом метками (в HTML это комментарии, в скрипте - комментарии /* */):
+       @sample:begin / @sample:end   образец: его пересобирает `qt_check.py sample ID`, из шаблона листа он вырезается;
+       @page:begin / @page:end       то, что бывает только на странице сайта (состояния отчёта, «Сохранить PDF», CSP): в шаблон листа не идёт;
+       @sheet:begin / @sheet:end     скрипт листа (wire, initLangs): общий для страницы и для лист.html.
+     `qt_check.py template` собирает шаблон.html из этого файла по меткам. Правите вёрстку или скрипт листа - правьте здесь и пересобирайте шаблон. -->
+<!--@page:begin--><script>try { if (new URLSearchParams(location.search).get('c')) document.documentElement.setAttribute('data-mode', 'report'); } catch (e) {}</script><!--@page:end-->
 <link rel="stylesheet" href="/_site/design/fonts/fonts.css">
 <style>
 :root{--navy:#34497a;--sun:#f0d48a;--sun-soft:#faf1d6;--ink:#232d45;--mut:#4b566d;--bg:#f2f3f6;--paper:#fff;--line:#d9dde5;--bad:#934238;--bad-soft:#f5e6e3;--good:#37664e;
@@ -20,7 +33,31 @@ h1,h2,p,ol,ul{margin:0}
 .band{background:var(--navy);color:#f7f8fa;padding:22px 56px;display:flex;align-items:center;gap:14px;border-bottom:6px solid var(--sun)}
 .band svg{width:34px;height:34px;flex:none}
 .band b{font:700 1.125rem/1 var(--head)}
-.band span{margin-left:auto;font-size:.875rem;color:#d5dbe8}
+.band .cap{margin-left:auto;font-size:.875rem;color:#d5dbe8}
+/* переключатель языка листа: RU / KK; виден, только когда у листа две версии */
+.lang{margin-left:16px;display:inline-flex;border:1px solid rgba(247,248,250,.5);border-radius:2px;overflow:hidden;flex:none}
+.lang[hidden]{display:none}
+.lang button{font:600 .75rem/1 var(--sans);letter-spacing:.04em;color:#f7f8fa;background:transparent;border:0;padding:11px 12px;min-width:38px;cursor:pointer}
+.lang button + button{border-left:1px solid rgba(247,248,250,.5)}
+.lang button:hover{background:rgba(247,248,250,.14)}
+.lang button[aria-pressed=true]{background:var(--sun);color:var(--ink);cursor:default}
+.lang button:focus-visible{outline:3px solid #fff;outline-offset:-3px}
+.pdf{margin-left:16px;font:600 .8125rem/1 var(--sans);color:#f7f8fa;background:transparent;border:1px solid rgba(247,248,250,.5);border-radius:2px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.pdf:hover{background:rgba(247,248,250,.14)}
+.pdf:focus-visible,.btn:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.pdf[hidden],#state[hidden]{display:none}
+html[data-mode=report] #body{display:none}
+/* состояния отчёта по коду: загрузка, ещё не готов, нет такого кода, сбой сети */
+.sheet .state{padding-top:56px;padding-bottom:64px;min-height:320px}
+.state h1{font:800 1.75rem/1.15 var(--head);letter-spacing:-.01em;margin-bottom:12px}
+.state p{max-width:34em;color:var(--mut)}
+.state p + p{margin-top:8px}
+.state .code{display:inline-block;margin-top:14px;font:700 1.125rem/1 var(--head);letter-spacing:.08em;background:var(--sun-soft);padding:8px 12px;border-radius:2px;color:var(--ink)}
+.state .btn{margin-top:22px;font:600 .9375rem/1 var(--sans);padding:12px 18px;border:2px solid var(--ink);border-radius:2px;background:transparent;color:var(--ink);cursor:pointer}
+.state .btn:hover{background:var(--ink);color:#fff}
+.spin{display:inline-block;width:20px;height:20px;border:3px solid #e3e6ed;border-top-color:var(--navy);border-radius:50%;vertical-align:-4px;margin-right:12px;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none;border-top-color:var(--navy);border-right-color:var(--navy)}}
 .pad{padding:0 56px}
 .head{padding-top:40px;padding-bottom:30px}
 .sample{display:inline-block;background:var(--sun);color:var(--ink);font:700 .8125rem/1 var(--head);padding:6px 10px;border-radius:2px;margin-bottom:16px}
@@ -93,6 +130,21 @@ mark.hot,.note.hot{background:var(--sun);box-shadow:0 0 0 3px var(--sun)}
 .legend i.lex{border:0;height:12px;background:var(--sun-soft)}
 .legend i.idea{border-bottom:2px dashed var(--navy)}
 
+/* карточки слов: в спокойном состоянии слово выглядит как обычный текст (ни подчёркивания, ни цвета); карточка открывается по нажатию.
+   Записи словаря лежат в .gl (скрыт), карточку и «живую область» для скринридера создаёт скрипт и кладёт в body. */
+.gl,.wcard[hidden]{display:none}
+.text [data-w]{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:2px}
+@media (hover:hover){.text [data-w]:hover{background:rgba(52,73,122,.09)}}
+.text [data-w].wopen{background:var(--sun-soft);box-shadow:0 0 0 2px var(--sun-soft)}
+.text[tabindex]:focus-visible,.text [data-w]:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.text .gl-hint{font-size:.8125rem;line-height:1.4;color:var(--mut);margin-top:20px}
+.wcard{position:absolute;z-index:30;box-sizing:border-box;width:max-content;max-width:300px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-top:3px solid var(--sun);border-radius:2px;padding:10px 14px 11px;box-shadow:0 8px 24px rgba(35,45,69,.2);font:400 .9375rem/1.4 var(--sans)}
+.wcard .wc-h b{font:700 1rem/1.3 var(--head)}
+.wcard .wc-x{font-style:italic;color:var(--mut);margin-top:4px}
+.wcard .wc-p{font-size:.75rem;color:var(--mut);margin-top:6px;letter-spacing:.02em}
+.wcard .wc-f{font-size:.8125rem;color:var(--good);margin-top:6px}
+.wlive{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
 /* что делать */
 .steps{list-style:none;padding:0;display:grid;gap:16px;counter-reset:s}
 .steps li{display:grid;grid-template-columns:40px 1fr;gap:0 16px;counter-increment:s}
@@ -108,7 +160,17 @@ mark.hot,.note.hot{background:var(--sun);box-shadow:0 0 0 3px var(--sun)}
   html{font-size:16px}
   .sheet{margin:0 0 70px}
   .band,.pad{padding-left:20px;padding-right:20px}
-  .band span{display:none}
+  .band{gap:10px}
+  .band b{font-size:1rem}
+  .band svg{width:30px;height:30px}
+  .band .cap{display:none}
+  .lang{margin-left:auto}
+  .lang button{min-width:34px;padding:11px 9px}
+  .pdf{margin-left:auto;padding:8px 10px}
+  .lang:not([hidden]) ~ .pdf{margin-left:0}
+  .m-hide{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .sheet .state{padding-top:36px;padding-bottom:44px;min-height:260px}
+  .state h1{font-size:1.5rem}
   h1{font-size:2rem}
   .score{grid-template-columns:1fr;gap:26px}
   .total{font-size:4.5rem}
@@ -125,8 +187,8 @@ mark.hot,.note.hot{background:var(--sun);box-shadow:0 0 0 3px var(--sun)}
   .sheet{margin:0;max-width:none}
   .band,.pad{padding-left:0;padding-right:0}
   .band{background:none;color:var(--ink);border-bottom:3px solid var(--ink);padding-top:0}
-  .band span{color:var(--mut)}
-  .seg,#qt-switch{display:none!important}
+  .band .cap{color:var(--mut)}
+  .seg,#qt-switch,#qt-view-switch,.pdf,#state,.lang,.wcard,.wlive,.gl,.gl-hint{display:none!important}
   .sheet section{padding-top:16px;padding-bottom:16px}
   .score,.two,.note,.steps li,.foot,.work-head,h2{break-inside:avoid}
   h2,.work-head,.task{break-after:avoid}
@@ -144,136 +206,390 @@ mark.hot,.note.hot{background:var(--sun);box-shadow:0 0 0 3px var(--sun)}
   <div class="band">
     <svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#f0d48a" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(4 4) scale(.56)"><path d="M50 92V60C50 36 60 12 79 12c13 0 20 12 15 23-5 10-20 9-22-1-1-8 8-12 13-6M50 60C50 36 40 12 21 12 8 12 1 24 6 35c5 10 20 9 22-1 1-8-8-12-13-6M50 74c7 2 16 1 20-6 3-6-3-11-8-8M50 74c-7 2-16 1-20-6-3-6 3-11 8-8M36 92h28"/></g></svg>
     <b>Qazaq Trainer</b>
-    <span>Проверка письма</span>
+    <span class="cap" data-ver="ru">Проверка письма</span><span class="cap" data-ver="kk" hidden>Жазылымды тексеру</span>
+    <div class="lang" id="sheet-lang" role="group" aria-label="Язык листа / Парақ тілі" hidden><button type="button" data-lang="ru" aria-pressed="true">RU</button><button type="button" data-lang="kk" aria-pressed="false">KK</button></div>
+    <!--@page:begin--><button type="button" class="pdf" id="pdf" hidden><span data-ver="ru"><span class="m-hide">Сохранить </span>PDF</span><span data-ver="kk" hidden>PDF<span class="m-hide"> сақтау</span></span></button><!--@page:end-->
   </div>
 
+  <!--@page:begin--><div class="pad state" id="state" role="status" aria-live="polite" hidden></div><!--@page:end-->
+
+  <div id="body">
+<!--@sample:begin-->
+<div class="ver" data-lang="ru" lang="ru">
   <header class="pad head">
     <div class="sample">Образец</div>
     <h1>Оценочный лист</h1>
-    <div class="meta"><span>Эссе, формат ҚАЗТЕСТ</span><span>Лист № 000</span><span>14 ноября 2026</span><span>103 слов</span></div>
+    <p class="lead">Мысль понятна и выстроена, но текст вдвое короче нормы, а в простых предложениях 7 ошибок.</p>
+    <div class="meta"><span>Эссе, формат ҚАЗТЕСТ</span><span>Лист № 000</span><span>15 ноября 2026</span><span>103 слова</span></div>
   </header>
-
-  <section class="pad">
-    <div class="score">
-      <div>
-        <div class="total">17<small> / 30</small></div>
-        <p class="total-cap">баллов за эссе</p>
-      </div>
-      <div>
-        <div class="crit"><b lang="kk">Ойын жеткізу деңгейі<i lang="ru">как раскрыта тема</i></b><em>7</em>
-          <div class="bar" data-v="7"></div></div>
-        <div class="crit"><b lang="kk">Сөздік қорды пайдалануы<i lang="ru">словарный запас</i></b><em>5</em>
-          <div class="bar" data-v="5"></div></div>
-        <div class="crit"><b lang="kk">Грамматикалық сауаттылығы<i lang="ru">грамматика</i></b><em>5</em>
-          <div class="bar" data-v="5"></div></div>
-      </div>
-      <div class="level">
-        <div class="scale" role="img" aria-label="Уровень письма: от A2 до B1"><span>A1</span><span class="in">A2</span><span class="in">B1</span><span>B2</span><span>C1</span></div>
-        <p><b>Письмо на уровне A2–B1.</b> Мысль и связки тянут на B1, грамматика пока держит на A2.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="pad">
-    <div class="two">
-      <div>
-        <h3>Что получилось</h3>
-        <ul>
-          <li>Понятная позиция: она названа в начале и повторена в выводе.</li>
-          <li>Текст выстроен связками: <span lang="kk">біріншіден, екіншіден, сонымен қатар, қорытындылай келе</span>.</li>
-          <li>Сравниваются обе стороны, у каждой свои доводы.</li>
-        </ul>
-      </div>
-      <div class="minus">
-        <h3>Что снижает балл</h3>
-        <ul>
-          <li>Падежи после глаголов и послелогов: три ошибки из семи.</li>
-          <li>Объём 103 слов при 250 по заданию, отсюда потолок за словарь.</li>
-          <li>Доводы без примеров; нет пословицы или образного выражения.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
+  <section class="pad"><div class="score"><div><div class="total">16<small> / 30</small></div><p class="total-cap">баллов за эссе</p></div><div><div class="crit"><b lang="kk">Ойын жеткізу деңгейі<i lang="ru">как раскрыта тема</i></b><em>6</em><div class="bar" data-v="6"></div><p class="why">Позиция и три части есть, но доводы даны одной строкой: қалада жұмыс көп, ауылда ауа таза — без примера или причины. <span>Дальше: К каждому доводу добавьте пример или причину в 2–3 предложения и разберите тему полностью.</span></p></div><div class="crit"><b lang="kk">Сөздік қорды пайдалануы<i lang="ru">словарный запас</i></b><em>5</em><div class="bar" data-v="5"></div><p class="why">103 слова из 250 по заданию. Лексика простая, қалада повторяется 5 раз, жақсы и ауылда — по 3, образных слов нет. <span>Дальше: Допишите текст до 250 слов, как в задании, и замените повторы синонимами: қалада — мұнда, шаһарда.</span></p></div><div class="crit"><b lang="kk">Грамматикалық сауаттылығы<i lang="ru">грамматика</i></b><em>5</em><div class="bar" data-v="5"></div><p class="why">7 ошибок на 103 слова, все в простых предложениях: падежи (саябақта барамын, оны көмектесемін), порядок слов. <span>Дальше: Проверьте падеж при бару, көмектесу и слове кейін: на них три ошибки из семи.</span></p></div></div><div class="level"><div class="scale" role="img" aria-label="Уровень письма: A2–B1"><span>A1</span><span class="in">A2</span><span class="in">B1</span><span>B2</span><span>C1</span></div><p><b>Письмо на уровне A2–B1.</b> Связный текст с позицией и связками себебі, сондықтан, өйткені, но предложения простые и в падежах базовые ошибки.</p></div></div></section>
+  <section class="pad"><div class="two"><div><h3>Что получилось</h3><ul><li>Есть вступление, две части с доводами и вывод; мысль идёт по порядку: біріншіден, екіншіден, қорытындылай келе.</li><li>Своя позиция названа и объяснена: қалада тұрғанды дұрыс деп санаймын, өйткені мұнда мүмкіндік көп.</li><li>Связки причины и противопоставления стоят верно: себебі, сондықтан, бірақ, алайда.</li></ul></div><div class="minus"><h3>Что снижает балл</h3><ul><li>Объём 103 слова при 250 по заданию: для богатого словаря слов мало.</li><li>Доводы не развёрнуты: жұмыс көп, ауа таза, жұмыс аз — каждый одной строкой, без примера.</li><li>7 ошибок в простых предложениях: падежи, гласный в окончании, порядок слов, число после екі.</li></ul></div></div></section>
   <section class="pad" id="work-sec">
-    <div class="work-head">
-      <h2>Ваш текст с пометками</h2>
-      <div class="seg" role="group" aria-label="Вид текста">
-        <button type="button" data-view="orig" aria-pressed="true">Как написано</button>
-        <button type="button" data-view="fixed" aria-pressed="false">С исправлениями</button>
-      </div>
-    </div>
+    <div class="work-head"><h2>Ваш текст с пометками</h2><div class="seg" role="group" aria-label="Вид текста"><button type="button" data-view="orig" aria-pressed="true">Как написано</button><button type="button" data-view="fixed" aria-pressed="false">С исправлениями</button></div></div>
     <p class="task">Задание: <span lang="kk">«Қалада тұрған жақсы ма, әлде ауылда тұрған жақсы ма? Өз ойыңызды жазыңыз»</span></p>
-    <div class="work">
-      <div class="text" lang="kk">
-        <p>Қазір көп адам қалада тұрғысы келеді. Менің ойымша, қаланың да, ауылдың да <mark class="lex" data-n="8" data-fix="артықшылықтары">жақсы жақтары</mark> бар.</p>
-        <p>Біріншіден, <mark class="idea" data-n="9">қалада жұмыс көп</mark>. Жастар оқуын <mark data-n="1" data-fix="бітіргеннен кейін">бітірген кейін</mark> қалада қалады, себебі мұнда жалақы жоғары. Сонымен қатар қалада аурухана, театр және <mark data-n="2" data-fix="үлкен">ұлкен</mark> кітапханалар бар. Мен өзім Астанада тұрамын, демалыс күндері достарыммен <mark data-n="3" data-fix="саябаққа барамын">саябақта барамын</mark>.</p>
-        <p>Екіншіден, <mark data-n="4" data-fix="ауылда">ауылде</mark> ауа таза, адамдар бір-бірін жақсы таниды. Ауылда менің <mark data-n="5" data-fix="екі досым">екі достарым</mark> бар. <mark data-n="6" data-fix="Жазда мен әжеме барамын">Мен барамын әжеме жазда</mark> және <mark data-n="7" data-fix="оған">оны</mark> бақшада көмектесемін. Ауылда уақыт баяу өтеді, сондықтан адам жақсы демалады. Бірақ ауылда жұмыс аз, жастарға қиын.</p>
-        <p>Қорытындылай келе, мен қалада тұрғанды дұрыс деп санаймын, өйткені мұнда мүмкіндік көп. Алайда жаз сайын ауылға барып тұру керек деп ойлаймын.</p>
-      </div>
-      <div class="notes">
-        <div class="note" data-n="1" tabindex="0"><b>1</b><div><s lang="kk">бітірген кейін</s> → <strong lang="kk">бітіргеннен кейін</strong><span>Перед <span lang="kk">кейін</span> слово стоит в исходном падеже: <span lang="kk">-нан, -нен</span>.</span></div></div>
-        <div class="note" data-n="2" tabindex="0"><b>2</b><div><s lang="kk">ұлкен</s> → <strong lang="kk">үлкен</strong><span>Орфография: мягкое слово, пишется с <span lang="kk">ү</span>.</span></div></div>
-        <div class="note" data-n="3" tabindex="0"><b>3</b><div><s lang="kk">саябақта барамын</s> → <strong lang="kk">саябаққа барамын</strong><span>Куда? Направление — дательный падеж. <span lang="kk">Саябақта</span> отвечает на вопрос «где?».</span></div></div>
-        <div class="note" data-n="4" tabindex="0"><b>4</b><div><s lang="kk">ауылде</s> → <strong lang="kk">ауылда</strong><span>Слово твёрдое, окончание тоже твёрдое. В других местах текста вы пишете верно.</span></div></div>
-        <div class="note" data-n="5" tabindex="0"><b>5</b><div><s lang="kk">екі достарым</s> → <strong lang="kk">екі досым</strong><span>После числительного множественное число не ставится.</span></div></div>
-        <div class="note" data-n="6" tabindex="0"><b>6</b><div><s lang="kk">Мен барамын әжеме жазда</s> → <strong lang="kk">Жазда мен әжеме барамын</strong><span>Порядок слов: сказуемое в конце предложения.</span></div></div>
-        <div class="note" data-n="7" tabindex="0"><b>7</b><div><s lang="kk">оны … көмектесемін</s> → <strong lang="kk">оған … көмектесемін</strong><span><span lang="kk">Көмектесу</span> — кому? Дательный падеж.</span></div></div>
-        <div class="note lex" data-n="8" tabindex="0"><b>8</b><div><s lang="kk">жақсы жақтары</s> → <strong lang="kk">артықшылықтары</strong><span>Слово <span lang="kk">жақсы</span> в тексте трижды. Одно из них стоит заменить.</span></div></div>
-        <div class="note idea" data-n="9" tabindex="0"><b>9</b><div><strong>Довод без примера</strong><span>Одно предложение о себе или знакомом: кто нашёл работу в городе и какую. За это растёт первый критерий.</span></div></div>
-      </div>
-    </div>
+    <div class="work"><div class="text" role="group" aria-label="Текст работы. Стрелки влево и вправо: переход по словам, Enter: карточка слова, Esc: закрыть." tabindex="0"><p lang="kk"><span data-w="қазір">Қазір</span> <span data-w="көп">көп</span> <span data-w="адам">адам</span> <span data-w="қала">қалада</span> <span data-w="тұру">тұрғысы</span> <span data-w="келу">келеді</span>. Менің <span data-w="ой">ойымша</span>, <mark class="idea" data-n="1"><span data-w="қала">қаланың</span> да, <span data-w="ауыл">ауылдың</span> да <span data-w="жақсы">жақсы</span> <span data-w="жақ">жақтары</span> бар</mark>.</p><p lang="kk"><span data-w="біріншіден">Біріншіден</span>, <mark class="idea" data-n="2"><span data-w="қала">қалада</span> <span data-w="жұмыс">жұмыс</span> <span data-w="көп">көп</span></mark>. <span data-w="жас">Жастар</span> <span data-w="оқу">оқуын</span> <mark data-n="3" data-fix="бітіргеннен кейін" data-fw="бітіру кейін"><span data-w="бітіру">бітірген</span> <span data-w="кейін">кейін</span></mark> <span data-w="қала">қалада</span> <span data-w="қалу">қалады</span>, <span data-w="себебі">себебі</span> <span data-w="мұнда">мұнда</span> <span data-w="жалақы">жалақы</span> <span data-w="жоғары">жоғары</span>. <span data-w="сонымен">Сонымен</span> <span data-w="қатар">қатар</span> <mark class="lex" data-n="4" data-fix="мұнда" data-fw="мұнда"><span data-w="қала">қалада</span></mark> <span data-w="аурухана">аурухана</span>, <span data-w="театр">театр</span> және <mark data-n="5" data-fix="үлкен" data-fw="үлкен"><span data-w="үлкен" data-e="үлкен">ұлкен</span></mark> <span data-w="кітапхана">кітапханалар</span> бар. Мен <span data-w="өз">өзім</span> <span data-w="астана">Астанада</span> <span data-w="тұру">тұрамын</span>, <span data-w="демалыс">демалыс</span> <span data-w="күн">күндері</span> <span data-w="дос">достарыммен</span> <mark data-n="6" data-fix="саябаққа" data-fw="саябақ"><span data-w="саябақ">саябақта</span></mark> <span data-w="бару">барамын</span>.</p><p lang="kk"><span data-w="екіншіден">Екіншіден</span>, <mark data-n="7" data-fix="ауылда" data-fw="ауыл"><span data-w="ауыл" data-e="ауылда">ауылде</span></mark> <span data-w="ауа">ауа</span> <span data-w="таза">таза</span>, <span data-w="адам">адамдар</span> <span data-w="бір-бірі">бір-бірін</span> <span data-w="жақсы">жақсы</span> <span data-w="тану">таниды</span>. <span data-w="ауыл">Ауылда</span> менің <mark data-n="8" data-fix="екі досым" data-fw="екі дос"><span data-w="екі">екі</span> <span data-w="дос">достарым</span></mark> бар. Мен <mark data-n="9" data-fix="жазда әжеме барамын" data-fw="жаз әже бару"><span data-w="бару">барамын</span> <span data-w="әже">әжеме</span> <span data-w="жаз">жазда</span></mark> және <mark data-n="10" data-fix="оған бақшада" data-fw="- бақша">оны <span data-w="бақша">бақшада</span></mark> <span data-w="көмектесу">көмектесемін</span>. <span data-w="ауыл">Ауылда</span> <span data-w="уақыт">уақыт</span> <span data-w="баяу">баяу</span> <span data-w="өту">өтеді</span>, <span data-w="сондықтан">сондықтан</span> <span data-w="адам">адам</span> <span data-w="жақсы">жақсы</span> <span data-w="демалу">демалады</span>. <span data-w="бірақ">Бірақ</span> <mark class="idea" data-n="11"><span data-w="ауыл">ауылда</span> <span data-w="жұмыс">жұмыс</span> <span data-w="аз">аз</span>, <span data-w="жас">жастарға</span> <span data-w="қиын">қиын</span></mark>.</p><p lang="kk"><span data-w="қорытындылау">Қорытындылай</span> келе, мен <span data-w="қала">қалада</span> <span data-w="тұру">тұрғанды</span> <span data-w="дұрыс">дұрыс</span> деп <span data-w="санау">санаймын</span>, <span data-w="өйткені">өйткені</span> <span data-w="мұнда">мұнда</span> <span data-w="мүмкіндік">мүмкіндік</span> <span data-w="көп">көп</span>. <span data-w="алайда">Алайда</span> <span data-w="жаз">жаз</span> <span data-w="сайын">сайын</span> <span data-w="ауыл">ауылға</span> <span data-w="бару">барып</span> <span data-w="тұру">тұру</span> <span data-w="керек">керек</span> деп <span data-w="ойлау">ойлаймын</span>.</p><p class="gl-hint">Нажмите на любое слово, чтобы увидеть перевод</p></div><div class="notes"><div class="note idea" data-n="1" tabindex="0"><b>1</b><div><strong>Позиция появляется только в конце</strong><span>Во вступлении вы никого не выбираете, а в выводе выбираете город. Назовите выбор сразу.</span></div></div><div class="note idea" data-n="2" tabindex="0"><b>2</b><div><strong>Довод без примера</strong><span>Довод дан одной строкой. Добавьте пример: какая работа, кто из знакомых её нашёл.</span></div></div><div class="note " data-n="3" tabindex="0"><b>3</b><div><s lang="kk">бітірген кейін</s> → <strong lang="kk">бітіргеннен кейін</strong><span>Перед кейін слово стоит с окончанием -нан/-нен: бітіргеннен кейін, сабақтан кейін.</span></div></div><div class="note lex" data-n="4" tabindex="0"><b>4</b><div><s lang="kk">қалада</s> → <strong lang="kk">мұнда</strong><span>Қалада стоит пять раз, из них три подряд в одном абзаце. Здесь подойдёт мұнда.</span></div></div><div class="note " data-n="5" tabindex="0"><b>5</b><div><s lang="kk">ұлкен</s> → <strong lang="kk">үлкен</strong><span>Пишется үлкен, через ү: в слове мягкие гласные.</span></div></div><div class="note " data-n="6" tabindex="0"><b>6</b><div><s lang="kk">саябақта</s> → <strong lang="kk">саябаққа</strong><span>Куда иду — окончание -ға/-ге, -қа/-ке: саябаққа барамын. Саябақта отвечает на вопрос «где?».</span></div></div><div class="note " data-n="7" tabindex="0"><b>7</b><div><s lang="kk">ауылде</s> → <strong lang="kk">ауылда</strong><span>После твёрдого слова окончание твёрдое: ауыл — ауылда, как дальше в вашем тексте.</span></div></div><div class="note " data-n="8" tabindex="0"><b>8</b><div><s lang="kk">екі достарым</s> → <strong lang="kk">екі досым</strong><span>После числа окончание множественного числа -лар/-тар не ставят: екі досым, үш кітап.</span></div></div><div class="note " data-n="9" tabindex="0"><b>9</b><div><s lang="kk">барамын әжеме жазда</s> → <strong lang="kk">жазда әжеме барамын</strong><span>Глагол в казахском предложении стоит в конце: Мен жазда әжеме барамын.</span></div></div><div class="note " data-n="10" tabindex="0"><b>10</b><div><s lang="kk">оны бақшада</s> → <strong lang="kk">оған бақшада</strong><span>Көмектесу требует вопроса «кому?»: оған көмектесемін, маған көмектес.</span></div></div><div class="note idea" data-n="11" tabindex="0"><b>11</b><div><strong>Мысль не развёрнута</strong><span>Почему жастарға қиын? Объясните причиной или случаем из жизни, одной строки мало.</span></div></div></div></div>
     <div class="legend"><span><i></i>грамматика и орфография</span><span><i class="lex"></i>словарь</span><span><i class="idea"></i>содержание</span></div>
+    <div class="gl" aria-hidden="true"><span class="k-fix">Написание исправлено</span><span class="k-see">см. пометку %s</span><div class="g" data-w="адам"><b>человек</b><i>существительное</i></div><div class="g" data-w="аз"><b>мало</b><i>наречие</i></div><div class="g" data-w="алайда"><b>однако</b><i>служебное слово</i></div><div class="g nm" data-w="астана"><b>Астана</b><i>имя</i></div><div class="g" data-w="ауа"><b>воздух</b><i>существительное</i></div><div class="g" data-w="аурухана"><b>больница</b><i>существительное</i></div><div class="g" data-w="ауыл"><b>село</b><i>существительное</i></div><div class="g" data-w="бару"><b>идти</b><i>глагол</i></div><div class="g" data-w="баяу"><b>медленно</b><i>наречие</i></div><div class="g" data-w="бақша"><b>огород</b><i>существительное</i></div><div class="g" data-w="бір-бірі"><b>друг друга</b><i>местоимение</i></div><div class="g" data-w="бірақ"><b>но</b><i>служебное слово</i></div><div class="g" data-w="біріншіден"><b>во-первых</b><i>наречие</i></div><div class="g" data-w="бітіру"><b>закончить</b><i>глагол</i></div><div class="g" data-w="демалу"><b>отдыхать</b><i>глагол</i></div><div class="g" data-w="демалыс"><b>отдых</b><i>существительное</i></div><div class="g" data-w="дос"><b>друг</b><i>существительное</i></div><div class="g" data-w="дұрыс"><b>правильный</b><i>прилагательное</i></div><div class="g" data-w="екі"><b>два</b><i>числительное</i></div><div class="g" data-w="екіншіден"><b>во-вторых</b><i>наречие</i></div><div class="g" data-w="жаз"><b>лето</b><i>существительное</i></div><div class="g" data-w="жалақы"><b>зарплата</b><i>существительное</i></div><div class="g" data-w="жас"><b>молодёжь</b><i>существительное</i></div><div class="g" data-w="жақ"><b>сторона</b><i>существительное</i></div><div class="g" data-w="жақсы"><b>хороший</b><i>прилагательное</i></div><div class="g" data-w="жоғары"><b>высокий</b><i>прилагательное</i></div><div class="g" data-w="жұмыс"><b>работа</b><i>существительное</i></div><div class="g" data-w="кейін"><b>после</b><i>служебное слово</i></div><div class="g" data-w="келу"><b>хотеться</b><i>глагол</i></div><div class="g" data-w="керек"><b>нужно</b><i>модальное слово</i></div><div class="g" data-w="кітапхана"><b>библиотека</b><i>существительное</i></div><div class="g" data-w="күн"><b>день</b><i>существительное</i></div><div class="g" data-w="көмектесу"><b>помогать</b><i>глагол</i></div><div class="g" data-w="көп"><b>много</b><i>наречие</i></div><div class="g" data-w="мүмкіндік"><b>возможность</b><i>существительное</i></div><div class="g" data-w="мұнда"><b>здесь</b><i>наречие</i></div><div class="g" data-w="ой"><b>мнение</b><i>существительное</i></div><div class="g" data-w="ойлау"><b>думать</b><i>глагол</i></div><div class="g" data-w="оқу"><b>учёба</b><i>существительное</i></div><div class="g" data-w="сайын"><b>каждый</b><i>служебное слово</i></div><div class="g" data-w="санау"><b>считать</b><i>глагол</i></div><div class="g" data-w="саябақ"><b>парк</b><i>существительное</i></div><div class="g" data-w="себебі"><b>потому что</b><i>служебное слово</i></div><div class="g" data-w="сондықтан"><b>поэтому</b><i>служебное слово</i></div><div class="g" data-w="сонымен"><b>кроме того</b><i>служебное слово</i></div><div class="g" data-w="таза"><b>чистый</b><i>прилагательное</i></div><div class="g" data-w="тану"><b>узнавать</b><i>глагол</i></div><div class="g" data-w="театр"><b>театр</b><i>существительное</i></div><div class="g" data-w="тұру"><b>жить</b><i>глагол</i></div><div class="g" data-w="уақыт"><b>время</b><i>существительное</i></div><div class="g" data-w="қазір"><b>сейчас</b><i>наречие</i></div><div class="g" data-w="қала"><b>город</b><i>существительное</i></div><div class="g" data-w="қалу"><b>оставаться</b><i>глагол</i></div><div class="g" data-w="қатар"><b>наряду</b><i>наречие</i></div><div class="g" data-w="қиын"><b>трудный</b><i>прилагательное</i></div><div class="g" data-w="қорытындылау"><b>подводить итог</b><i>глагол</i></div><div class="g" data-w="үлкен"><b>большой</b><i>прилагательное</i></div><div class="g" data-w="әже"><b>бабушка</b><i>существительное</i></div><div class="g" data-w="өз"><b>сам</b><i>местоимение</i></div><div class="g" data-w="өйткені"><b>потому что</b><i>служебное слово</i></div><div class="g" data-w="өту"><b>проходить</b><i>глагол</i></div></div>
   </section>
-
-  <section class="pad">
-    <h2>Что делать до следующей работы</h2>
-    <ol class="steps">
-      <li><div><b>Падежи после глаголов движения и послелогов.</b><span>Выпишите десять своих предложений с <span lang="kk">бару, келу, көмектесу, кейін, бұрын</span> и проверьте окончание в каждом. Это уберёт пометки 1, 3 и 7.</span></div></li>
-      <li><div><b>Пишите полный объём.</b><span>250 слов: к каждому доводу добавьте пример из жизни, тогда текст вырастет сам.</span></div></li>
-      <li><div><b>Одна пословица на эссе.</b><span>К этой теме подошла бы <span lang="kk">«Туған жердей жер болмас, туған елдей ел болмас»</span>. Критерий словаря прямо называет пословицы и образные выражения.</span></div></li>
-    </ol>
-  </section>
-
+  <section class="pad"><h2>Что делать до следующей работы</h2><ol class="steps"><li><div><b>Развернуть каждый довод до 3–4 предложений</b><span>К доводам жұмыс көп, ауа таза, жұмыс аз допишите по примеру и причине. Так текст вырастет до 250 слов, и вырастут баллы за содержание и словарь.</span></div></li><li><div><b>Повторить падеж «куда?» и «кому?»</b><span>Составьте по пять предложений с бару и көмектесу: саябаққа барамын, әжеме көмектесемін. Отдельно три предложения с -нан/-нен кейін.</span></div></li><li><div><b>Проверять порядок слов и повторы перед сдачей</b><span>Перечитайте текст: глагол стоит в конце каждого предложения, после числа нет -лар/-тар. Слово, которое встретилось больше двух раз, замените синонимом.</span></div></li></ol></section>
   <footer class="pad foot">
     <p><b>Проверила наша команда по критериям эссе ҚАЗТЕСТ.</b> Разбор готовит наш инструмент проверки, каждый лист перед отправкой читает человек из команды.</p>
     <p>Оценка приблизительная. Это не официальный результат и не сертификат: официальные результаты ҚАЗТЕСТ выдаёт только Национальный центр тестирования.</p>
     <p>Это образец: работа написана нами для примера.</p>
   </footer>
+</div>
+<div class="ver" data-lang="kk" lang="kk" hidden>
+  <header class="pad head">
+    <div class="sample">Үлгі</div>
+    <h1>Бағалау парағы</h1>
+    <p class="lead">Ой түсінікті, жүйелі жазылған, бірақ мәтіннің көлемі керектен екі есе аз, ал жай сөйлемдерде 7 қате бар.</p>
+    <div class="meta"><span>Эссе, ҚАЗТЕСТ форматы</span><span>Парақ № 000</span><span>2026 жылғы 15 қараша</span><span>103 сөз</span></div>
+  </header>
+  <section class="pad"><div class="score"><div><div class="total">16<small> / 30</small></div><p class="total-cap">эссе үшін ұпай</p></div><div><div class="crit"><b lang="kk">Ойын жеткізу деңгейі<i lang="kk">тақырыптың ашылуы</i></b><em>6</em><div class="bar" data-v="6"></div><p class="why">Көзқарас та, үш бөлім де бар, бірақ дәлелдер бір жолмен берілген: қалада жұмыс көп, ауылда ауа таза — мысалсыз, себепсіз. <span>Келесі қадам: Әр дәлелге 2–3 сөйлеммен мысал немесе себеп қосыңыз және тақырыпты толық ашыңыз.</span></p></div><div class="crit"><b lang="kk">Сөздік қорды пайдалануы<i lang="kk">сөз байлығы</i></b><em>5</em><div class="bar" data-v="5"></div><p class="why">Тапсырма бойынша 250 сөздің орнына 103 сөз. Лексика қарапайым, қалада 5 рет қайталанады, жақсы мен ауылда — 3 реттен, бейнелі сөздер жоқ. <span>Келесі қадам: Мәтінді тапсырмадағы 250 сөзге жеткізіңіз және қайталанатын сөздерді синонимдермен ауыстырыңыз: қалада — мұнда, шаһарда.</span></p></div><div class="crit"><b lang="kk">Грамматикалық сауаттылығы<i lang="kk">грамматика</i></b><em>5</em><div class="bar" data-v="5"></div><p class="why">103 сөзде 7 қате, бәрі жай сөйлемдерде: септіктер (саябақта барамын, оны көмектесемін), сөз тәртібі. <span>Келесі қадам: бару, көмектесу етістіктерінде және кейін сөзінде септікті тексеріңіз: жеті қатенің үшеуі осында.</span></p></div></div><div class="level"><div class="scale" role="img" aria-label="Жазылым деңгейі: A2–B1"><span>A1</span><span class="in">A2</span><span class="in">B1</span><span>B2</span><span>C1</span></div><p><b>Жазылым деңгейі: A2–B1.</b> Мәтін байланысты, көзқарас бар, себебі, сондықтан, өйткені сөздері қолданылған, бірақ сөйлемдер жай, ал септіктерде қарапайым қателер бар.</p></div></div></section>
+  <section class="pad"><div class="two"><div><h3>Жақсы жақтары</h3><ul><li>Кіріспе, дәлелдері бар екі бөлім және қорытынды бар; ой ретімен жүреді: біріншіден, екіншіден, қорытындылай келе.</li><li>Өз көзқарасы айтылған және түсіндірілген: қалада тұрғанды дұрыс деп санаймын, өйткені мұнда мүмкіндік көп.</li><li>Себеп пен қарама-қарсылықты білдіретін байланыстырушы сөздер дұрыс қойылған: себебі, сондықтан, бірақ, алайда.</li></ul></div><div class="minus"><h3>Ұпайды төмендететін жайттар</h3><ul><li>Көлемі тапсырмадағы 250 сөздің орнына 103 сөз: бай сөздік қор үшін сөз аз.</li><li>Дәлелдер ашылмаған: жұмыс көп, ауа таза, жұмыс аз — әрқайсысы бір жолмен, мысалсыз.</li><li>Жай сөйлемдерде 7 қате: септіктер, жалғаудағы дауысты, сөз тәртібі, екіден кейінгі көптік жалғау.</li></ul></div></div></section>
+  <section class="pad" id="work-sec-kk">
+    <div class="work-head"><h2>Сіздің мәтініңіз белгілермен</h2><div class="seg" role="group" aria-label="Мәтін түрі"><button type="button" data-view="orig" aria-pressed="true">Қалай жазылған</button><button type="button" data-view="fixed" aria-pressed="false">Түзетулермен</button></div></div>
+    <p class="task">Тапсырма: <span lang="kk">«Қалада тұрған жақсы ма, әлде ауылда тұрған жақсы ма? Өз ойыңызды жазыңыз»</span></p>
+    <div class="work"><div class="text" role="group" aria-label="Жұмыс мәтіні. Сол және оң көрсеткі: сөздер арасында жүру, Enter: сөз картасы, Esc: жабу." tabindex="0"><p lang="kk"><span data-w="қазір">Қазір</span> <span data-w="көп">көп</span> <span data-w="адам">адам</span> <span data-w="қала">қалада</span> <span data-w="тұру">тұрғысы</span> <span data-w="келу">келеді</span>. Менің <span data-w="ой">ойымша</span>, <mark class="idea" data-n="1"><span data-w="қала">қаланың</span> да, <span data-w="ауыл">ауылдың</span> да <span data-w="жақсы">жақсы</span> <span data-w="жақ">жақтары</span> бар</mark>.</p><p lang="kk"><span data-w="біріншіден">Біріншіден</span>, <mark class="idea" data-n="2"><span data-w="қала">қалада</span> <span data-w="жұмыс">жұмыс</span> <span data-w="көп">көп</span></mark>. <span data-w="жас">Жастар</span> <span data-w="оқу">оқуын</span> <mark data-n="3" data-fix="бітіргеннен кейін" data-fw="бітіру кейін"><span data-w="бітіру">бітірген</span> <span data-w="кейін">кейін</span></mark> <span data-w="қала">қалада</span> <span data-w="қалу">қалады</span>, <span data-w="себебі">себебі</span> <span data-w="мұнда">мұнда</span> <span data-w="жалақы">жалақы</span> <span data-w="жоғары">жоғары</span>. <span data-w="сонымен">Сонымен</span> <span data-w="қатар">қатар</span> <mark class="lex" data-n="4" data-fix="мұнда" data-fw="мұнда"><span data-w="қала">қалада</span></mark> <span data-w="аурухана">аурухана</span>, <span data-w="театр">театр</span> және <mark data-n="5" data-fix="үлкен" data-fw="үлкен"><span data-w="үлкен" data-e="үлкен">ұлкен</span></mark> <span data-w="кітапхана">кітапханалар</span> бар. Мен <span data-w="өз">өзім</span> <span data-w="астана">Астанада</span> <span data-w="тұру">тұрамын</span>, <span data-w="демалыс">демалыс</span> <span data-w="күн">күндері</span> <span data-w="дос">достарыммен</span> <mark data-n="6" data-fix="саябаққа" data-fw="саябақ"><span data-w="саябақ">саябақта</span></mark> <span data-w="бару">барамын</span>.</p><p lang="kk"><span data-w="екіншіден">Екіншіден</span>, <mark data-n="7" data-fix="ауылда" data-fw="ауыл"><span data-w="ауыл" data-e="ауылда">ауылде</span></mark> <span data-w="ауа">ауа</span> <span data-w="таза">таза</span>, <span data-w="адам">адамдар</span> <span data-w="бір-бірі">бір-бірін</span> <span data-w="жақсы">жақсы</span> <span data-w="тану">таниды</span>. <span data-w="ауыл">Ауылда</span> менің <mark data-n="8" data-fix="екі досым" data-fw="екі дос"><span data-w="екі">екі</span> <span data-w="дос">достарым</span></mark> бар. Мен <mark data-n="9" data-fix="жазда әжеме барамын" data-fw="жаз әже бару"><span data-w="бару">барамын</span> <span data-w="әже">әжеме</span> <span data-w="жаз">жазда</span></mark> және <mark data-n="10" data-fix="оған бақшада" data-fw="- бақша">оны <span data-w="бақша">бақшада</span></mark> <span data-w="көмектесу">көмектесемін</span>. <span data-w="ауыл">Ауылда</span> <span data-w="уақыт">уақыт</span> <span data-w="баяу">баяу</span> <span data-w="өту">өтеді</span>, <span data-w="сондықтан">сондықтан</span> <span data-w="адам">адам</span> <span data-w="жақсы">жақсы</span> <span data-w="демалу">демалады</span>. <span data-w="бірақ">Бірақ</span> <mark class="idea" data-n="11"><span data-w="ауыл">ауылда</span> <span data-w="жұмыс">жұмыс</span> <span data-w="аз">аз</span>, <span data-w="жас">жастарға</span> <span data-w="қиын">қиын</span></mark>.</p><p lang="kk"><span data-w="қорытындылау">Қорытындылай</span> келе, мен <span data-w="қала">қалада</span> <span data-w="тұру">тұрғанды</span> <span data-w="дұрыс">дұрыс</span> деп <span data-w="санау">санаймын</span>, <span data-w="өйткені">өйткені</span> <span data-w="мұнда">мұнда</span> <span data-w="мүмкіндік">мүмкіндік</span> <span data-w="көп">көп</span>. <span data-w="алайда">Алайда</span> <span data-w="жаз">жаз</span> <span data-w="сайын">сайын</span> <span data-w="ауыл">ауылға</span> <span data-w="бару">барып</span> <span data-w="тұру">тұру</span> <span data-w="керек">керек</span> деп <span data-w="ойлау">ойлаймын</span>.</p><p class="gl-hint">Түсіндірмесін көру үшін кез келген сөзді басыңыз</p></div><div class="notes"><div class="note idea" data-n="1" tabindex="0"><b>1</b><div><strong>Көзқарас тек соңында көрінеді</strong><span>Кіріспеде ешкімді таңдамайсыз, ал қорытындыда қаланы таңдайсыз. Таңдауыңызды бірден айтыңыз.</span></div></div><div class="note idea" data-n="2" tabindex="0"><b>2</b><div><strong>Мысалсыз дәлел</strong><span>Дәлел бір жолмен берілген. Мысал қосыңыз: қандай жұмыс, таныстарыңыздың қайсысы тапты.</span></div></div><div class="note " data-n="3" tabindex="0"><b>3</b><div><s lang="kk">бітірген кейін</s> → <strong lang="kk">бітіргеннен кейін</strong><span>кейін алдындағы сөз шығыс септікте (-нан/-нен) тұрады: бітіргеннен кейін, сабақтан кейін.</span></div></div><div class="note lex" data-n="4" tabindex="0"><b>4</b><div><s lang="kk">қалада</s> → <strong lang="kk">мұнда</strong><span>Қалада бес рет кездеседі, соның үшеуі бір абзацта қатар тұр. Осы жерге мұнда сөзі жарасады.</span></div></div><div class="note " data-n="5" tabindex="0"><b>5</b><div><s lang="kk">ұлкен</s> → <strong lang="kk">үлкен</strong><span>үлкен сөзі ү әрпімен жазылады: онда жіңішке дауыстылар бар.</span></div></div><div class="note " data-n="6" tabindex="0"><b>6</b><div><s lang="kk">саябақта</s> → <strong lang="kk">саябаққа</strong><span>Бағыт болса (қайда бару), -ға/-ге, -қа/-ке жалғауы керек (барыс септік): саябаққа барамын. Саябақта — жатыс септік, ол орынды білдіреді.</span></div></div><div class="note " data-n="7" tabindex="0"><b>7</b><div><s lang="kk">ауылде</s> → <strong lang="kk">ауылда</strong><span>Жуан сөзден кейін жалғау да жуан болады: ауыл — ауылда, мәтініңіздің келесі жерінде өзіңіз жазғандай.</span></div></div><div class="note " data-n="8" tabindex="0"><b>8</b><div><s lang="kk">екі достарым</s> → <strong lang="kk">екі досым</strong><span>Саннан кейін көптік жалғау (-лар/-тар) жалғанбайды: екі досым, үш кітап.</span></div></div><div class="note " data-n="9" tabindex="0"><b>9</b><div><s lang="kk">барамын әжеме жазда</s> → <strong lang="kk">жазда әжеме барамын</strong><span>Қазақ сөйлемінде етістік (баяндауыш) соңында тұрады: Мен жазда әжеме барамын.</span></div></div><div class="note " data-n="10" tabindex="0"><b>10</b><div><s lang="kk">оны бақшада</s> → <strong lang="kk">оған бақшада</strong><span>Көмектесу етістігі барыс септікті («кімге?») қажет етеді: оған көмектесемін, маған көмектес.</span></div></div><div class="note idea" data-n="11" tabindex="0"><b>11</b><div><strong>Ой ашылмаған</strong><span>Неге жастарға қиын? Себеппен немесе өмірден алынған мысалмен түсіндіріңіз, бір жол аз.</span></div></div></div></div>
+    <div class="legend"><span><i></i>грамматика және емле</span><span><i class="lex"></i>сөздік қор</span><span><i class="idea"></i>мазмұн</span></div>
+    <div class="gl" aria-hidden="true"><span class="k-fix">Жазылуы түзетілді</span><span class="k-see">%s-белгіні қараңыз</span><div class="g" data-w="адам"><b>Әрбір ер кісі, әйел, бала.</b><em>Аялдамада көп адам тұр.</em><i>зат есім</i></div><div class="g" data-w="аз"><b>Керекті мөлшерден кем.</b><em>Сүт аз қалды.</em><i>үстеу</i></div><div class="g" data-w="алайда"><b>Қарсылық білдіреді, «бірақ» дегенмен бірдей.</b><em>Жол ұзақ, алайда қызық.</em><i>шылау</i></div><div class="g nm" data-w="астана"><b>Астана</b><i>жалқы есім</i></div><div class="g" data-w="ауа"><b>Дем алған кезде кіретін көзге көрінбейтін зат.</b><em>Тауда ауа таза.</em><i>зат есім</i></div><div class="g" data-w="аурухана"><b>Дәрігерлер ауырғандарға көмек беретін ғимарат.</b><em>Аурухана үйден алыс емес.</em><i>зат есім</i></div><div class="g" data-w="ауыл"><b>Қаладан тыс жерде орналасқан шағын елді мекен.</b><em>Менің әжем ауылда тұрады.</em><i>зат есім</i></div><div class="g" data-w="бару"><b>Бір жерге қарай жүріп жету, жолға шығу.</b><em>Мен жұма сайын театрға барамын.</em><i>етістік</i></div><div class="g" data-w="баяу"><b>Жылдамдығы төмен, асықпай.</b><em>Ол баяу жүреді.</em><i>үстеу</i></div><div class="g" data-w="бақша"><b>Үй жанында көкөніс, жеміс егетін жер.</b><em>Бақшада қызанақ өсіп тұр.</em><i>зат есім</i></div><div class="g" data-w="бір-бірі"><b>Екі адамның біреуі екіншісіне қатысты екенін білдіреді.</b><em>Олар бір-бірін жақсы көреді.</em><i>есімдік</i></div><div class="g" data-w="бірақ"><b>Алдыңғы ойға қарсы ой айтқанда қолданылады.</b><em>Ол келді, бірақ ұзақ қалмады.</em><i>шылау</i></div><div class="g" data-w="біріншіден"><b>Бірнеше ойдың ішінде біріншісін айтқанда қолданылады.</b><em>Біріншіден, мұнда жұмыс көп.</em><i>үстеу</i></div><div class="g" data-w="бітіру"><b>Істі аяғына жеткізу, толық орындау.</b><em>Мен жұмысты бітірдім.</em><i>етістік</i></div><div class="g" data-w="демалу"><b>Шаршағаннан кейін тынығу, күш жинау.</b><em>Жексенбі күні үйде демаламыз.</em><i>етістік</i></div><div class="g" data-w="демалыс"><b>Жұмыстан немесе оқудан бос уақыт.</b><em>Демалыс күні үйде боламыз.</em><i>зат есім</i></div><div class="g" data-w="дос"><b>Сыйлайтын, сенетін, жақын жүретін кісі.</b><em>Менің досым Алматыда тұрады.</em><i>зат есім</i></div><div class="g" data-w="дұрыс"><b>Қатесі жоқ, дәл және тура.</b><em>Сіздің жауабыңыз дұрыс.</em><i>сын есім</i></div><div class="g" data-w="екі"><b>Бірден кейінгі, үштен бұрынғы сан.</b><em>Менің екі қарындасым бар.</em><i>сан есім</i></div><div class="g" data-w="екіншіден"><b>Бірнеше ойдың ішінде екіншісін айтқанда қолданылады.</b><em>Екіншіден, жол ұзақ емес.</em><i>үстеу</i></div><div class="g" data-w="жаз"><b>Жылдың ең ыстық мезгілі: маусым, шілде, тамыз.</b><em>Жазда біз ауылға барамыз.</em><i>зат есім</i></div><div class="g" data-w="жалақы"><b>Жұмысқа берілетін ақы, ай сайынғы табыс.</b><em>Менің жалақым жақсы.</em><i>зат есім</i></div><div class="g" data-w="жас"><b>Балалық шақтан шыққан, әлі қартаймаған адамдар.</b><em>Жастар қалаға оқуға барады.</em><i>зат есім</i></div><div class="g" data-w="жақ"><b>Бір нәрсенің немесе істің белгілі бір беті, қыры.</b><em>Қаланың жақсы жақтары көп.</em><i>зат есім</i></div><div class="g" data-w="жақсы"><b>Жаман емес, ұнайтын, пайдалы нәрсе.</b><em>Бұл кітап өте жақсы.</em><i>сын есім</i></div><div class="g" data-w="жоғары"><b>Төмен емес, биік деңгейдегі.</b><em>Бағасы өте жоғары.</em><i>сын есім</i></div><div class="g" data-w="жұмыс"><b>Адамның күнде істейтін ісі, табыс көзі.</b><em>Менің жұмысым үйден алыс.</em><i>зат есім</i></div><div class="g" data-w="кейін"><b>Бір іс аяқталған соң, одан соң.</b><em>Сабақтан кейін үйге барамын.</em><i>шылау</i></div><div class="g" data-w="келу"><b>«-ғысы келеді» дегенде: қалау, тілеу, ықыласы болу.</b><em>Менің үйге барғым келеді.</em><i>етістік</i></div><div class="g" data-w="керек"><b>Қажет, болуға тиіс.</b><em>Маған су керек.</em><i>модаль сөз</i></div><div class="g" data-w="кітапхана"><b>Кітап оқуға және алуға болатын орын.</b><em>Кітапхана сағат тоғызда ашылады.</em><i>зат есім</i></div><div class="g" data-w="күн"><b>Аптаның бір бөлігі: дүйсенбі, сейсенбі…</b><em>Бүгін қандай күн?</em><i>зат есім</i></div><div class="g" data-w="көмектесу"><b>Біреудің ісіне қол ұшын беру, жәрдемдесу.</b><em>Мен анама үйде көмектесемін.</em><i>етістік</i></div><div class="g" data-w="көп"><b>Саны үлкен, аз емес.</b><em>Бұл қалада көп адам тұрады.</em><i>үстеу</i></div><div class="g" data-w="мүмкіндік"><b>Бір істі істеуге болатын жағдай.</b><em>Менде оқуға мүмкіндік бар.</em><i>зат есім</i></div><div class="g" data-w="мұнда"><b>Сөйлеушіге жақын орында, осы жерде.</b><em>Мұнда кітапхана бар.</em><i>үстеу</i></div><div class="g" data-w="ой"><b>Адамның басындағы пікір, шешім.</b><em>Менің ойымша, ол дұрыс айтады.</em><i>зат есім</i></div><div class="g" data-w="ойлау"><b>Ойға алу, бір нәрсе туралы ақыл жүгірту.</b><em>Мен бұл туралы ойлаймын.</em><i>етістік</i></div><div class="g" data-w="оқу"><b>Мектепте, университетте білім алу.</b><em>Оқуым биыл бітеді.</em><i>зат есім</i></div><div class="g" data-w="сайын"><b>Әр кезде қайталанатынын көрсетеді: күн сайын, жыл сайын.</b><em>Ол күн сайын жүгіреді.</em><i>шылау</i></div><div class="g" data-w="санау"><b>Өз ойыңша бір нәрсені осындай деп білу.</b><em>Мен оны жақсы дос деп санаймын.</em><i>етістік</i></div><div class="g" data-w="саябақ"><b>Ағаштар мен гүл егілген, адамдар серуендейтін жер.</b><em>Саябақта көп адам серуендейді.</em><i>зат есім</i></div><div class="g" data-w="себебі"><b>Не үшін болғанын түсіндіргенде айтылатын сөз.</b><em>Мен бармаймын, себебі жұмысым бар.</em><i>шылау</i></div><div class="g" data-w="сондықтан"><b>Алдыңғы ойдың нәтижесін айтқанда қолданылады.</b><em>Жаңбыр жауды, сондықтан үйде қалдық.</em><i>шылау</i></div><div class="g" data-w="сонымен"><b>Айтылған ойға тағы бір ой қосқанда қолданылады.</b><em>Ол оқиды, сонымен қатар жұмыс істейді.</em><i>шылау</i></div><div class="g" data-w="таза"><b>Ластанбаған, жарқырап тұрған.</b><em>Бөлме өте таза.</em><i>сын есім</i></div><div class="g" data-w="тану"><b>Біреуді көргенде кім екенін білу.</b><em>Мен оны дауысынан таныдым.</em><i>етістік</i></div><div class="g" data-w="театр"><b>Сахнада спектакль көрсетілетін ғимарат.</b><em>Біз театрға бардық.</em><i>зат есім</i></div><div class="g" data-w="тұру"><b>Белгілі бір жерде өмір сүру, мекендеу.</b><em>Мен қалада тұрамын.</em><i>етістік</i></div><div class="g" data-w="уақыт"><b>Сағат пен күнмен өлшенетін мезгіл.</b><em>Менде бос уақыт жоқ.</em><i>зат есім</i></div><div class="g" data-w="қазір"><b>Сөйлеп тұрған сәт, дәл осы уақыт.</b><em>Қазір мен үйдемін.</em><i>үстеу</i></div><div class="g" data-w="қала"><b>Көп адам тұратын, үйлері мен көшелері көп үлкен елді мекен.</b><em>Алматы — үлкен қала.</em><i>зат есім</i></div><div class="g" data-w="қалу"><b>Кетпей, сол орында тұра беру.</b><em>Мен бүгін үйде қаламын.</em><i>етістік</i></div><div class="g" data-w="қатар"><b>Бір нәрсемен бірге, жанында тұрған.</b><em>Екеуі қатар жүреді.</em><i>үстеу</i></div><div class="g" data-w="қиын"><b>Істеуге немесе түсінуге оңай емес.</b><em>Бұл сұрақ маған қиын.</em><i>сын есім</i></div><div class="g" data-w="қорытындылау"><b>Айтылған нәрсенің түйінін қысқа айту.</b><em>Қорытындылай келе, мен келісемін.</em><i>етістік</i></div><div class="g" data-w="үлкен"><b>Мөлшері немесе жасы басқадан артық.</b><em>Үлкен үйде тұрамыз.</em><i>сын есім</i></div><div class="g" data-w="әже"><b>Әкенің немесе ананың анасы.</b><em>Әжем бізге шай құйды.</em><i>зат есім</i></div><div class="g" data-w="өз"><b>Сөйлеушінің дәл өзі, басқа адам емес.</b><em>Мен өзім барамын.</em><i>есімдік</i></div><div class="g" data-w="өйткені"><b>Себебін түсіндіргенде қолданылады.</b><em>Мен үйдемін, өйткені ауырып тұрмын.</em><i>шылау</i></div><div class="g" data-w="өту"><b>Уақыттың ағып, артта қалуы.</b><em>Жыл тез өтті.</em><i>етістік</i></div></div>
+  </section>
+  <section class="pad"><h2>Келесі жұмысқа дейін не істеу керек</h2><ol class="steps"><li><div><b>Әр дәлелді 3–4 сөйлемге дейін ашыңыз</b><span>жұмыс көп, ауа таза, жұмыс аз дәлелдерінің әрқайсысына мысал мен себеп қосыңыз. Сонда мәтін 250 сөзге жетеді, мазмұн мен сөздік қор үшін ұпай өседі.</span></div></li><li><div><b>Барыс септікті қайталаңыз: бағыт және «кімге?»</b><span>бару және көмектесу сөздерімен бес-бестен сөйлем құрастырыңыз: саябаққа барамын, әжеме көмектесемін. Бөлек, -нан/-нен кейін тіркесімен үш сөйлем жазыңыз.</span></div></li><li><div><b>Тапсырар алдында сөз тәртібі мен қайталауларды тексеріңіз</b><span>Мәтінді қайта оқыңыз: етістік әр сөйлемнің соңында тұрады, сан есімнен кейін -лар/-тар жоқ. Екі реттен көп кездескен сөзді синонимімен ауыстырыңыз.</span></div></li></ol></section>
+  <footer class="pad foot">
+    <p><b>Біздің команда ҚАЗТЕСТ эссесінің критерийлері бойынша тексерді.</b> Талдауды біздің тексеру құралы дайындайды, әр парақты жіберер алдында команда мүшесі оқиды.</p>
+    <p>Баға шамамен берілген. Бұл ресми нәтиже де, сертификат та емес: ҚАЗТЕСТ бойынша ресми нәтижелерді тек Ұлттық тестілеу орталығы береді.</p>
+    <p>Бұл үлгі: жұмысты өзіміз мысал үшін жаздық.</p>
+  </footer>
+</div>
+<!--@sample:end-->
+  </div>
 </main>
 <script>
 (function () {
-  var $$ = function (s) { return [].slice.call(document.querySelectorAll(s)); };
-  $$('.bar').forEach(function (b) {
-    var v = +b.getAttribute('data-v'), h = '';
-    for (var i = 0; i < 10; i++) h += '<u' + (i < v ? ' class="on"' : '') + '></u>';
-    b.innerHTML = h;
-  });
-  var text = document.querySelector('.text'), marks = $$('mark');
-  marks.forEach(function (m) { m.setAttribute('data-orig', m.textContent); m.tabIndex = 0; });
-  $$('.seg button').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var fixed = btn.getAttribute('data-view') === 'fixed';
-      text.classList.toggle('fixed', fixed);
-      marks.forEach(function (m) { m.textContent = fixed && m.getAttribute('data-fix') ? m.getAttribute('data-fix') : m.getAttribute('data-orig'); });
-      $$('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+  /* @sheet:begin */
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+
+  /* поведение одной версии листа: полоски баллов, переключатель «как написано / с исправлениями», подсветка пометок.
+     root - обёртка .ver этой версии: версий на странице две (ru, kk), у каждой своё состояние, поиск идёт только внутри root. */
+  function wire(root) {
+    $$('.bar', root).forEach(function (b) {
+      var v = +b.getAttribute('data-v'), h = '';
+      for (var i = 0; i < 10; i++) h += '<u' + (i < v ? ' class="on"' : '') + '></u>';
+      b.innerHTML = h;
     });
-  });
-  function light(n, from) {
-    $$('.hot').forEach(function (e) { e.classList.remove('hot'); });
-    var m = document.querySelector('mark[data-n="' + n + '"]'), note = document.querySelector('.note[data-n="' + n + '"]');
-    if (m) m.classList.add('hot'); if (note) note.classList.add('hot');
-    var to = from === 'mark' ? note : m;
-    if (to && to.scrollIntoView) { var r = to.getBoundingClientRect(); if (r.top < 0 || r.bottom > window.innerHeight) to.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-  }
-  function bind(els, kind) {
-    els.forEach(function (e) {
-      var go = function () { light(e.getAttribute('data-n'), kind); };
-      e.addEventListener('click', go);
-      e.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } });
+    var text = $('.text', root), marks = $$('mark', root), btns = $$('.seg button', root);
+    $$('[data-w]', text || root).forEach(function (w) { w.tabIndex = -1; });   // слова с карточкой: в порядок Tab не входят, ходят стрелками (см. ниже)
+    marks.forEach(function (m) {
+      m.setAttribute('data-orig', m.textContent); m.tabIndex = 0;
+      var o = document.createDocumentFragment();   // исходное содержимое пометки (со словами), чтобы вернуть его после «с исправлениями»
+      [].forEach.call(m.childNodes, function (n) { o.appendChild(n.cloneNode(true)); });
+      m._o = o;
     });
+    /* «с исправлениями»: содержимое пометки заменяется исправлением; его слова берут основы из data-fw (по порядку слов, «-» — без карточки) */
+    function paint(m, fixed) {
+      var fx = m.getAttribute('data-fix');
+      m.textContent = '';
+      if (!(fixed && fx)) { m.appendChild(m._o.cloneNode(true)); return; }
+      var fw = (m.getAttribute('data-fw') || '').split(' '), re = new RegExp(WORD_RE, 'gu'), pos = 0, i = 0, mt;
+      while ((mt = re.exec(fx))) {
+        if (mt.index > pos) m.appendChild(document.createTextNode(fx.slice(pos, mt.index)));
+        var st = fw[i++];
+        if (st && st !== '-') { var s = document.createElement('span'); s.setAttribute('data-w', st); s.tabIndex = -1; s.textContent = mt[0]; m.appendChild(s); }
+        else m.appendChild(document.createTextNode(mt[0]));
+        pos = mt.index + mt[0].length;
+      }
+      if (pos < fx.length) m.appendChild(document.createTextNode(fx.slice(pos)));
+    }
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var fixed = btn.getAttribute('data-view') === 'fixed';
+        closeCard();
+        if (text) text.classList.toggle('fixed', fixed);
+        marks.forEach(function (m) { paint(m, fixed); });
+        btns.forEach(function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+      });
+    });
+    /* quiet: подсветить пару, не прокручивая страницу (так делает нажатие на слово внутри пометки: перед глазами уже карточка слова) */
+    function light(n, from, quiet) {
+      $$('.hot', root).forEach(function (e) { e.classList.remove('hot'); });
+      var m = $('mark[data-n="' + n + '"]', root), note = $('.note[data-n="' + n + '"]', root);
+      if (m) m.classList.add('hot'); if (note) note.classList.add('hot');
+      var to = from === 'mark' ? note : m;
+      if (!quiet && to && to.scrollIntoView) { var r = to.getBoundingClientRect(); if (r.top < 0 || r.bottom > window.innerHeight) to.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    }
+    function bind(els, kind) {
+      els.forEach(function (e) {
+        var go = function (ev) { light(e.getAttribute('data-n'), kind, !!(ev && ev.type === 'click' && ev.target.closest && ev.target.closest('[data-w]'))); };
+        e.addEventListener('click', go);
+        e.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(ev); } });
+      });
+    }
+    bind(marks, 'mark'); bind($$('.note', root), 'note');
+    if (text && $('[data-w]', text)) words(text, light);
   }
-  bind(marks, 'mark'); bind($$('.note'), 'note');
+
+  /* ---- карточки слов ----
+     Слова текста автора, у которых есть запись, обёрнуты в <span data-w="основа"> (у слова с ошибкой, которого нет в словаре, ещё data-e="исправленное слово").
+     Запись лежит один раз в блоке .gl той же версии: <div class="g" data-w="основа"><b>перевод или толкование</b><em>пример</em><i>часть речи</i></div>,
+     подписи («Написание исправлено», «см. пометку %s») - там же, в .k-fix и .k-see. Всё читается как textContent и в карточку кладётся как текст, не как html.
+     Мышь и палец: нажатие на слово открывает карточку рядом (под словом или над ним, в пределах экрана, слова не перекрывает); то же слово, мимо, Esc,
+     смена языка или вида текста - закрывают. Клавиатура: блок текста - одна остановка Tab, дальше стрелки влево/вправо по словам (Home/End - первое и последнее),
+     Enter или пробел - карточка, Esc - закрыть; пока карточка открыта, стрелки переносят её на соседнее слово. Скринридер: карточка для него скрыта (aria-hidden),
+     а тот же текст попадает в невидимую область role=status, поэтому читается при каждом открытии. */
+  var WORD_RE = '[\\p{L}]+(?:-[\\p{L}]+)*';   // как WORD в qt_check.py
+  var card, live, openW;
+  function mk(tag, cls, txt, lang) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (lang) e.setAttribute('lang', lang); return e; }
+  function glOf(ver) {
+    if (!ver._gl) {
+      var m = Object.create(null);   // без прототипа: основа из отчёта не может оказаться служебным именем
+      $$('.gl > .g', ver).forEach(function (g) { m[g.getAttribute('data-w')] = g; });
+      var lab = function (c) { var n = $('.gl > .' + c, ver); return n ? n.textContent : ''; };
+      ver._gl = m; ver._lab = { fix: lab('k-fix'), see: lab('k-see') };
+    }
+    return ver._gl;
+  }
+  function closeCard() {
+    if (openW) openW.classList.remove('wopen');
+    openW = null;
+    if (card) card.hidden = true;
+  }
+  function place(w) {
+    var rs = w.getClientRects(); if (!rs.length) return;
+    var first = rs[0], last = rs[rs.length - 1], vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    card.style.maxWidth = Math.min(300, vw - 16) + 'px'; card.style.left = '0px'; card.style.top = '0px'; card.hidden = false;
+    var cw = card.offsetWidth, ch = card.offsetHeight;
+    var left = Math.max(8, Math.min(first.left, vw - cw - 8));
+    var below = last.bottom + 8, above = first.top - ch - 8;
+    var top = (below + ch <= vh || above < 8) ? below : above;   // по умолчанию под словом, над ним - если снизу не помещается
+    card.style.left = Math.round(left + window.pageXOffset) + 'px'; card.style.top = Math.round(top + window.pageYOffset) + 'px';
+  }
+  function openCard(w) {
+    var ver = w.closest('.ver'), g = ver && glOf(ver)[w.getAttribute('data-w')];
+    if (!g) return;
+    if (!card) {
+      card = mk('div', 'wcard'); card.setAttribute('aria-hidden', 'true'); card.hidden = true; document.body.appendChild(card);
+      live = mk('div', 'wlive'); live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite'); document.body.appendChild(live);
+      document.addEventListener('click', function (ev) { if (openW && !(ev.target.closest && ev.target.closest('[data-w],.wcard'))) closeCard(); });
+      document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && openW) closeCard(); });
+      window.addEventListener('resize', function () { if (openW) place(openW); });
+    }
+    if (openW) openW.classList.remove('wopen');
+    var lang = ver.getAttribute('lang') || 'ru', key = w.getAttribute('data-w'), nm = g.classList.contains('nm');
+    var tx = function (s) { var n = $(s, g); return n ? n.textContent : ''; };
+    card.textContent = '';
+    var head = mk('div', 'wc-h');
+    head.appendChild(mk('b', '', nm ? tx('b') : key, 'kk'));
+    if (!nm) { head.appendChild(document.createTextNode(' \u2014 ')); head.appendChild(mk('span', '', tx('b'), lang)); }
+    card.appendChild(head);
+    if (tx('em')) card.appendChild(mk('div', 'wc-x', tx('em'), 'kk'));
+    if (tx('i')) card.appendChild(mk('div', 'wc-p', tx('i'), lang));
+    var e = w.getAttribute('data-e');
+    if (e) {
+      var mkn = w.closest('mark'), n = mkn && mkn.getAttribute('data-n');
+      card.appendChild(mk('div', 'wc-f', ver._lab.fix + ': ' + w.textContent + ' \u2192 ' + e + (n ? ' (' + ver._lab.see.replace('%s', n) + ')' : ''), lang));
+    }
+    live.textContent = '';
+    [].forEach.call(card.childNodes, function (c) { live.appendChild(c.cloneNode(true)); });
+    openW = w; w.classList.add('wopen');
+    place(w);
+  }
+  function words(text, light) {
+    var last = null;
+    var list = function () { return $$('[data-w]', text); };
+    var go = function (w) { last = w; w.focus(); if (openW) openCard(w); };
+    text.addEventListener('click', function (ev) {
+      var w = ev.target.closest && ev.target.closest('[data-w]');
+      if (!w || !text.contains(w)) return;
+      var sel = window.getSelection && window.getSelection();
+      if (sel && !sel.isCollapsed && String(sel)) return;   // человек выделяет текст, а не нажимает на слово
+      if (openW === w) closeCard(); else openCard(w);
+    });
+    /* capture: Enter на слове внутри пометки не доходит до обработчика пометки (он прокрутил бы страницу к замечанию), пару подсвечиваем тихо */
+    text.addEventListener('keydown', function (ev) {
+      var t = ev.target, k = ev.key, ws = list();
+      if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+      if (t === text) {
+        if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'Enter' || k === ' ') { ev.preventDefault(); ev.stopPropagation(); if (ws.length) go(last && text.contains(last) ? last : ws[0]); }
+        return;
+      }
+      var i = ws.indexOf(t);
+      if (i < 0) return;
+      if (k === 'ArrowRight' || k === 'ArrowLeft' || k === 'Home' || k === 'End') {
+        ev.preventDefault(); ev.stopPropagation();
+        var j = k === 'Home' ? 0 : k === 'End' ? ws.length - 1 : Math.max(0, Math.min(ws.length - 1, i + (k === 'ArrowRight' ? 1 : -1)));
+        go(ws[j]);
+      } else if (k === 'Enter' || k === ' ') {
+        ev.preventDefault(); ev.stopPropagation();
+        last = t; if (openW === t) closeCard(); else openCard(t);
+        var mk_ = t.closest('mark'); if (mk_) light(mk_.getAttribute('data-n'), 'mark', true);
+      }
+    }, true);
+  }
+
+  /* язык листа. На странице одна или две версии (.ver[data-lang]), видна одна. Какая: адрес (#kk, так печатает PDF конвейер), потом
+     прошлый выбор здесь (localStorage qt-sheet:lang), потом язык сайта (kz-trainer:lang), потом ru; нет такой версии - первая из имеющихся.
+     Переключатель #sheet-lang виден, только если версий больше одной. Надписи страницы (шапка, «Сохранить PDF») помечены data-ver. */
+  function initLangs() {
+    var vers = $$('.ver[data-lang]');
+    if (!vers.length) return;
+    var have = vers.map(function (v) { return v.getAttribute('data-lang'); }), sw = $('#sheet-lang');
+    var get = function (k) { try { return (localStorage.getItem(k) || '').slice(0, 2); } catch (e) { return ''; } };
+    var hash = ''; try { hash = (location.hash || '').replace(/^#(lang=)?/, '').slice(0, 2); } catch (e) {}
+    var cur = [hash, get('qt-sheet:lang'), get('kz-trainer:lang'), 'ru'].filter(function (l) { return have.indexOf(l) >= 0; })[0] || have[0];
+    function show(l, remember) {
+      closeCard();
+      vers.forEach(function (v) { v.hidden = v.getAttribute('data-lang') !== l; });
+      $$('[data-ver]').forEach(function (e) { e.hidden = e.getAttribute('data-ver') !== l; });
+      if (sw) $$('button', sw).forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-lang') === l ? 'true' : 'false'); });
+      document.documentElement.lang = l;
+      var tt = $('title'); if (tt && tt.getAttribute('data-' + l)) document.title = tt.getAttribute('data-' + l);
+      if (remember) { try { localStorage.setItem('qt-sheet:lang', l); } catch (e) {} }
+    }
+    if (sw) {
+      sw.hidden = have.length < 2;
+      $$('button', sw).forEach(function (b) {
+        b.addEventListener('click', function () { var l = b.getAttribute('data-lang'); if (have.indexOf(l) >= 0) show(l, true); });
+      });
+    }
+    show(cur, false);
+  }
+  /* @sheet:end */
+
+  /* html отчёта приходит из нашей базы, но вставляем его как чужой: разбираем в неактивном документе (DOMParser: скрипты и
+     onerror там не работают), переносим только разрешённые теги и атрибуты, всё остальное отбрасываем. Неизвестный тег
+     теряет обёртку, но не текст; скрипты, стили, формы, фреймы пропадают вместе с содержимым. */
+  var TAGS = 'header footer section div span p h1 h2 h3 h4 ul ol li b i em strong s u small mark button br a table thead tbody tr th td'.split(' ');
+  var DROP = 'script style iframe frame object embed link meta base form input textarea select template noscript svg math title head'.split(' ');
+  var ATTRS = ['class', 'lang', 'role', 'tabindex', 'title', 'colspan', 'rowspan', 'aria-label', 'aria-pressed', 'aria-hidden', 'data-n', 'data-fix', 'data-v', 'data-view',
+    /* карточки слов (часть 6): основа слова, исправленное слово у слова с ошибкой, основы слов исправления у пометки; только значения-строки, читаются через getAttribute и textContent */
+    'data-w', 'data-e', 'data-fw'];
+  function clean(html) {
+    var doc = new DOMParser().parseFromString('<!doctype html><html><body>' + html + '</body></html>', 'text/html');
+    var frag = document.createDocumentFragment();
+    (function walk(src, dst) {
+      for (var n = src.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.nodeValue)); continue; }
+        if (n.nodeType !== 1) continue;
+        var tag = n.nodeName.toLowerCase();
+        if (DROP.indexOf(tag) >= 0) continue;
+        if (TAGS.indexOf(tag) < 0) { walk(n, dst); continue; }
+        var el = document.createElement(tag);
+        for (var i = 0; i < n.attributes.length; i++) {
+          var a = n.attributes[i];
+          if (ATTRS.indexOf(a.name) >= 0) el.setAttribute(a.name, a.value);
+        }
+        if (tag === 'button') el.setAttribute('type', 'button');
+        if (tag === 'a') {
+          var href = n.getAttribute('href') || '';
+          if (/^(https:\/\/|\/(?!\/)|#)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('rel', 'noopener noreferrer'); el.setAttribute('target', '_blank'); }
+        }
+        walk(n, el); dst.appendChild(el);
+      }
+    })(doc.body, frag);
+    return frag;
+  }
+
+  /* ---- без кода: образец, как был ---- */
+  var param = '';
+  try { param = new URLSearchParams(location.search).get('c') || ''; } catch (e) {}
+  var body = $('#body'), box = $('#state'), pdf = $('#pdf');
+  if (!param) { $$('.ver', body).forEach(wire); initLangs(); return; }
+
+  /* ---- с кодом: отчёт с сервера ---- */
+  /* Адрес сервера отчётов. Пусто - свой origin (лаборатория: воркер лаборатории отвечает на /api/writing/report). На публичном сайте build.py
+     подставляет сюда eventsUrl (публичный воркер tools/events-worker) и разрешает его в CSP; метка API нужна сборке, не менять. */
+  var API = '';   /*API*/
+  var ABC = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';   // алфавит кода как на сервере (writing-api.js, normalizeCode)
+  function normalize(v) {
+    var c = String(v || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+    if (c.length === 10 && c.slice(0, 2) === 'QT') c = c.slice(2);
+    if (c.length !== 8) return '';
+    for (var i = 0; i < 8; i++) if (ABC.indexOf(c.charAt(i)) < 0) return '';
+    return c;
+  }
+  var code = normalize(param), label = code ? 'QT-' + code.slice(0, 4) + '-' + code.slice(4) : '';
+  var el = function (tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+  /* Язык надписей до того, как отчёт пришёл и initLangs выбрал версию листа: адрес (#kk), прошлый выбор здесь, язык сайта, ru - как в initLangs.
+     Тексты состояний на двух языках (казахские проверены мастером, носитель не читал: tools/kk-review-2026-11-15.md, часть 7). */
+  var UL = (function () {
+    var get = function (k) { try { return (localStorage.getItem(k) || '').slice(0, 2); } catch (e) { return ''; } };
+    var hash = ''; try { hash = (location.hash || '').replace(/^#(lang=)?/, '').slice(0, 2); } catch (e) {}
+    return [hash, get('qt-sheet:lang'), get('kz-trainer:lang')].filter(function (l) { return l === 'ru' || l === 'kk'; })[0] || 'ru';
+  })();
+  var TX = {
+    ru: { loading: 'Загружаем отчёт', loadingP: 'Это займёт несколько секунд.',
+      failH: 'Не удалось загрузить отчёт', failP: 'Проверьте связь с интернетом и попробуйте ещё раз.', retry: 'Повторить',
+      waitH: 'Отчёт ещё не готов', waitP: 'Наша команда читает работу и готовит отчёт. Эта страница откроется с тем же адресом, когда он будет готов.', got: 'Работа получена {d}.', recheck: 'Проверить ещё раз',
+      noH: 'Такого кода нет', noP: 'Проверьте код: он выглядит как QT-XXXX-XXXX. Коды отправленных работ собраны в блоке «Мои работы на проверке» на странице «Мой прогресс».' },
+    kk: { loading: 'Есеп жүктелуде', loadingP: 'Бірнеше секунд кетеді.',
+      failH: 'Есепті жүктеу мүмкін болмады', failP: 'Интернет байланысын тексеріп, қайталап көріңіз.', retry: 'Қайталау',
+      waitH: 'Есеп әлі дайын емес', waitP: 'Біздің команда жұмысты оқып, есепті дайындап жатыр. Есеп дайын болғанда, осы мекенжайдағы бет ашылады.', got: 'Жұмыс қабылданған күн: {d}.', recheck: 'Қайта тексеру',
+      noH: 'Мұндай код жоқ', noP: 'Кодты тексеріңіз: ол QT-XXXX-XXXX түрінде болады. Жіберілген жұмыстардың кодтары «Менің прогресім» бетіндегі «Тексерудегі жұмыстарым» блогында жиналған.' }
+  };
+  var X = function (k) { return TX[UL][k]; };
+  var MON = { ru: 'января февраля марта апреля мая июня июля августа сентября октября ноября декабря'.split(' '),
+    kk: 'қаңтар ақпан наурыз сәуір мамыр маусым шілде тамыз қыркүйек қазан қараша желтоқсан'.split(' ') };
+  function fmtDate(ts) { try { var d = new Date(ts); return isNaN(d) ? '' : d.getDate() + ' ' + MON[UL][d.getMonth()] + ' ' + d.getFullYear(); } catch (e) { return ''; } }
+  /* пока версия листа не выбрана, шапка и вкладка на языке посетителя (после загрузки отчёта это делает initLangs) */
+  (function () {
+    $$('[data-ver]').forEach(function (e) { e.hidden = e.getAttribute('data-ver') !== UL; });
+    document.documentElement.lang = UL;
+    var tt = $('title'); if (tt && tt.getAttribute('data-' + UL)) document.title = tt.getAttribute('data-' + UL);
+  })();
+
+  function show(h, paras, opt) {
+    opt = opt || {};
+    box.textContent = '';
+    var t = el('h1'); if (opt.spin) t.appendChild(el('span', 'spin')); t.appendChild(document.createTextNode(h)); box.appendChild(t);
+    paras.forEach(function (p) { if (p) box.appendChild(el('p', '', p)); });
+    if (opt.code) { var c = el('div', 'code', opt.code); c.setAttribute('lang', 'ru'); box.appendChild(c); }
+    if (opt.btn) { var b = el('button', 'btn', opt.btn); b.type = 'button'; b.addEventListener('click', load); box.appendChild(b); }
+    box.hidden = false; body.hidden = true; pdf.hidden = true;
+  }
+  function done(rep) {
+    /* в отчёте версии по языкам; берём только ru и kk, у каждой своя обёртка, переключает initLangs */
+    var langs = rep && rep.lang && typeof rep.lang === 'object' ? rep.lang : {};
+    var ks = ['ru', 'kk'].filter(function (k) { return typeof langs[k] === 'string' && langs[k]; });
+    if (!ks.length) return fail();
+    body.textContent = '';
+    ks.forEach(function (k) {
+      var v = el('div', 'ver'); v.setAttribute('data-lang', k); v.setAttribute('lang', k); v.hidden = true;
+      v.appendChild(clean(langs[k])); body.appendChild(v); wire(v);
+    });
+    body.hidden = false; box.hidden = true; pdf.hidden = false;
+    document.documentElement.setAttribute('data-mode', 'ready');
+    initLangs();
+    window.scrollTo(0, 0);
+  }
+  function fail() { show(X('failH'), [X('failP')], { btn: X('retry') }); }
+  var busy = false;
+  function load() {
+    if (busy) return;
+    if (!code) return notFound();
+    busy = true;
+    show(X('loading'), [X('loadingP')], { spin: true });
+    fetch(API + '/api/writing/report?code=' + encodeURIComponent(code), { cache: 'no-store', referrerPolicy: 'no-referrer', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { s: r.status, d: d || {} }; }); })
+      .then(function (x) {
+        busy = false;
+        if (x.s === 200 && x.d.report) return done(x.d.report);
+        if (x.s === 404 || x.s === 400) return notFound();
+        if (x.s === 409) {
+          var when = x.d.ts ? X('got').replace('{d}', fmtDate(x.d.ts)) : '';
+          return show(X('waitH'), [X('waitP'), when], { code: x.d.label || label, btn: X('recheck') });
+        }
+        fail();
+      })
+      .catch(function () { busy = false; fail(); });
+  }
+  function notFound() {
+    busy = false;
+    show(X('noH'), [X('noP')]);
+  }
+  pdf.addEventListener('click', function () { window.print(); });
+  load();
 })();
 </script>
 </body>

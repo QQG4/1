@@ -12,13 +12,14 @@
 export const IG_PAUSED = false;
 export const IG_PREP_UTC = [13];      // контейнер: за час до эфира
 export const IG_PUB_UTC = [14];       // эфир: 19:00 по Алматы (с 27.10.2026 один в день, было 12:00 и 19:00)
+import { tgBase } from './tgapi.js';
 const GRAPH = 'https://graph.instagram.com/v25.0/';
 const SELF = 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev/';
 
 const rows = async (env, sql, ...args) => (await env.DB.prepare(sql).bind(...args).all()).results || [];
 async function owner(env, text) {
   if (!env.TG_BOT_TOKEN || !env.TG_OWNER_CHAT) return;
-  await fetch('https://api.telegram.org/bot' + env.TG_BOT_TOKEN + '/sendMessage', { method: 'POST',
+  await fetch(tgBase(env) + '/bot' + env.TG_BOT_TOKEN + '/sendMessage', { method: 'POST',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: env.TG_OWNER_CHAT, text, disable_web_page_preview: true }) });
 }
 async function auth(env) {
@@ -57,7 +58,7 @@ export async function igPrepare(env, queue) {
   const a = await auth(env); if (!a) return;
   if ((await rows(env, `SELECT n FROM ig_posts WHERE status = 'container'`)).length) return;   // прошлый ещё не вышел
   const next = await rows(env, `SELECT n FROM tg_videos WHERE status IN ('approved', 'published')
-    AND n NOT IN (SELECT n FROM ig_posts WHERE status IN ('published', 'container', 'error', 'skipped')) ORDER BY n LIMIT 1`);
+    AND n NOT IN (SELECT n FROM ig_posts WHERE status IN ('published', 'container', 'error', 'skipped')) ORDER BY (n < 1000), n LIMIT 1`);   // от 1000 — прогрев, раньше очереди
   if (!next.length) return owner(env, 'Instagram: одобренных роликов нет, ближайший Reels не выйдет. Нажмите ✅ под роликом в боте.');
   const item = (await queue(env)).find((x) => x.n === next[0].n);
   if (!item) return;

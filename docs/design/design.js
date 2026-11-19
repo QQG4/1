@@ -94,7 +94,7 @@
      Он шагает только от прокрутки и стоит, когда посетитель читает; в конце страницы поднимает руку. На узком экране шкалы нет,
      человечек идёт вдоль правого края. Лента кадров - tools/make_walker.py (0-7 шаг, 8 стойка, 9-11 рука вверх).
      «Анимация: выключена» убирает шкалу целиком. */
-  var railEl = null, railQs = [], railNames = [], walkStop = null, walkY = 0, walkDist = 0;
+  var railEl = null, railQs = [], railNames = [], walkStop = null, walkY = 0, walkDist = 0, cheerT = null, cheerN = 0;
   function railBuild() {
     var names = [], qs = [];
     if (root.getAttribute('data-phase') === 'run' && root.getAttribute('data-motion') !== 'off') $$('.opts input:not([disabled])', app).forEach(function (i) {
@@ -126,8 +126,20 @@
     if (still) frame = end ? 11 : 8;
     else frame = end ? 9 + Math.min(2, Math.floor(walkDist / 40) % 3) : Math.floor(walkDist / 22) % 8;
     w.style.top = Math.round(pos * H - fh / 2) + 'px';
-    w.style.backgroundPosition = (-frame * fw) + 'px 0';
+    if (!cheerT) w.style.backgroundPosition = (-frame * fw) + 'px 0';
   }
+  /* человечек отвечает на нажатия (16.11.2026): ответ на задание - радуется (кадры 12-15: обе руки вверх и прыжок),
+     любое другое нажатие - задумывается (кадры 16-17: одна рука у головы, другая у живота) */
+  function walkReact(kind) {
+    if (!railEl) return; var w = railEl.querySelector('.dz-walker'); if (!w) return;
+    var cheer = kind === 'cheer', n0 = cheer ? 12 : 16, len = cheer ? 4 : 2, ticks = cheer ? 8 : 6, ms = cheer ? 110 : 330;
+    clearInterval(cheerT); cheerN = 0;
+    cheerT = setInterval(function () {
+      w.style.backgroundPosition = (-(n0 + cheerN % len) * w.offsetWidth) + 'px 0'; cheerN++;
+      if (cheerN > ticks) { clearInterval(cheerT); cheerT = null; railMove(true); }
+    }, ms);
+  }
+  document.addEventListener('click', function (e) { walkReact(e.target.closest && e.target.closest('.opts .opt') ? 'cheer' : 'think'); }, true);
   window.addEventListener('scroll', function () {
     if (!railEl) return;
     railMove(false);
@@ -405,6 +417,7 @@
   }
   function calmFooter() {
     var f = $(':scope > footer', app); if (!f || $('ul', f)) return;
+    attachSeoNav(f);
     /* на виду ссылки и строка о независимости от организаторов; реконструкция и статистика - под кнопкой */
     var ps = Array.prototype.slice.call(f.childNodes), first = $(':scope > p', f), hide = [];
     ps.forEach(function (n) {
@@ -439,18 +452,27 @@
       p.textContent = parts.join('\n'); p.style.whiteSpace = 'pre-line';
     });
   }
+  /* «Все экзамены и уровни» стоит ссылкой в одной строке с остальными ссылками подвала и раскрывает список под строкой (просьба владельца 16.11.2026) */
+  var seoNavEl = null, seoOpen = false;
   function calmSeoNav() {
-    var nav = $('.seo-nav'); if (!nav) return;
+    var nav = seoNavEl || (seoNavEl = $('.seo-nav')); if (!nav) return;
     var lang = isKk() ? 'kk' : 'ru';
     if (nav.getAttribute('data-calm') === lang) return;
-    var styles = $$(':scope > style', nav);
     if (!nav.__orig) nav.__orig = Array.prototype.slice.call(nav.children).filter(function (c) { return c.tagName !== 'STYLE'; }).map(function (c) { return c.cloneNode(true); });
     Array.prototype.slice.call(nav.children).forEach(function (c) { if (c.tagName !== 'STYLE') c.remove(); });
     var kids = nav.__orig.map(function (c) { return c.cloneNode(true); });
     nav.setAttribute('data-calm', lang);
     if (isKk()) kids = kkSeoNav(kids);
-    nav.appendChild(fold('dz-more', isKk() ? 'Барлық емтихан мен деңгей' : 'Все экзамены и уровни', kids));
+    var body = el('div', 'seo-body'); move(body, kids); body.hidden = !seoOpen; nav.appendChild(body);
     rename(nav);
+  }
+  function attachSeoNav(f) {
+    var nav = seoNavEl, first = $(':scope > p', f); if (!nav || !first || $('.seo-link', first)) return;
+    var a = el('a', 'seo-link'), body = $('.seo-body', nav);
+    a.href = '#'; a.textContent = isKk() ? 'Барлық емтихан мен деңгей' : 'Все экзамены и уровни'; a.setAttribute('aria-expanded', String(seoOpen));
+    first.appendChild(document.createTextNode(' · ')); first.appendChild(a);
+    a.addEventListener('click', function (e) { e.preventDefault(); seoOpen = !seoOpen; if (body) body.hidden = !seoOpen; a.setAttribute('aria-expanded', String(seoOpen)); });
+    after(first, nav);
   }
   document.addEventListener('click', function (e) {   // «Все блоки ↓» ведёт в свёрнутую гармошку
     var b = e.target.closest && e.target.closest('[data-act=scroll]'); if (!b) return;
@@ -514,7 +536,7 @@
     split();
     progress();
     result();
-    if (D === 'd1') { calm(route, p); calmSeoNav(); sentences(app); scenes(route, p); railBuild(); tabTitle(route); }
+    if (D === 'd1') { calmSeoNav(); calm(route, p); sentences(app); scenes(route, p); railBuild(); tabTitle(route); }
     if (keep && keep !== document.activeElement && document.contains(keep)) try { keep.focus({ preventScroll: true }); } catch (e) {}
   }
   enhance();

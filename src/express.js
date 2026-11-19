@@ -134,8 +134,10 @@
       '<h1>' + T('Ступень') + ' ' + (X.steps.length + 1) + ' · ' + X.lv + '</h1>' +
       '<p class="lede">' + T('Вопросы') + ' ' + from + '–' + (from + X.items.length - 1) + '. ' + T('Это быстрая оценка, а не экзамен: точнее уровень покажет полный тест.') + '</p>' +
       X.items.map(function (it, i) { return itemHtml(it, from + i, false, X.answers); }).join('') +
-      '<div class="actions"><button class="btn" data-act="x-next">' + T('Дальше') + '</button><span class="hint" id="x-msg" role="status" aria-live="polite"></span></div>';
+      '<div class="actions">' + backBtn() + '<button class="btn" data-act="x-next">' + T('Дальше') + '</button><span class="hint" id="x-msg" role="status" aria-live="polite"></span></div>';
   }
+  /* «Назад» возвращает на прошлую ступень с сохранёнными ответами: их можно поменять, дальше путь пересчитается (16.11.2026) */
+  function backBtn() { return X.steps.length ? '<button class="btn ghost" data-act="x-back">' + T('Назад') + '</button>' : ''; }
   function viewListen() {
     var au = KZ.audio[X.au.t.id], from = asked() + 1, kk = KZ.lang === 'kk';
     var qs = X.auQs.map(function (q) { return Object.assign({}, q, { id: 'l' + q.id }); });
@@ -146,7 +148,7 @@
                               : 'Последний шаг: одна запись аудирования уровня ' + X.au.t.level + ', ' + qs.length + ' ' + KZ.plural(qs.length, 'вопрос', 'вопроса', 'вопросов') + '. Запись можно слушать несколько раз.') + '</p>' +
       '<div class="block player"><span class="setlabel">' + T('Аудио') + ' · ' + esc(X.au.s.script.title) + '</span><audio controls preload="none" src="' + esc(au.src) + '" style="width:100%"></audio></div>' +
       '<div class="block">' + U.renderQuestions({ questions: qs }, X.answers, false, null, { offset: from - 1 }) + '</div>' +
-      '<div class="actions"><button class="btn" data-act="x-next">' + T('Дальше') + '</button><button class="btn ghost" data-act="x-skip">' + T('Пропустить') + '</button><span class="hint" id="x-msg" role="status" aria-live="polite"></span></div>';
+      '<div class="actions">' + backBtn() + '<button class="btn" data-act="x-next">' + T('Дальше') + '</button><button class="btn ghost" data-act="x-skip">' + T('Пропустить') + '</button><span class="hint" id="x-msg" role="status" aria-live="polite"></span></div>';
   }
   function viewResult() {
     var kk = KZ.lang === 'kk', lv = X.level, start = lv || ladder(X.exam)[0], full = fullTest(X.exam, start);
@@ -206,6 +208,11 @@
     var act = b.getAttribute('data-act');
     if (act === 'x-start') begin(b.getAttribute('data-exam'));
     else if (act === 'x-again') { if (X) X = { exam: X.exam, phase: 'intro' }; }
+    else if (act === 'x-back') {
+      if (!X || !X.steps || !X.steps.length) return;
+      var last = X.steps.pop(); X.lv = last.lv; X.items = last.items; X.answers = last.answers; X.phase = 'step'; X.confirm = false;
+      delete X.level; delete X.au; delete X.auQs; delete X.listen;
+    }
     else if (act === 'x-skip') { if (X && X.phase === 'listen') { X.phase = 'skip'; done(); } }   // пропущенное аудирование в итог не входит
     else if (act === 'x-next' && X) {
       var keys = X.phase === 'listen' ? X.auQs.map(function (q) { return 'l' + q.id; }) : X.items.map(function (it) { return it.key; });

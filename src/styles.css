@@ -15,7 +15,7 @@
   --sans:'Source Sans 3',system-ui,-apple-system,sans-serif;
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
+  :root[data-theme="dark"]{
     --bg:#10171b; --surface:#182226; --surface-raised:#1d2a2f;
     --ink:#e9e4d8; --ink-muted:#9fadb2; --ink-faint:#8b979b;
     --accent:#5cc2dc; --accent-ink:#0a1417; --accent-soft:#1c343a;
@@ -384,7 +384,7 @@ figure.picture figcaption{font-size:0.7812rem;color:var(--ink-faint);padding:8px
 .tile-big{font-family:var(--serif);font-size:1.75rem;font-weight:600;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
 .tile-lbl{font-size:0.8125rem;color:var(--ink-muted);margin-top:4px;line-height:1.35}
 .pg-chart{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;padding:16px 16px 12px}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pg-chart{--s1:#3987e5;--s2:#d95926;--s3:#199e70}}
+@media (prefers-color-scheme:dark){:root[data-theme="dark"] .pg-chart{--s1:#3987e5;--s2:#d95926;--s3:#199e70}}
 :root[data-theme="dark"] .pg-chart{--s1:#3987e5;--s2:#d95926;--s3:#199e70}
 .pg-filter{margin-bottom:12px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:0.8438rem;color:var(--ink);margin-bottom:8px}

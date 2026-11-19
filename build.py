@@ -131,11 +131,13 @@ def landing_pairs():
             tests = [x for x in META['tests'] if x['exam'] == eid and x['level'] == lv and not x.get('block')]   # блоки аудирования - не варианты уровня
             if tests: out.append((eid, ex, lv, sorted(tests, key=lambda x: x['id'])))
     return out
+# оформление выбирает посетитель (по умолчанию светлое), скрипт ставит data-theme до отрисовки; тёмная схема больше не включается сама по системной (16.11.2026)
+THEME_JS = "<script>(function(){var t='light';try{var u=JSON.parse(localStorage.getItem('kz-trainer:ui'));if(u&&/^(light|dark|soft|contrast|cb)$/.test(u.theme))t=u.theme}catch(e){}document.documentElement.setAttribute('data-theme',t)})()</script>"
 def landing_url(lang, eid, lv): return f'{lang}/{eid}/{lv.lower()}/'
 
 LANDING_CSS = (
-    ':root{color-scheme:light dark;--bg:#faf8f3;--fg:#1e2a30;--mut:#5d6b73;--acc:#0e6e86;--line:#e3ded2;--card:#fff}'
-    '@media (prefers-color-scheme:dark){:root{--bg:#10171b;--fg:#e9e4d8;--mut:#9fb0b8;--acc:#6fc3d4;--line:#24333a;--card:#16212612}}'
+    ':root{color-scheme:light;--bg:#faf8f3;--fg:#1e2a30;--mut:#5d6b73;--acc:#0e6e86;--line:#e3ded2;--card:#fff}'
+    ':root[data-theme="dark"]{--bg:#10171b;--fg:#e9e4d8;--mut:#9fb0b8;--acc:#6fc3d4;--line:#24333a;--card:#16212612}'
     '*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);'
     'font:17px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif}'
     'main{max-width:46rem;margin:0 auto;padding:2.5rem 1rem 4rem}'
@@ -162,7 +164,7 @@ def page_head(lang, title, desc, url, alts=()):
     """Начало статической страницы до <main>: заголовок, описание, canonical, hreflang (alts - пары язык/адрес,
        только если у страницы есть перевод), og-теги. Без url (siteUrl пуст) - без canonical и og."""
     e = _html.escape
-    h = ['<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8">',
+    h = ['<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8">' + THEME_JS + '<meta name="color-scheme" content="only light">',
          '<meta name="viewport" content="width=device-width,initial-scale=1">',
          '<title>' + e(title) + '</title>',
          '<meta name="description" content="' + e(desc) + '">',
@@ -802,7 +804,7 @@ def head(mode, extra_head=''):
     base = (site_cfg.get('url') or '').strip()
     if base and not base.endswith('/'): base += '/'
     page = base
-    h = ('<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    h = ('<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' + THEME_JS + '<meta name="color-scheme" content="only light">'
          '<title>' + TITLES[mode] + '</title>'
          '<meta name="description" content="' + DESCS[mode] + '">'
          '<meta name="theme-color" content="#0e6e86">')
@@ -830,7 +832,7 @@ def head(mode, extra_head=''):
                       {'@type': 'WebSite', '@id': base + '#site', 'url': base, 'name': SITE_NAME, 'inLanguage': ['ru', 'kk']},
                       {'@type': 'Organization', '@id': base + '#org', 'url': base, 'name': SITE_NAME, 'logo': base + 'favicon-192.png',
                        'sameAs': ['https://t.me/qazaqtrainer', 'https://www.instagram.com/qazaq.trainer/']}]}, ensure_ascii=False) + '</script>')
-    h += '<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
+    h += '<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
     return h + extra_head
 
 def full(mode, extra_head=''):
@@ -876,10 +878,10 @@ if _base and not _base.endswith('/'): _base += '/'
 # Приложение маршрутизирует через #хэш, поэтому любой путь вида /что-угодно - действительно несуществующая страница:
 # раньше Cloudflare отдавал на него главную с кодом 200, и мусорные адреса могли попасть в поиск.
 (docs / '404.html').write_text(
-    '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' + THEME_JS +
     '<meta name="robots" content="noindex"><title>Страница не найдена · Qazaq Trainer</title><link rel="icon" href="/favicon.svg" type="image/svg+xml">'
     '<style>body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#faf8f3;color:#1e2a30;display:grid;place-items:center;min-height:100vh;padding:0 16px}'
-    'main{max-width:420px}a{color:#0e6e86}@media (prefers-color-scheme:dark){body{background:#10171b;color:#e9e4d8}a{color:#6fc3d4}}</style></head>'
+    'main{max-width:420px}a{color:#0e6e86}html[data-theme=dark] body{background:#10171b;color:#e9e4d8}html[data-theme=dark] a{color:#6fc3d4}</style></head>'
     '<body><main><p style="font-size:.8rem;letter-spacing:.08em;opacity:.7">404</p><h1>Страница не найдена</h1>'
     '<p>Такого адреса на сайте нет. / Мұндай мекенжай сайтта жоқ.</p><p><a href="/">На главную · Басты бетке</a></p>'
     + (f'<p style="font-size:.9rem;opacity:.8">{site_cfg["email"]}</p>' if site_cfg.get('email') else '') + '</main></body></html>\n', encoding='utf-8')

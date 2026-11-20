@@ -41,6 +41,19 @@ def main():
         queue.append({'n': n, 'id': v['id'], 'slot': v['slot'], 'date': v['date'], 'file': name,
                       'caption': tg_caption(mp4.with_suffix('.txt').read_text()),
                       'caption_ig': ig_caption(mp4.with_suffix('.txt').read_text())})
+    # Вне банка (19.11.2026): ролики прогрева конкурса эссе. Номера с 1001, чтобы номера банка не сдвигались;
+    # воркер выпускает номера от 1000 раньше остальных одобренных (videos.js, ig.js).
+    for k, (folder, start) in enumerate([('прогрев-письмо/ролики', 1001)]):
+        scen = ROOT / folder / 'сценарии.json'
+        if not scen.exists(): continue
+        for i, v in enumerate(json.loads(scen.read_text())['videos']):
+            mp4 = ROOT / folder / (v['id'] + '.mp4')
+            if not mp4.exists(): continue
+            name = 'v/%04d.mp4' % (start + i)
+            shutil.copy2(mp4, OUT / name)
+            queue.append({'n': start + i, 'id': v['id'], 'slot': v['slot'], 'date': v['date'], 'file': name,
+                          'caption': tg_caption(mp4.with_suffix('.txt').read_text()),
+                          'caption_ig': ig_caption(mp4.with_suffix('.txt').read_text())})
     (OUT / 'queue.json').write_text(json.dumps(queue, ensure_ascii=False, indent=1))
     print('%d роликов → %s' % (len(queue), OUT))
 

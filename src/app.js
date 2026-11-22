@@ -190,10 +190,11 @@
   var UI_KEY = 'kz-trainer:ui';
   var THEMES = ['light', 'soft', 'contrast', 'cb', 'dark'];   // оформление: по умолчанию светлое у всех, тёмное и особые схемы - только по выбору (16.11.2026)
   var a11yOpen = false;   // блок «Универсальный доступ» в настройках свёрнут, пока посетитель его не откроет
-  var ui = { size: 'm', font: 'std', theme: 'light', lh: 'std', align: 'justify', rate: '1', hints: false, transcript: false, practice: false, motion: true };   // motion: 'auto' - как в системе («меньше движения»), true / false - выбор в настройках сильнее системы
+  var ui = { size: 'm', font: 'std', theme: 'light', lh: 'std', align: 'justify', rate: '1', hints: false, transcript: false, practice: false, motion: true, guide: 'off' };   // motion: 'auto' - как в системе («меньше движения»), true / false - выбор в настройках сильнее системы
   try { var u0 = JSON.parse(localStorage.getItem(UI_KEY)); if (u0) Object.keys(ui).forEach(function (k) { if (u0[k] != null) ui[k] = u0[k]; }); } catch (e) {}
   if (ui.motion !== false) ui.motion = true;   // анимация включена у всех, выключить можно только кнопкой в настройках (16.11.2026)
   if (THEMES.indexOf(ui.theme) < 0) ui.theme = 'light';
+  if (ui.guide !== 'auto') ui.guide = 'off';   // голосовой гид по курсу: по умолчанию выключен, включается в настройках или карточкой с советом про наушники
   if (['std', 'wide'].indexOf(ui.lh) < 0) ui.lh = 'std';
   if (['justify', 'left'].indexOf(ui.align) < 0) ui.align = 'justify';
   if (['1', '0.85', '0.7'].indexOf(String(ui.rate)) < 0) ui.rate = '1';
@@ -205,6 +206,7 @@
     return '<div class="uipanel" id="ui-panel" hidden><div class="row"><span class="lbl">' + T('Язык интерфейса') + '</span><span class="seg">' + ['ru', 'kk'].map(function (l) { return '<button class="cb' + (KZ.lang === l ? ' on' : '') + '" data-act="lang" data-v="' + l + '" aria-pressed="' + (KZ.lang === l) + '">' + l.toUpperCase() + '</button>'; }).join('') + '</span></div>' +
       '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Таймер') + '</span>' + seg('ui-practice', 'practice', [false, true], [T('как на экзамене'), T('тренировка')]) + '</div>' +
+      (KZ.guide ? '<div class="row"><span class="lbl">' + T('Голосовой гид') + '</span>' + seg('ui-guide', 'guide', ['off', 'auto'], [T('выключен'), T('авто')]) + '</div>' : '') +
       '<div class="row"><span class="lbl">' + T('Анимация') + '</span>' + (function () { var on = ui.motion !== false; return '<span class="seg" role="group">' + [true, false].map(function (v) { return '<button class="cb' + (on === v ? ' on' : '') + '" data-act="ui-motion" data-v="' + v + '" aria-pressed="' + (on === v) + '">' + (v ? T('включена') : T('выключена')) + '</button>'; }).join('') + '</span>'; })() + '</div>' +
       '<div class="uigrp"><button class="uigrp-t uigrp-btn" data-act="ui-a11y" aria-expanded="' + a11yOpen + '">' + T('Универсальный доступ') + '<span class="uigrp-ar" aria-hidden="true">▾</span></button><div class="uigrp-body"' + (a11yOpen ? '' : ' hidden') + '>' +
       '<div class="row"><span class="lbl">' + T('Оформление') + '</span>' + seg('ui-theme', 'theme', THEMES, [T('Светлое'), T('Мягкое'), T('Контрастное'), T('Для дальтоников'), T('Тёмное')]) + '</div>' +
@@ -554,6 +556,8 @@
   KZ.resetRun = function (init) { extRun = init || {}; return extRun; };
   KZ.route = function () { route(); };
   KZ.speak = function (text) { return speak(text); };
+  KZ.getUi = function () { return ui; };   // настройки интерфейса для голосового гида (src/guide.js)
+  KZ.setUi = function (k, v) { ui[k] = v; saveUi(); };
   var lastHash = null;
   /* селектор, по которому вернуть фокус после перерисовки той же страницы */
   function focusKey(el) {
@@ -1941,7 +1945,7 @@
     else if (act === 'to-top') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     else if (act === 'ui-a11y') { a11yOpen = !a11yOpen; b.setAttribute('aria-expanded', String(a11yOpen)); var gb = b.parentNode.querySelector('.uigrp-body'); if (gb) gb.hidden = !a11yOpen; return; }
     else if (act === 'ui-panel') { a11yOpen = false; var up = document.getElementById('ui-panel'); if (up) { var gb2 = up.querySelector('.uigrp-body'); if (gb2) gb2.hidden = true; var ab = up.querySelector('.uigrp-btn'); if (ab) ab.setAttribute('aria-expanded', 'false'); up.hidden = !up.hidden; placePanel(); b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
-    else if (act === 'ui-size' || act === 'ui-theme' || act === 'ui-lh' || act === 'ui-align' || act === 'ui-rate' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice' || act === 'ui-motion') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) { up2.hidden = false; placePanel(); } } return; }
+    else if (act === 'ui-size' || act === 'ui-guide' || act === 'ui-theme' || act === 'ui-lh' || act === 'ui-align' || act === 'ui-rate' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice' || act === 'ui-motion') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) { up2.hidden = false; placePanel(); } } return; }
     if (act === 'sync-make' || act === 'sync-use') {
       var sm = document.getElementById('sync-msg'), url = KZ.site && KZ.site.eventsUrl;
       if (!url) return;

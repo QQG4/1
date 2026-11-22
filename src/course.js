@@ -55,6 +55,21 @@
     return { known: known, total: tot, done: done, topics: course.topics.length };
   }
   KZ.courseProgress = courseProgress;
+  /* Что делать дальше по теме (для голосового гида): слова, грамматика, тексты, тест, следующая тема (21.11.2026) */
+  KZ.courseNext = function (level, tpId) {
+    var course = KZ.courses && KZ.courses[level]; if (!course) return null;
+    var tp = course.topics.filter(function (t) { return t.id === tpId; })[0];
+    var base = '#/course/' + level + '/';
+    if (tp) {
+      var p = cp(level, tp.id), r = topicProgress(level, tp);
+      if (tp.words.length && r.known < tp.words.length * 0.8) return { key: 'n.next.words', href: base + tp.id + '/words' };
+      if (tp.grammar.length && p.gramBest == null) return { key: 'n.next.grammar', href: base + tp.id + '/grammar' };
+      if (tp.texts.length && Object.keys(p.textsDone).length < tp.texts.length) return { key: 'n.next.texts', href: base + tp.id + '/texts' };
+      if (!(p.testBest != null && p.testBest >= 0.7)) return { key: 'n.next.test', href: base + tp.id + '/test' };
+    }
+    var nx = course.topics.filter(function (t) { return !topicProgress(level, t).done; })[0];
+    return nx ? { key: tp ? 'n.next.topic' : 'n.topic.' + level + '.' + nx.id, href: base + nx.id } : { key: 'n.next.level', href: '#/course/' + level };
+  };
 
   /* ---------- вьюхи ---------- */
   function viewCourse(course) {
@@ -227,15 +242,15 @@
     else if (act === 'c-filter') { run.filter = b.getAttribute('data-f'); }
     else if (act === 'c-quiz') { run.mode = 'quiz'; run.quiz = makeVocabQuiz(tp, p, 10); run.answers = {}; run.phase = 'run'; }
     else if (act === 'c-quiz-exit') { run.mode = null; }
-    else if (act === 'c-quiz-submit') { run.score = score(run.quiz, run.answers); run.quiz.forEach(function (q) { p.words[q.w] = run.answers[q.id] === q.answer ? 1 : 0; }); p.quizBest = Math.max(p.quizBest || 0, run.score / run.quiz.length); U.save(); run.phase = 'review'; }
+    else if (act === 'c-quiz-submit') { run.score = score(run.quiz, run.answers); run.quiz.forEach(function (q) { p.words[q.w] = run.answers[q.id] === q.answer ? 1 : 0; }); p.quizBest = Math.max(p.quizBest || 0, run.score / run.quiz.length); U.save(); run.phase = 'review'; if (KZ.guide && KZ.guide.on) KZ.guide.on('quiz', run.score / run.quiz.length); }
     else if (act === 'c-gopen') { run.openG = +b.getAttribute('data-g'); }
-    else if (act === 'c-gram-submit') { var all = []; tp.grammar.forEach(function (g) { g.tasks.forEach(function (t) { all.push(Object.assign({ id: 'g' + all.length }, t)); }); }); run.gscore = score(all, run.ganswers || {}); p.gramBest = Math.max(p.gramBest || 0, run.gscore / all.length); U.save(); run.gphase = 'review'; }
+    else if (act === 'c-gram-submit') { var all = []; tp.grammar.forEach(function (g) { g.tasks.forEach(function (t) { all.push(Object.assign({ id: 'g' + all.length }, t)); }); }); run.gscore = score(all, run.ganswers || {}); p.gramBest = Math.max(p.gramBest || 0, run.gscore / all.length); U.save(); run.gphase = 'review'; if (KZ.guide && KZ.guide.on) KZ.guide.on('gram', run.gscore / all.length); }
     else if (act === 'c-gram-retry') { run.ganswers = {}; run.gphase = null; }
     else if (act === 'c-topen') { run.openT = +b.getAttribute('data-t'); }
     else if (act === 'c-text-done') { p.textsDone[b.getAttribute('data-tid')] = 1; U.save(); }
     else if (act === 'c-text-submit') { var tid = b.getAttribute('data-tid'), tx = tp.texts.filter(function (x) { return x.id === tid; })[0]; var qs = tx.questions.map(function (q, qi) { return Object.assign({ id: tid + '-q' + qi }, q); }); run.tphase = run.tphase || {}; run.tscore = run.tscore || {}; run.tscore[tid] = score(qs, (run.tanswers || {})[tid] || {}); run.tphase[tid] = 'review'; p.textsDone[tid] = 1; U.save(); }
     else if (act === 'c-test-start') { run.test = makeTopicTest(tp, p); run.testAnswers = {}; run.testPhase = 'run'; }
-    else if (act === 'c-test-submit') { run.testScore = score(run.test, run.testAnswers); p.testBest = Math.max(p.testBest || 0, run.testScore / run.test.length); U.save(); run.testPhase = 'review'; }
+    else if (act === 'c-test-submit') { run.testScore = score(run.test, run.testAnswers); p.testBest = Math.max(p.testBest || 0, run.testScore / run.test.length); U.save(); run.testPhase = 'review'; if (KZ.guide && KZ.guide.on) KZ.guide.on('test', run.testScore / run.test.length); }
     else stop = false;
     if (stop) { e.stopPropagation(); KZ.route(); }
   }, true);

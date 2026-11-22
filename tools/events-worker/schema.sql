@@ -78,7 +78,8 @@ CREATE TABLE IF NOT EXISTS writing_submissions (
   blocked INTEGER,             -- когда Telegram ответил 403 (бот заблокирован): по расписанию больше не пишем, пока человек не напишет боту снова
   report TEXT,                 -- отчёт команды (следующий этап)
   updated INTEGER,             -- когда менялся статус, мс
-  hash TEXT                    -- sha-256 от теста, задания и текста: тот же текст за сутки возвращает прежний код
+  hash TEXT,                    -- sha-256 от теста, задания и текста: тот же текст за сутки возвращает прежний код
+  picked INTEGER               -- когда выбрана розыгрышем конкурса (plan.js, 22.11.2026)
 );
 CREATE INDEX IF NOT EXISTS writing_hash ON writing_submissions (hash, ts);
 CREATE INDEX IF NOT EXISTS writing_status ON writing_submissions (status, ts);

@@ -99,6 +99,24 @@ export async function igRefresh(env) {
   await env.DB.prepare(`UPDATE ig_auth SET token = ?, ts = ? WHERE id = 1`).bind(j.access_token, Date.now()).run();
 }
 
+/* Одна картинка в ленту (22.11.2026, посты по расписанию — plan.js): контейнер IMAGE, ждём готовности до ~20 с, публикуем.
+   Картинка должна быть 4:5…1,91:1 и лежать по публичному адресу (статические файлы воркера). */
+export async function igImage(env, imageUrl, caption) {
+  const a = await auth(env);
+  if (!a || IG_PAUSED) { await owner(env, 'Instagram: картинка не вышла — нет токена или пауза.'); return null; }
+  const c = await graph('POST', a.user_id + '/media', { image_url: imageUrl, caption: String(caption || '').slice(0, 2200), access_token: a.token });
+  if (!c.ok) { await owner(env, 'Instagram: контейнер картинки не создан: ' + JSON.stringify(c.j.error || c.j).slice(0, 300)); return null; }
+  for (let i = 0; i < 10; i++) {
+    const st = await graph('GET', c.j.id, { fields: 'status_code', access_token: a.token });
+    if (st.j.status_code === 'FINISHED') break;
+    if (st.j.status_code === 'ERROR') { await owner(env, 'Instagram: картинка не обработалась.'); return null; }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  const r = await graph('POST', a.user_id + '/media_publish', { creation_id: c.j.id, access_token: a.token });
+  if (!r.ok) { await owner(env, 'Instagram: картинка не опубликована: ' + JSON.stringify(r.j.error || r.j).slice(0, 300)); return null; }
+  return true;
+}
+
 export async function igStatus(env) {
   const a = await auth(env);
   if (!a) return 'Instagram: не подключён (/igtoken <токен>)';

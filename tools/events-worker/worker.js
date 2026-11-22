@@ -9,6 +9,7 @@ import { SESSIONS } from './sessions.js';
 import { VIDEO_UTC, NUDGE_UTC, previewNext, onCallback, onOwnerText, publishVideo, queueStatus, queue } from './videos.js';
 import { tgBase } from './tgapi.js';
 import { handleWriting, purgeWritingRate } from '../writing-api.js';   // проверка письма командой: приём работ посетителей и служебные запросы (17.11.2026)
+import { runPlan, linkTakenToday } from './plan.js';
 import { wStart, wCallback, wMy, wDelete, notifyWritingReady } from './writing-bot.js';
 import { IG_PREP_UTC, IG_PUB_UTC, igPrepare, igPublish, igRefresh, saveToken } from './ig.js';
 
@@ -107,7 +108,8 @@ export default {
      (09:00 и 19:00 по Алматы, то есть 04 и 14 UTC). Часы держим в одном месте — TASKS. */
   async scheduled(event, env) {
     if (event.cron !== HOURLY_CRON) { await igRefresh(env); return purge(env); }   // ночью — и продление токена Instagram
-    await notifyWritingReady(env).catch((e) => console.log('writing notify: ' + e));   // «отчёт готов» (writing-bot.js); до заданий дня, чтобы ранние return их не обходили
+    await notifyWritingReady(env).catch((e) => console.log('writing notify: ' + e));
+    await runPlan(env).catch((e) => console.log('plan: ' + e));   // разовые посты по расписанию (plan.js), до ранних return   // «отчёт готов» (writing-bot.js); до заданий дня, чтобы ранние return их не обходили
     const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
     if (IG_PREP_UTC.includes(h)) await igPrepare(env, queue);   // Instagram: контейнер за час до эфира (ig.js)
     if (IG_PUB_UTC.includes(h)) await igPublish(env);           // Instagram: эфир 19:00 по Алматы
@@ -180,7 +182,7 @@ async function postTask(env, kind) {
   } else if (kind === 'listening') {
     await tg(env, 'sendAudio', { chat_id: env.TG_CHANNEL, audio: SITE + q.audio, title: q.title || exam + ' ' + q.level,
       performer: 'Qazaq Trainer', caption: head + '\nТыңдап, сұраққа жауап беріңіз. / Послушайте и ответьте на вопрос.' +
-        '\n\nТолық сынақ тест / Полный пробный тест: ' + SITE + 'kk/' + q.exam + '/' + String(q.level).toLowerCase() + '/?utm_source=telegram&utm_medium=quiz' });
+        (linkTakenToday() ? '' : '\n\nТолық сынақ тест / Полный пробный тест: ' + SITE + 'kk/' + q.exam + '/' + String(q.level).toLowerCase() + '/?utm_source=telegram&utm_medium=quiz') });   // в день анонса ссылка уже была (plan.js)
   }
 
   const sent = await tg(env, 'sendPoll', {

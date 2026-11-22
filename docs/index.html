@@ -471,6 +471,29 @@ table.prog .sc{display:block;font-size:0.75rem;color:var(--ink-faint);white-spac
 .kbd-warn{margin-top:8px;padding:10px 12px;border-left:4px solid var(--gold);background:rgba(140,97,24,.1);font-size:.9375rem;line-height:1.45}
 .kbd-warn[hidden]{display:none}
 
+/* голосовой гид по курсу (21.11.2026): говорящий человечек внизу слева, под ним текст реплики */
+.guide{position:fixed;left:12px;bottom:12px;z-index:45;display:flex;align-items:flex-end;gap:8px;max-width:min(440px,calc(100vw - 24px));opacity:0;transform:translateY(24px);pointer-events:none;transition:opacity .25s,transform .25s}
+.guide.show{opacity:1;transform:none;pointer-events:auto}
+.guide-man{width:98px;height:88px;flex:none;background-repeat:no-repeat;background-size:1800% 100%;background-position:-784px 0;cursor:pointer}
+.guide.talking .guide-man{animation:gbob .45s ease-in-out infinite alternate}
+[data-motion=off] .guide.talking .guide-man{animation:none}
+@keyframes gbob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+.guide-bubble{background:var(--surface);color:var(--ink);border:1px solid var(--border-strong);border-radius:12px 12px 12px 2px;padding:10px 12px;box-shadow:var(--shadow);font-size:.9375rem;line-height:1.45}
+.guide-text{margin:0 0 6px;text-align:left}
+.guide-bars{display:none;gap:3px;height:14px;align-items:flex-end;margin-bottom:6px}
+.guide.talking .guide-bars{display:flex}
+.guide-bars i{width:4px;height:4px;border-radius:2px;background:var(--accent);animation:gbar .5s ease-in-out infinite alternate}
+.guide-bars i:nth-child(2){animation-delay:.1s}.guide-bars i:nth-child(3){animation-delay:.2s}.guide-bars i:nth-child(4){animation-delay:.3s}.guide-bars i:nth-child(5){animation-delay:.15s}
+[data-motion=off] .guide-bars i{animation:none;height:8px}
+@keyframes gbar{from{height:3px}to{height:14px}}
+.guide-btns{display:flex;gap:6px;align-items:center}
+.guide-btns .btn{min-height:36px}
+.guide-launch{position:fixed;left:12px;bottom:12px;z-index:44;display:inline-flex;align-items:center;gap:6px;min-height:40px}
+.guide-card{position:fixed;left:12px;bottom:12px;z-index:46;width:min(340px,calc(100vw - 24px));background:var(--surface);color:var(--ink);border:2px solid var(--border-strong);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
+.guide-card p{margin:0 0 10px;font-size:.9375rem;line-height:1.45;text-align:left}
+.guide-card .row{display:flex;gap:8px;flex-wrap:wrap}
+.guide-card[hidden],.guide-launch[hidden]{display:none}
+
 </style>
 <link rel="stylesheet" href="/design/fonts/fonts.css"><link rel="stylesheet" href="/design/base.css"><link rel="stylesheet" href="/design/d1.css"><div class="wrap"><div id="app"></div></div>
 <nav class="seo-nav" aria-label="Страницы по экзаменам и уровням"><style>.seo-nav{max-width:46rem;margin:0 auto;padding:1.5rem 1rem 3rem;font-size:.85rem;opacity:.75}.seo-nav b{display:block;font-weight:600;margin-bottom:.5em}.seo-nav a{display:inline-block;margin:.15em .8em .15em 0}</style><p style="max-width:40rem">Qazaq Trainer - бесплатные пробные тесты для подготовки к экзаменам по казахскому языку: Казтест (ҚАЗТЕСТ, Kaztest) и Казресмитест (Qazaq Resmi Test, QRT). Все блоки экзамена, включая письмо и говорение, таймер, озвученное аудирование и разбор ошибок. Без регистрации. · Қазақ тілінен ҚАЗТЕСТ пен QazResmiTest емтихандарына дайындыққа арналған тегін сынақ тестер.</p><b>Пробные тесты по экзаменам и уровням · Емтихан мен деңгей бойынша сынақ тестер</b><a href="/ru/qrt/a1/">QazResmiTest A1</a><a href="/ru/qrt/a2/">QazResmiTest A2</a><a href="/ru/qrt/b1/">QazResmiTest B1</a><a href="/ru/qrt/b2/">QazResmiTest B2</a><a href="/ru/qrt/c1/">QazResmiTest C1</a><a href="/ru/qrt/c2/">QazResmiTest C2</a><a href="/ru/kaztest/a1/">ҚАЗТЕСТ A1</a><a href="/ru/kaztest/a2/">ҚАЗТЕСТ A2</a><a href="/ru/kaztest/b1/">ҚАЗТЕСТ B1</a><a href="/ru/kaztest/b2/">ҚАЗТЕСТ B2</a><a href="/ru/kaztest/c1/">ҚАЗТЕСТ C1</a><b style="margin-top:1em">Вопросы об экзаменах</b><a href="/ru/kaztest/bally/">Сколько баллов нужно на ҚАЗТЕСТ</a><a href="/ru/kaztest/kak-prohodit/">Как проходит ҚАЗТЕСТ</a><a href="/ru/qrt/kak-prohodit/">Как проходит QazResmiTest</a><a href="/ru/kaztest-ili-qrt/">ҚАЗТЕСТ или QazResmiTest</a><a href="/ru/obrazcy-zadaniy/">Образцы заданий по уровням</a><a href="/ru/qrt/urovni/">Уровни и баллы QazResmiTest</a><a href="/ru/kaztest/kriterii/">Критерии письма и говорения ҚАЗТЕСТ</a><a href="/ru/kaztest/podgotovka-za-mesyac/">Подготовка к ҚАЗТЕСТ за месяц</a><a href="/kk/qrt/a1/" hreflang="kk">Қазақша</a></nav>
@@ -1083,6 +1106,10 @@ window.KZ = window.KZ || {};
     /* 01.11.2026, правки владельца: строки ждут носителя, список в tools/kk-review-lifehacks-2026-11-01.md */
     'Ошибка?': 'Қате?',
     'Назад': 'Артқа',
+    'Голосовой гид': 'Дауысты гид', 'выключен': 'өшірулі', 'авто': 'авто',
+    'Гид: что дальше?': 'Гид: әрі қарай не?', 'Перейти': 'Өту',
+    'Совет: надень наушники и включи голосового гида, он будет подсказывать каждый шаг.': 'Кеңес: құлаққап киіп, дауысты гидті қосыңыз: ол әр қадамды айтып отырады.',
+    'Включить гида': 'Гидті қосу', 'Не сейчас': 'Қазір емес',
     'Универсальный доступ': 'Қолжетімділік (инклюзия)', 'Интервалы': 'Аралықтар', 'обычные': 'қалыпты', 'увеличенные': 'үлкейтілген',
     'больше воздуха между строками, буквами и словами': 'жолдар, әріптер мен сөздер арасы кеңірек',
     'Выравнивание текста': 'Мәтінді туралау', 'по ширине': 'ені бойынша', 'по левому краю': 'сол жақ жиегі бойынша',
@@ -1351,10 +1378,11 @@ window.KZ = window.KZ || {};
   var UI_KEY = 'kz-trainer:ui';
   var THEMES = ['light', 'soft', 'contrast', 'cb', 'dark'];   // оформление: по умолчанию светлое у всех, тёмное и особые схемы - только по выбору (16.11.2026)
   var a11yOpen = false;   // блок «Универсальный доступ» в настройках свёрнут, пока посетитель его не откроет
-  var ui = { size: 'm', font: 'std', theme: 'light', lh: 'std', align: 'justify', rate: '1', hints: false, transcript: false, practice: false, motion: true };   // motion: 'auto' - как в системе («меньше движения»), true / false - выбор в настройках сильнее системы
+  var ui = { size: 'm', font: 'std', theme: 'light', lh: 'std', align: 'justify', rate: '1', hints: false, transcript: false, practice: false, motion: true, guide: 'off' };   // motion: 'auto' - как в системе («меньше движения»), true / false - выбор в настройках сильнее системы
   try { var u0 = JSON.parse(localStorage.getItem(UI_KEY)); if (u0) Object.keys(ui).forEach(function (k) { if (u0[k] != null) ui[k] = u0[k]; }); } catch (e) {}
   if (ui.motion !== false) ui.motion = true;   // анимация включена у всех, выключить можно только кнопкой в настройках (16.11.2026)
   if (THEMES.indexOf(ui.theme) < 0) ui.theme = 'light';
+  if (ui.guide !== 'auto') ui.guide = 'off';   // голосовой гид по курсу: по умолчанию выключен, включается в настройках или карточкой с советом про наушники
   if (['std', 'wide'].indexOf(ui.lh) < 0) ui.lh = 'std';
   if (['justify', 'left'].indexOf(ui.align) < 0) ui.align = 'justify';
   if (['1', '0.85', '0.7'].indexOf(String(ui.rate)) < 0) ui.rate = '1';
@@ -1366,6 +1394,7 @@ window.KZ = window.KZ || {};
     return '<div class="uipanel" id="ui-panel" hidden><div class="row"><span class="lbl">' + T('Язык интерфейса') + '</span><span class="seg">' + ['ru', 'kk'].map(function (l) { return '<button class="cb' + (KZ.lang === l ? ' on' : '') + '" data-act="lang" data-v="' + l + '" aria-pressed="' + (KZ.lang === l) + '">' + l.toUpperCase() + '</button>'; }).join('') + '</span></div>' +
       '<div class="row"><span class="lbl">' + T('Подсказки') + '</span>' + seg('ui-hints', 'hints', [false, true], [T('скрыты'), T('показаны')]) + '</div>' +
       '<div class="row"><span class="lbl">' + T('Таймер') + '</span>' + seg('ui-practice', 'practice', [false, true], [T('как на экзамене'), T('тренировка')]) + '</div>' +
+      (KZ.guide ? '<div class="row"><span class="lbl">' + T('Голосовой гид') + '</span>' + seg('ui-guide', 'guide', ['off', 'auto'], [T('выключен'), T('авто')]) + '</div>' : '') +
       '<div class="row"><span class="lbl">' + T('Анимация') + '</span>' + (function () { var on = ui.motion !== false; return '<span class="seg" role="group">' + [true, false].map(function (v) { return '<button class="cb' + (on === v ? ' on' : '') + '" data-act="ui-motion" data-v="' + v + '" aria-pressed="' + (on === v) + '">' + (v ? T('включена') : T('выключена')) + '</button>'; }).join('') + '</span>'; })() + '</div>' +
       '<div class="uigrp"><button class="uigrp-t uigrp-btn" data-act="ui-a11y" aria-expanded="' + a11yOpen + '">' + T('Универсальный доступ') + '<span class="uigrp-ar" aria-hidden="true">▾</span></button><div class="uigrp-body"' + (a11yOpen ? '' : ' hidden') + '>' +
       '<div class="row"><span class="lbl">' + T('Оформление') + '</span>' + seg('ui-theme', 'theme', THEMES, [T('Светлое'), T('Мягкое'), T('Контрастное'), T('Для дальтоников'), T('Тёмное')]) + '</div>' +
@@ -1715,6 +1744,8 @@ window.KZ = window.KZ || {};
   KZ.resetRun = function (init) { extRun = init || {}; return extRun; };
   KZ.route = function () { route(); };
   KZ.speak = function (text) { return speak(text); };
+  KZ.getUi = function () { return ui; };   // настройки интерфейса для голосового гида (src/guide.js)
+  KZ.setUi = function (k, v) { ui[k] = v; saveUi(); };
   var lastHash = null;
   /* селектор, по которому вернуть фокус после перерисовки той же страницы */
   function focusKey(el) {
@@ -3390,7 +3421,7 @@ window.KZ = window.KZ || {};
     else if (act === 'to-top') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     else if (act === 'ui-a11y') { a11yOpen = !a11yOpen; b.setAttribute('aria-expanded', String(a11yOpen)); var gb = b.parentNode.querySelector('.uigrp-body'); if (gb) gb.hidden = !a11yOpen; return; }
     else if (act === 'ui-panel') { a11yOpen = false; var up = document.getElementById('ui-panel'); if (up) { var gb2 = up.querySelector('.uigrp-body'); if (gb2) gb2.hidden = true; var ab = up.querySelector('.uigrp-btn'); if (ab) ab.setAttribute('aria-expanded', 'false'); up.hidden = !up.hidden; placePanel(); b.setAttribute('aria-expanded', String(!up.hidden)); } return; }
-    else if (act === 'ui-size' || act === 'ui-theme' || act === 'ui-lh' || act === 'ui-align' || act === 'ui-rate' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice' || act === 'ui-motion') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) { up2.hidden = false; placePanel(); } } return; }
+    else if (act === 'ui-size' || act === 'ui-guide' || act === 'ui-theme' || act === 'ui-lh' || act === 'ui-align' || act === 'ui-rate' || act === 'ui-font' || act === 'ui-hints' || act === 'ui-transcript' || act === 'ui-practice' || act === 'ui-motion') { var v = b.getAttribute('data-v'); ui[act.slice(3)] = v === 'true' ? true : v === 'false' ? false : v; saveUi(); track('setting', { name: act.slice(3), value: String(v) }); var keep = document.getElementById('ui-panel') && !document.getElementById('ui-panel').hidden; route(); if (keep) { var up2 = document.getElementById('ui-panel'); if (up2) { up2.hidden = false; placePanel(); } } return; }
     if (act === 'sync-make' || act === 'sync-use') {
       var sm = document.getElementById('sync-msg'), url = KZ.site && KZ.site.eventsUrl;
       if (!url) return;
@@ -3573,6 +3604,21 @@ window.KZ = window.KZ || {};
     return { known: known, total: tot, done: done, topics: course.topics.length };
   }
   KZ.courseProgress = courseProgress;
+  /* Что делать дальше по теме (для голосового гида): слова, грамматика, тексты, тест, следующая тема (21.11.2026) */
+  KZ.courseNext = function (level, tpId) {
+    var course = KZ.courses && KZ.courses[level]; if (!course) return null;
+    var tp = course.topics.filter(function (t) { return t.id === tpId; })[0];
+    var base = '#/course/' + level + '/';
+    if (tp) {
+      var p = cp(level, tp.id), r = topicProgress(level, tp);
+      if (tp.words.length && r.known < tp.words.length * 0.8) return { key: 'n.next.words', href: base + tp.id + '/words' };
+      if (tp.grammar.length && p.gramBest == null) return { key: 'n.next.grammar', href: base + tp.id + '/grammar' };
+      if (tp.texts.length && Object.keys(p.textsDone).length < tp.texts.length) return { key: 'n.next.texts', href: base + tp.id + '/texts' };
+      if (!(p.testBest != null && p.testBest >= 0.7)) return { key: 'n.next.test', href: base + tp.id + '/test' };
+    }
+    var nx = course.topics.filter(function (t) { return !topicProgress(level, t).done; })[0];
+    return nx ? { key: tp ? 'n.next.topic' : 'n.topic.' + level + '.' + nx.id, href: base + nx.id } : { key: 'n.next.level', href: '#/course/' + level };
+  };
 
   /* ---------- вьюхи ---------- */
   function viewCourse(course) {
@@ -3745,15 +3791,15 @@ window.KZ = window.KZ || {};
     else if (act === 'c-filter') { run.filter = b.getAttribute('data-f'); }
     else if (act === 'c-quiz') { run.mode = 'quiz'; run.quiz = makeVocabQuiz(tp, p, 10); run.answers = {}; run.phase = 'run'; }
     else if (act === 'c-quiz-exit') { run.mode = null; }
-    else if (act === 'c-quiz-submit') { run.score = score(run.quiz, run.answers); run.quiz.forEach(function (q) { p.words[q.w] = run.answers[q.id] === q.answer ? 1 : 0; }); p.quizBest = Math.max(p.quizBest || 0, run.score / run.quiz.length); U.save(); run.phase = 'review'; }
+    else if (act === 'c-quiz-submit') { run.score = score(run.quiz, run.answers); run.quiz.forEach(function (q) { p.words[q.w] = run.answers[q.id] === q.answer ? 1 : 0; }); p.quizBest = Math.max(p.quizBest || 0, run.score / run.quiz.length); U.save(); run.phase = 'review'; if (KZ.guide && KZ.guide.on) KZ.guide.on('quiz', run.score / run.quiz.length); }
     else if (act === 'c-gopen') { run.openG = +b.getAttribute('data-g'); }
-    else if (act === 'c-gram-submit') { var all = []; tp.grammar.forEach(function (g) { g.tasks.forEach(function (t) { all.push(Object.assign({ id: 'g' + all.length }, t)); }); }); run.gscore = score(all, run.ganswers || {}); p.gramBest = Math.max(p.gramBest || 0, run.gscore / all.length); U.save(); run.gphase = 'review'; }
+    else if (act === 'c-gram-submit') { var all = []; tp.grammar.forEach(function (g) { g.tasks.forEach(function (t) { all.push(Object.assign({ id: 'g' + all.length }, t)); }); }); run.gscore = score(all, run.ganswers || {}); p.gramBest = Math.max(p.gramBest || 0, run.gscore / all.length); U.save(); run.gphase = 'review'; if (KZ.guide && KZ.guide.on) KZ.guide.on('gram', run.gscore / all.length); }
     else if (act === 'c-gram-retry') { run.ganswers = {}; run.gphase = null; }
     else if (act === 'c-topen') { run.openT = +b.getAttribute('data-t'); }
     else if (act === 'c-text-done') { p.textsDone[b.getAttribute('data-tid')] = 1; U.save(); }
     else if (act === 'c-text-submit') { var tid = b.getAttribute('data-tid'), tx = tp.texts.filter(function (x) { return x.id === tid; })[0]; var qs = tx.questions.map(function (q, qi) { return Object.assign({ id: tid + '-q' + qi }, q); }); run.tphase = run.tphase || {}; run.tscore = run.tscore || {}; run.tscore[tid] = score(qs, (run.tanswers || {})[tid] || {}); run.tphase[tid] = 'review'; p.textsDone[tid] = 1; U.save(); }
     else if (act === 'c-test-start') { run.test = makeTopicTest(tp, p); run.testAnswers = {}; run.testPhase = 'run'; }
-    else if (act === 'c-test-submit') { run.testScore = score(run.test, run.testAnswers); p.testBest = Math.max(p.testBest || 0, run.testScore / run.test.length); U.save(); run.testPhase = 'review'; }
+    else if (act === 'c-test-submit') { run.testScore = score(run.test, run.testAnswers); p.testBest = Math.max(p.testBest || 0, run.testScore / run.test.length); U.save(); run.testPhase = 'review'; if (KZ.guide && KZ.guide.on) KZ.guide.on('test', run.testScore / run.test.length); }
     else stop = false;
     if (stop) { e.stopPropagation(); KZ.route(); }
   }, true);
@@ -3769,6 +3815,127 @@ window.KZ = window.KZ || {};
     var ul = el.closest('.opts'); Array.prototype.forEach.call(ul.querySelectorAll('.opt'), function (o) { o.classList.remove('selected'); }); el.closest('.opt').classList.add('selected');
     e.stopPropagation();
   }, true);
+})();
+
+/* ============================================================
+   Голосовой гид по курсу (21.11.2026). Реплики записаны заранее (tools/guide/), в браузер приходит только манифест KZ.guide
+   с текстами и длительностями; mp3 лежат в /guide/<ru|kk>/<ключ>.mp3. Есть только в лаборатории: курс платный.
+   Два голоса: проводник n (Даулет / Дмитрий) говорит, куда идти, тренер c (Айгүль / Светлана) оценивает результат и советует.
+   Говорящий человечек (лента walker.webp: кадры 8-11 руки) появляется на экране, пока звучит реплика, под ним текст.
+   Режим «авто» выключен по умолчанию: включается в настройках или карточкой с советом про наушники.
+   ============================================================ */
+(function () {
+  'use strict';
+  var G = KZ.guide; if (!G) return;
+  var T = KZ.T, esc = KZ.util.esc;
+  var LS = 'kz-trainer:guide', st = {};
+  try { st = JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) {}
+  st.seen = st.seen || {};
+  function save() { try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {} }
+  var ui = function () { return KZ.getUi(); };
+  var auto = function () { return ui().guide === 'auto'; };
+  var box = null, btn = null, card = null, au = null, queue = [], playing = null, blocked = null, hideT = null, frameT = null, frameN = 0, session = {};
+  var SEQ = [8, 9, 10, 11, 10, 9];
+
+  function onCourse() { return /^#\/?course\//.test(location.hash); }
+  function build() {
+    if (box) return;
+    box = document.createElement('div'); box.className = 'guide'; box.id = 'guide'; box.setAttribute('role', 'status');
+    box.innerHTML = '<div class="guide-man" style="background-image:url(/guide/walker.webp)" data-g="toggle"></div>' +
+      '<div class="guide-bubble"><p class="guide-text"></p><div class="guide-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>' +
+      '<div class="guide-btns"><button type="button" class="btn ghost small" data-g="toggle" aria-label="' + esc(T('Пауза')) + '">⏸</button>' +
+      '<a class="btn small guide-go" hidden></a><button type="button" class="btn ghost small" data-g="close" aria-label="' + esc(T('Закрыть')) + '">✕</button></div></div>';
+    document.body.appendChild(box);
+    btn = document.createElement('button'); btn.type = 'button'; btn.className = 'guide-launch btn small'; btn.setAttribute('data-g', 'next');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="13.5" width="5" height="7" rx="2"/><rect x="16.5" y="13.5" width="5" height="7" rx="2"/></svg> <span></span>';
+    document.body.appendChild(btn);
+    document.addEventListener('click', function (e) {
+      var g = e.target.closest && e.target.closest('[data-g]'); if (!g) return;
+      var a = g.getAttribute('data-g');
+      if (a === 'close') stop(true);
+      else if (a === 'toggle') toggle();
+      else if (a === 'next') next();
+      else if (a === 'card-on') { KZ.setUi('guide', 'auto'); st.carded = 1; st.seen['n.welcome'] = 1; save(); if (card) card.hidden = true; say(['n.welcome']); KZ.route(); }
+      else if (a === 'card-off') { st.carded = 1; save(); if (card) card.hidden = true; }
+    }, true);
+    window.addEventListener('hashchange', onRoute);
+  }
+  function lang() { return KZ.lang === 'kk' ? 'kk' : 'ru'; }
+  function textOf(key) { return G[key] ? G[key][lang()] : ''; }
+  function frame(i) { var m = box.querySelector('.guide-man'); m.style.backgroundPosition = (-i * m.offsetWidth) + 'px 0'; }
+  function startTalk() {
+    box.classList.add('talking'); clearInterval(frameT); frameN = 0; frame(8);
+    if (document.documentElement.getAttribute('data-motion') === 'off') return;
+    frameT = setInterval(function () { frameN++; frame(SEQ[frameN % SEQ.length]); }, 230);
+  }
+  function stopTalk() { box.classList.remove('talking'); clearInterval(frameT); frameT = null; frame(8); }
+  function show() { clearTimeout(hideT); box.classList.add('show'); btn.hidden = true; }
+  function hide() { box.classList.remove('show'); stopTalk(); refreshBtn(); }
+  function refreshBtn() { if (!btn) return; btn.hidden = !onCourse() || box.classList.contains('show'); btn.querySelector('span').textContent = T('Гид: что дальше?'); }
+
+  /* очередь реплик: ключи или {key, href} */
+  function say(items, opts) {
+    build();
+    if (opts && opts.now) { queue = []; if (au) { au.onended = null; au.pause(); } playing = null; }
+    [].concat(items).forEach(function (it) { if (it) queue.push(typeof it === 'string' ? { key: it } : it); });
+    if (!playing) playNext();
+  }
+  function playNext() {
+    var it = queue.shift(); if (!it) { playing = null; stopTalk(); hideT = setTimeout(hide, box.querySelector('.guide-go').hidden ? 2500 : 12000); return; }
+    if (!G[it.key]) return playNext();
+    playing = it; show();
+    box.querySelector('.guide-text').textContent = textOf(it.key);
+    var go = box.querySelector('.guide-go'); if (it.href) { go.hidden = false; go.href = it.href; go.textContent = T('Перейти'); } else go.hidden = true;
+    au = new Audio('/guide/' + lang() + '/' + it.key + '.mp3'); au.playbackRate = parseFloat(ui().rate) || 1;
+    au.onended = function () { playing = null; playNext(); };
+    au.onerror = function () { playing = null; stopTalk(); };
+    var pr = au.play();
+    if (pr && pr.catch) pr.catch(function () { blocked = it; box.querySelector('[data-g=toggle]:not(.guide-man)').textContent = '▶'; stopTalk(); });   // браузер не дал начать без нажатия: ждём ▶
+    else startTalk();
+    if (pr && pr.then) pr.then(function () { blocked = null; box.querySelector('[data-g=toggle]:not(.guide-man)').textContent = '⏸'; startTalk(); });
+  }
+  function toggle() {
+    if (!au) return;
+    if (au.paused) { au.play(); startTalk(); box.querySelector('[data-g=toggle]:not(.guide-man)').textContent = '⏸'; }
+    else { au.pause(); stopTalk(); box.querySelector('[data-g=toggle]:not(.guide-man)').textContent = '▶'; }
+  }
+  function stop(hideNow) { queue = []; if (au) { au.onended = null; au.pause(); } playing = null; blocked = null; if (hideNow) hide(); }
+
+  /* «что дальше» по прогрессу курса */
+  function ctx() { var p = location.hash.replace(/^#\/?/, '').split('/'); return p[0] === 'course' ? { level: p[1], topic: p[2], tab: p[3] } : null; }
+  function next() {
+    var c = ctx(); if (!c || !c.level) return;
+    var r = KZ.courseNext && KZ.courseNext(c.level, c.topic); if (r) say([r], { now: true });
+  }
+  /* автогид: что сказать при заходе на страницу курса; каждое вступление звучит один раз */
+  function onRoute() {
+    refreshBtn(); var c = ctx(); if (!c) { return; }
+    if (!auto()) { offerCard(); return; }
+    var keys = [];
+    function once(k) { if (!st.seen[k] && G[k]) { st.seen[k] = 1; keys.push(k); } }
+    if (!st.seen['n.welcome']) { once('n.welcome'); } else if (!session.back && KZ.courseProgress && c.level && KZ.courses[c.level] && KZ.courseProgress(KZ.courses[c.level]).known > 0) { session.back = 1; keys.push('c.back'); }
+    if (c.level) once('n.level.' + c.level);
+    if (c.topic) { once('n.topic.' + c.level + '.' + c.topic); once('n.tab.' + (c.tab || 'words')); }
+    if (keys.length) { save(); say(keys); }
+  }
+  /* результат задания: реплика тренера, затем что делать дальше; после теста ещё совет */
+  G.on = function (kind, ratio) {
+    if (!auto()) return; build();
+    var k = kind === 'test' ? (ratio >= 0.7 ? 'c.test.pass' : 'c.test.fail') : 'c.' + kind + '.' + (ratio >= 0.8 ? 'high' : ratio >= 0.5 ? 'mid' : 'low');
+    var items = [k], c = ctx();
+    if (kind === 'test') { st.tip = ((st.tip || 0) % 6) + 1; save(); items.push('c.tip.' + st.tip); }
+    var nx = c && KZ.courseNext && KZ.courseNext(c.level, c.topic); if (nx) items.push(nx);
+    say(items, { now: true });
+  };
+  /* карточка с советом про наушники: один раз, при первом заходе в курс */
+  function offerCard() {
+    if (st.carded || card) return;
+    card = document.createElement('div'); card.className = 'guide-card';
+    card.innerHTML = '<p>' + esc(T('Совет: надень наушники и включи голосового гида, он будет подсказывать каждый шаг.')) + '</p><div class="row"><button type="button" class="btn small" data-g="card-on">' + esc(T('Включить гида')) + '</button><button type="button" class="btn ghost small" data-g="card-off">' + esc(T('Не сейчас')) + '</button></div>';
+    document.body.appendChild(card);
+  }
+  window.addEventListener('hashchange', function () { if (card && !onCourse()) card.hidden = true; else if (card && !st.carded) card.hidden = false; });
+  build(); refreshBtn(); setTimeout(onRoute, 600);
 })();
 
 /* ============================================================

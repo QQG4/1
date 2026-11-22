@@ -470,3 +470,26 @@ table.prog .sc{display:block;font-size:0.75rem;color:var(--ink-faint);white-spac
 /* предупреждение о раскладке под полем письма (16.11.2026) */
 .kbd-warn{margin-top:8px;padding:10px 12px;border-left:4px solid var(--gold);background:rgba(140,97,24,.1);font-size:.9375rem;line-height:1.45}
 .kbd-warn[hidden]{display:none}
+
+/* голосовой гид по курсу (21.11.2026): говорящий человечек внизу слева, под ним текст реплики */
+.guide{position:fixed;left:12px;bottom:12px;z-index:45;display:flex;align-items:flex-end;gap:8px;max-width:min(440px,calc(100vw - 24px));opacity:0;transform:translateY(24px);pointer-events:none;transition:opacity .25s,transform .25s}
+.guide.show{opacity:1;transform:none;pointer-events:auto}
+.guide-man{width:98px;height:88px;flex:none;background-repeat:no-repeat;background-size:1800% 100%;background-position:-784px 0;cursor:pointer}
+.guide.talking .guide-man{animation:gbob .45s ease-in-out infinite alternate}
+[data-motion=off] .guide.talking .guide-man{animation:none}
+@keyframes gbob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+.guide-bubble{background:var(--surface);color:var(--ink);border:1px solid var(--border-strong);border-radius:12px 12px 12px 2px;padding:10px 12px;box-shadow:var(--shadow);font-size:.9375rem;line-height:1.45}
+.guide-text{margin:0 0 6px;text-align:left}
+.guide-bars{display:none;gap:3px;height:14px;align-items:flex-end;margin-bottom:6px}
+.guide.talking .guide-bars{display:flex}
+.guide-bars i{width:4px;height:4px;border-radius:2px;background:var(--accent);animation:gbar .5s ease-in-out infinite alternate}
+.guide-bars i:nth-child(2){animation-delay:.1s}.guide-bars i:nth-child(3){animation-delay:.2s}.guide-bars i:nth-child(4){animation-delay:.3s}.guide-bars i:nth-child(5){animation-delay:.15s}
+[data-motion=off] .guide-bars i{animation:none;height:8px}
+@keyframes gbar{from{height:3px}to{height:14px}}
+.guide-btns{display:flex;gap:6px;align-items:center}
+.guide-btns .btn{min-height:36px}
+.guide-launch{position:fixed;left:12px;bottom:12px;z-index:44;display:inline-flex;align-items:center;gap:6px;min-height:40px}
+.guide-card{position:fixed;left:12px;bottom:12px;z-index:46;width:min(340px,calc(100vw - 24px));background:var(--surface);color:var(--ink);border:2px solid var(--border-strong);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
+.guide-card p{margin:0 0 10px;font-size:.9375rem;line-height:1.45;text-align:left}
+.guide-card .row{display:flex;gap:8px;flex-wrap:wrap}
+.guide-card[hidden],.guide-launch[hidden]{display:none}

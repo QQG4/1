@@ -775,10 +775,16 @@ def seo_nav():
 
 
 app = read(src / 'i18n.js') + '\n' + read(src / 'app.js') + '\n' + read(src / 'course.js') if (src / 'i18n.js').exists() else read(src / 'app.js') + '\n' + read(src / 'course.js')
+app += '\n' + read(src / 'guide.js')   # голосовой гид по курсу (21.11.2026): работает, только если в сборке есть KZ.guide (лаборатория)
 app += '\n' + read(src / 'express.js')   # экспресс-тест «Узнать уровень за 10 минут» (29.10.2026), во всех сборках
+# манифест гида: тексты и длительности реплик; mp3 и лента человечка копируются в lab-site/guide (только лаборатория)
+guide_js = ''
+if (src / 'guide' / 'manifest.json').exists():
+    _gm = json.loads((src / 'guide' / 'manifest.json').read_text(encoding='utf-8'))
+    guide_js = 'KZ.guide=' + json.dumps({k: {'role': v['role'], 'ru': v['ru'], 'kk': v['kk']} for k, v in _gm.items()}, ensure_ascii=False, separators=(',', ':')) + ';'
 def body(mode):
     # публичный сайт - только тесты; лаборатория и локальная сборка - плюс курс и платный материал
-    extra = [] if mode == 'site' else course_data + (paid_data if mode == 'lab' else [])
+    extra = [] if mode == 'site' else course_data + (paid_data if mode == 'lab' else []) + ([guide_js] if mode == 'lab' and guide_js else [])
     flag = ["KZ.site.build = '" + mode + "';"]
     # сайт и лаборатория берут шрифты со своего сервера (src/fonts → fonts/), автономный dist - по-прежнему с Google Fonts
     return (tpl.replace('/*STYLES*/', local_fonts(css) if mode in ('site', 'lab') else css)
@@ -993,6 +999,10 @@ lab = root / 'lab-site'; lab.mkdir(exist_ok=True)
 (lab / '.assetsignore').write_text('.git\n.gitignore\n.assetsignore\n', encoding='utf-8')
 for ico in ('favicon.svg', 'favicon.ico', 'favicon-48.png', 'favicon-192.png', 'apple-touch-icon.png'):
     if (docs / ico).exists(): shutil.copyfile(docs / ico, lab / ico)
+if guide_js:
+    shutil.rmtree(lab / 'guide', ignore_errors=True)
+    shutil.copytree(src / 'guide', lab / 'guide', ignore=shutil.ignore_patterns('manifest.json'))
+    shutil.copyfile(src / 'design' / 'scenes' / 'walker.webp', lab / 'guide' / 'walker.webp')
 for _d in ('privacy', 'terms'):   # в лаборатории ссылки из подвала ведут на копии этих страниц
     (lab / _d).mkdir(exist_ok=True); shutil.copyfile(src / _d / 'index.html', lab / _d / 'index.html')
 put_audio(lab / 'audio')

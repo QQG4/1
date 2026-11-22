@@ -18,7 +18,7 @@ story — «История»: «типичная ситуация» фразам
 Перед сборкой они проходят kk_check.py; SWAP и RARE вне kk_allow.txt останавливают сборку. Варианты, которые
 неверны намеренно (wrong_ok), не проверяются, но попадают в список для носителя отдельной пометкой.
 Рядом с роликами кладутся: <id>.txt (подписи), обзор-N.png (кадры всех роликов), казахский-на-проверку.md."""
-import difflib, hashlib, time, json, pathlib, re, shutil, random, subprocess, sys, tempfile
+import difflib, hashlib, os, time, json, pathlib, re, shutil, random, subprocess, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import make_short as ms, kk_check
@@ -27,7 +27,7 @@ W, H = ms.W, ms.H
 TTS_CACHE = ms.ROOT.parent / 'соцсети' / '_tts'
 TTS_HZ = 48000      # 04.11.2026: голос от Azure в 48 кГц (в 24 кГц звучал сухо и с хрипотцой)
 SHORT_WORDS, SHORT_RATE = 3, '+0%'   # до трёх слов — без ускорения: слово выговаривается целиком, а растяжение темпа даёт металл в голосе
-RATE = '+12%'   # 11.10.2026 владелец: «медленно, можно быстрее на 15–20 %»; было -5 %, стало +12 %. Темп утверждён
+RATE = os.environ.get('REELS_RATE') or '+12%'   # 11.10.2026 владелец: «медленно, можно быстрее на 15–20 %»; было -5 %, стало +12 %. Темп утверждён
 SENT_GAP = 0.15       # пауза между предложениями внутри фразы: «миллисекунды и сразу дальше, не терять внимание» (11.10.2026)
 STEP_GAP = 0.25        # пауза между шагами «Разбора» и «Истории» (было 0,5 с)
 EMOJI_FONT = '/System/Library/Fonts/Apple Color Emoji.ttc'
@@ -561,13 +561,28 @@ def build(v, out, mute):
         a, dur = tts(v['q']['say'], voice, mute)
         bottoms.append(('вопрос', fq(meta, q, tmp / 'q.png')))
         seg(tmp / 'q.png', max(3.0, dur + 0.7), a, key=True)
-        gap_scene(overlays, 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30, wmax=640)
-        if FX3D:   # клип 640 px, центр там же, где был плоский кружок отсчёта
-            cy = max(bottoms[-1][1] + 240, 1350)
-            overlays.append(('count', sum(x[1] for x in segs), (W - 560) // 2, min(cy - 280, 1770 - 570), 560))
-        for c in range(ms.COUNTDOWN, 0, -1):
-            bottoms.append(('отсчёт', fq(meta, q, tmp / ('n%d.png' % c), count=None if FX3D else c)))
-            seg(tmp / ('n%d.png' % c), 1.0, sfx('tick') if MOTION else None)
+        # countdown — секунд на ответ (по умолчанию ms.COUNTDOWN); timer: 'bar' — вместо кольца отсчёта тающая линия под вариантами,
+        # а сцена под вопросом стоит всё время отсчёта (19.11.2026, владелец: «пусть анимация остаётся рядом, время — линией»)
+        cd, bar = int(v.get('countdown') or ms.COUNTDOWN), v.get('timer') == 'bar'
+        if bar:
+            qtop = bottoms[-1][1] + 30
+            base = Image.open(tmp / 'q.png').convert('RGB')
+            x0, x1, y0, steps = 80, W - 80, qtop + 4, cd * 5   # 5 шагов в секунду: линия тает ровно, без рывков
+            for k in range(steps):
+                im = base.copy(); d = ImageDraw.Draw(im)
+                d.rounded_rectangle((x0, y0, x1, y0 + 16), 8, fill=(74, 95, 145))
+                d.rounded_rectangle((x0, y0, x0 + max(16, round((x1 - x0) * (1 - k / steps))), y0 + 16), 8, fill=(240, 212, 138))
+                im.save(tmp / ('b%03d.png' % k)); seg(tmp / ('b%03d.png' % k), 0.2)
+            bottoms.append(('отсчёт', y0 + 16))
+            gap_scene(overlays, v.get('scene_q') or 'qt_puzzled', 0, sum(x[1] for x in segs), y0 + 50, wmax=640)
+        else:
+            gap_scene(overlays, v.get('scene_q') or 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30, wmax=640)   # scene_q: своя сцена под вопросом (19.11.2026, «Найди ошибку» о письме — qt_type)
+            if FX3D:   # клип 640 px, центр там же, где был плоский кружок отсчёта
+                cy = max(bottoms[-1][1] + 240, 1350)
+                overlays.append(('count', sum(x[1] for x in segs), (W - 560) // 2, min(cy - 280, 1770 - 570), 560))
+            for c in range(cd, 0, -1):
+                bottoms.append(('отсчёт', fq(meta, q, tmp / ('n%d.png' % c), count=None if FX3D else c)))
+                seg(tmp / ('n%d.png' % c), 1.0, sfx('tick') if MOTION else None)
         note = (v['note'], '') if v.get('note') else None
         bottoms.append(('ответ', fq(meta, q, tmp / 'ans.png', reveal=True, explain=note)))
         a, dur = tts(v['say_answer'], voice, mute)
@@ -608,6 +623,7 @@ def build(v, out, mute):
     total = assemble(segs, mp4, None if '--no-music' in sys.argv else MUSIC_STARTS[sum(map(ord, v['id'])) % len(MUSIC_STARTS)], overlays)
     problems = ['%s: текст заходит на подпись внизу (до %d px)' % (w, b) for w, b in bottoms if b > BOTTOM]
     lo, hi = DUR[v['type']]
+    if v.get('countdown'): hi += max(0, int(v['countdown']) - ms.COUNTDOWN)   # дольше думать — дольше ролик
     if not lo <= total <= hi: problems.append('длина %.1f с вне %d–%d с' % (total, lo, hi))
     write_caption(v, out)
     return total, voice, keys, problems

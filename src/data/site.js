@@ -6,8 +6,7 @@ KZ.site = {
   // приёмник событий (Cloudflare Worker, tools/events-worker): «начал раздел», «завершил раздел», разбор по вопросам;
   // пусто → не отправляется ничего. При смене адреса сайта добавить новый домен в ALLOWED в worker.js и задеплоить заново.
   eventsUrl: 'https://qazaq-trainer-stats.k-k-g-inter.workers.dev',
-  telegramChannel: 'qazaqtrainer',           // канал напоминаний о датах регистрации и об окне апелляции (2 рабочих дня):
-                                 // 'qazaqtrainer' → блок после раздела и ссылка в подвале. Пусто - блок не показывается
+  telegramChannel: 'qazaqtrainer',           // канал с «заданием дня»: ссылка в подвале. Пусто - ссылки нет (напоминания о ҚАЗТЕСТ убраны 23.11.2026)
   instagram: 'qazaq.trainer',     // значок Instagram на главной: https://www.instagram.com/<handle>/
   tiktok: 'qazaq.trainer',        // значок TikTok на главной: https://www.tiktok.com/@<handle>. Пусто - значка нет
   googleVerify: '',              // код из Google Search Console (метод «HTML-тег»: только значение content). Пусто - тега нет

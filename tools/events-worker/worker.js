@@ -5,7 +5,6 @@
    Персональных данных не принимает: sid — случайный идентификатор вкладки, IP не пишем.
    Деплой: см. README.md рядом. */
 
-import { SESSIONS } from './sessions.js';
 import { VIDEO_UTC, NUDGE_UTC, previewNext, onCallback, onOwnerText, publishVideo, queueStatus, queue } from './videos.js';
 import { tgBase } from './tgapi.js';
 import { handleWriting, purgeWritingRate } from '../writing-api.js';   // проверка письма командой: приём работ посетителей и служебные запросы (17.11.2026)
@@ -116,7 +115,6 @@ export default {
     if (h === VIDEO_UTC) return publishVideo(env);    // ролик дня (videos.js)
     if (h === NUDGE_UTC) await previewNext(env);       // вечером — следующий ролик владельцу на одобрение
     if (!task) return;
-    if (h === 4) await postReminders(env);
     const kind = typeof task.kind === 'function' ? task.kind() : task.kind;
     if (kind === 'ask') return postAsk(env);
     if (kind === 'weekly') return postWeekly(env);
@@ -242,34 +240,8 @@ async function postWeekly(env) {
     .bind(new Date().toISOString().slice(0, 10), Date.now(), 'tg-quiz', 'weekly').run();
 }
 
-/* Напоминания о сессиях ҚАЗТЕСТ из sessions.js. Сегодняшняя дата — по Астане (UTC+5). */
-function dayShift(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
-function ruDate(iso) { const m = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']; const [, mm, dd] = iso.split('-'); return +dd + ' ' + m[+mm - 1]; }
-function kkDate(iso) { const m = ['қаңтар','ақпан','наурыз','сәуір','мамыр','маусым','шілде','тамыз','қыркүйек','қазан','қараша','желтоқсан']; const [, mm, dd] = iso.split('-'); return +dd + ' ' + m[+mm - 1]; }
-async function postReminders(env) {
-  if (!env.TG_BOT_TOKEN || !env.TG_CHANNEL || !SESSIONS.length) return;
-  const today = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10);
-  for (const s of SESSIONS) {
-    let kk = '', ru = '';
-    if (today === s.regFrom) {
-      kk = '📝 ҚАЗТЕСТ: өтінім қабылдау ашылды — ' + kkDate(s.regFrom) + ' – ' + kkDate(s.regTo) + '. Тестілеу — ' + kkDate(s.test) + '.';
-      ru = '📝 ҚАЗТЕСТ: открыт приём заявок — ' + ruDate(s.regFrom) + ' – ' + ruDate(s.regTo) + '. Тестирование — ' + ruDate(s.test) + '.';
-    } else if (today === dayShift(s.regTo, -1)) {
-      kk = '⏳ ҚАЗТЕСТ: ертең, ' + kkDate(s.regTo) + ', өтінім берудің соңғы күні. Тестілеу — ' + kkDate(s.test) + '.';
-      ru = '⏳ ҚАЗТЕСТ: завтра, ' + ruDate(s.regTo) + ', последний день приёма заявок. Тестирование — ' + ruDate(s.test) + '.';
-    } else if (today === dayShift(s.test, -1)) {
-      kk = '🎯 Ертең — ҚАЗТЕСТ. Шағым мерзімі: тыңдалым мен оқылым — тестілеу күні нәтиже шыққан соң бірден; жазылым мен айтылым — 2 жұмыс күні.';
-      ru = '🎯 Завтра — ҚАЗТЕСТ. Сроки апелляции: аудирование и чтение — в день тестирования сразу после результата; письмо и говорение — 2 рабочих дня.';
-    } else continue;
-    const text = kk + '\n' + ru + (s.note ? '\n' + s.note : '') +
-      '\n\nӨтінім / Заявка: app.testcenter.kz\nДереккөз / Источник: ' + s.source +
-      '\nДайындық / Подготовка: ' + SITE + 'kk/kaztest/b1/?utm_source=telegram&utm_medium=remind';
-    if (await tg(env, 'sendMessage', { chat_id: env.TG_CHANNEL, text, disable_web_page_preview: true })) {
-      await env.DB.prepare(`INSERT INTO events (day, ts, name, exam, note) VALUES (?,?,?,?,?)`)
-        .bind(today, Date.now(), 'tg-remind', 'kaztest', s.test).run();
-    }
-  }
-}
+/* Напоминания о сессиях ҚАЗТЕСТ (sessions.js, postReminders) убраны 23.11.2026 по слову владельца: в канал больше не публикуются.
+   Старые записи tg-remind в базе остаются до чистки по сроку хранения. */
 
 /* ---------- Бот @qzqtrainer_bot: ответы на сообщения (webhook) ----------
    Telegram присылает сюда каждое сообщение боту. Подлинность — по заголовку X-Telegram-Bot-Api-Secret-Token,
@@ -366,7 +338,7 @@ async function tgWebhook(request, env, ctx) {
   } else if (cmd === '/dates') {
     await say('ҚАЗТЕСТ бойынша шағым беру мерзімі: тыңдалым мен оқылым — тестілеу күні нәтиже шыққан соң бірден; жазылым мен айтылым — нәтижеден кейін 2 жұмыс күні ішінде (app.testcenter.kz).\n' +
       'Апелляция по ҚАЗТЕСТ: аудирование и чтение — в день тестирования сразу после результата; письмо и говорение — 2 рабочих дня после результата (app.testcenter.kz).\n\n' +
-      'Тестілеу кестесі / Расписание: testcenter.kz\nЕске салулар / Напоминания: t.me/qazaqtrainer');
+      'Тестілеу кестесі / Расписание: testcenter.kz');
   } else if (cmd === '/feedback') {
     await say('Не дұрыс емес немесе нені жақсартуға болады — бір хабарламамен осында жазыңыз.\nЧто не так или что улучшить — напишите одним сообщением сюда.');
   } else if (cmd) {

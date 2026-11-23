@@ -2384,7 +2384,7 @@ window.KZ = window.KZ || {};
       };
       return timerBar(sec) + body;
     }
-    body = '<div class="block"><span class="setlabel">' + T('Ваш текст') + '</span><p class="small muted">' + esc(prompt.text) + '</p><div class="essay-view">' + esc(run.text) + '</div><div class="wc">' + wordCount(run.text) + ' ' + T('слов') + ' · ' + mmss(run.secondsUsed || 0) + '</div></div>' +
+    body = '<div class="block"><span class="setlabel">' + T('Ваш текст') + '</span><p class="small muted">' + esc(prompt.text) + '</p><div class="essay-view">' + esc(run.text) + '</div><div class="wc">' + wordCount(run.text) + ' ' + T('слов') + ' · ' + mmss(run.secondsUsed || 0) + '</div>' + wrBox(t, wrTask(t, run.promptId)) + '</div>' +
       '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span>' + (wordCount(run.text) === 0 ? '<p class="small cap-note">' + T('Текст пустой - чек-лист не засчитывается, результат будет 0.') + '</p>' : '') + '<ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (run.checks[i] ? ' checked' : '') + '><span>' + esc(c) + '</span></label></li>'; }).join('') + '</ul>' +
       '<div class="actions"><button class="btn" data-act="save-writing">' + T('Сохранить результат') + '</button>' + (run.timedOut ? '' : '<button class="btn ghost" data-act="back-writing">' + T('Вернуться к тексту') + '</button>') + '</div></div>';
     run.afterRender = null;
@@ -2763,7 +2763,7 @@ window.KZ = window.KZ || {};
     } else if (sec.type === 'writing') {
       var prompt = sec.prompts.filter(function (p) { return p.id === saved.promptId; })[0] || {};
       head = '<div class="score-card"><div class="score-big">' + saved.score + '<small>/' + saved.total + '</small></div><div><b>' + T('Чек-лист самопроверки.') + '</b><div class="m">' + wordCount(saved.text) + ' ' + T('слов') + ' · ' + mmss(saved.secondsUsed || 0) + ' ' + T('из') + ' ' + sec.minutes + ':00 · ' + fmtDate(saved.finishedAt) + '</div></div></div>';
-      body = '<div class="block"><span class="setlabel">' + T('Тема') + '</span><p>' + esc(prompt.text) + '</p><div class="essay-view">' + esc(saved.text) + '</div></div>' +
+      body = '<div class="block"><span class="setlabel">' + T('Тема') + '</span><p>' + esc(prompt.text) + '</p><div class="essay-view">' + esc(saved.text) + '</div>' + wrBox(t, wrTask(t, saved.promptId)) + '</div>' +
         '<div class="block"><span class="setlabel">' + T('Самопроверка') + '</span><ul class="checklist">' + checklistOf(sec).map(function (c, i) { return '<li class="static" style="' + (saved.checks && saved.checks[i] ? 'color:var(--good)' : '') + '">' + esc(c) + (saved.checks && saved.checks[i] ? ' ✓' : '') + '</li>'; }).join('') + '</ul></div>';
     } else {
       var set = sec.sets.filter(function (s) { return s.id === saved.setId; })[0] || { title: '', questions: [] };
@@ -2939,11 +2939,19 @@ window.KZ = window.KZ || {};
   function wrKey(tid, taskId) { return tid + '|' + taskId; }
   function wrTask(t, taskId) {   // задание раздела письма по id: в разделе говорения тоже есть t1/t2, поэтому только writing
     var r = null;
-    (t ? t.sections : []).forEach(function (s) { if (s.type === 'writing') (s.tasks || []).forEach(function (x) { if (x.id === taskId) r = x; }); });
+    (t ? t.sections : []).forEach(function (s) {
+      if (s.type !== 'writing') return;
+      (s.tasks || []).forEach(function (x) { if (x.id === taskId) r = x; });
+      // QazResmiTest (23.11.2026): у письма нет tasks, есть темы prompts; работа = выбранная тема, id задания = id темы
+      (s.prompts || []).forEach(function (x) { if (x.id === taskId) r = { id: x.id, kind: 'essay', prompt: x.text, qrt: true }; });
+    });
     return r;
   }
   function wrText(t, taskId) {
-    var v = run && run.testId === t.id && run.texts && run.texts[taskId] != null ? run.texts[taskId] : ((sp(t.id, 'writing') || {}).texts || {})[taskId];
+    var saved = sp(t.id, 'writing') || {};
+    if (run && run.testId === t.id && run.promptId === taskId && !run.texts) return String(run.text || '');   // QazResmiTest: один текст на выбранную тему
+    if (!saved.texts && saved.promptId === taskId) return String(saved.text || '');
+    var v = run && run.testId === t.id && run.texts && run.texts[taskId] != null ? run.texts[taskId] : (saved.texts || {})[taskId];
     return String(v || '');
   }
   function wrHash(t, taskId, text) {   // cyrb53: короткий отпечаток «тест + задание + текст», чтобы узнать повторную отправку без хранения текста
@@ -2974,7 +2982,8 @@ window.KZ = window.KZ || {};
   function wrSpent(t, taskId, ui) {
     var saved = sp(t.id, 'writing') || {}, ts = (run && run.testId === t.id && run.taskSec) ? run.taskSec : (saved.taskSec || {});
     var here = ui.t0 ? (Date.now() - ui.t0) / 1000 : 0;
-    return Math.floor(Math.max(+ts[taskId] || 0, here));
+    var qrt = (run && run.testId === t.id && run.promptId === taskId ? run.secondsUsed : 0) || (saved.promptId === taskId ? saved.secondsUsed : 0) || 0;   // QazResmiTest: время письма раздела
+    return Math.floor(Math.max(+ts[taskId] || 0, +qrt, here));
   }
   function wrBox(t, task) {
     if (!WR_ON || !task || task.kind !== 'essay') return '';

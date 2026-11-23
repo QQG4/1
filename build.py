@@ -268,8 +268,8 @@ def landing_page(lang, eid, ex, lv, tests, base):
     if site_cfg.get('tg'):
         tg_url = 'https://t.me/' + site_cfg['tg']   # метки Telegram не читает - клик считаем сами событием remind
         h.append('<div class="tgbox"><b>' + ('Күн сайын бір тапсырма - Telegram-да' if lang == 'kk' else 'Задание дня - в Telegram') + '</b><p>' +
-                 e('Әр таңертең - сынақ тесттен бір сұрақ пен оның түсіндірмесі, ҚАЗТЕСТ тіркеу мерзімдері туралы еске салу.' if lang == 'kk'
-                   else 'Каждое утро - вопрос из пробных тестов с разбором и напоминания о сроках регистрации на ҚАЗТЕСТ.') +
+                 e('Әр таңертең - сынақ тесттен бір сұрақ пен оның түсіндірмесі.' if lang == 'kk'
+                   else 'Каждое утро - вопрос из пробных тестов с разбором.') +
                  '</p><a href="' + e(tg_url) + '" data-remind="landing" target="_blank" rel="noopener">t.me/' + e(site_cfg['tg']) + ' →</a></div>')
 
     others = [(o_eid, o_ex, o_lv) for (o_eid, o_ex, o_lv, _t) in landing_pairs() if not (o_eid == eid and o_lv == lv)]
@@ -717,8 +717,7 @@ def info_page_html(u, title, desc, body_parts, base):
     h = page_head('ru', title, desc, (base + u) if base else '')
     h += body_parts
     if site_cfg.get('tg'):
-        h.append('<div class="tgbox"><b>Задание дня - в Telegram</b><p>Каждое утро - вопрос из пробных тестов с разбором и '
-                 'напоминания о сроках регистрации на ҚАЗТЕСТ.</p><a href="https://t.me/' + e(site_cfg['tg']) +
+        h.append('<div class="tgbox"><b>Задание дня - в Telegram</b><p>Каждое утро - вопрос из пробных тестов с разбором.</p><a href="https://t.me/' + e(site_cfg['tg']) +
                  '" data-remind="landing" target="_blank" rel="noopener">t.me/' + e(site_cfg['tg']) + ' →</a></div>')
     h.append('<p class="note">' + e(L10N['ru']['note']) + ' Qazaq Trainer - независимый тренажёр, не официальный сайт экзаменов.</p>')
     h.append('<footer><p><a href="/">' + e(L10N['ru']['home']) + '</a> · <a href="/privacy/">privacy</a>' +

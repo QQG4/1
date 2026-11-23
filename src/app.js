@@ -1620,9 +1620,7 @@
   /* Сроки апелляции сверены 18.09.2026: правила системы «ҚАЗТЕСТ» (adilet.zan.kz/kaz/docs/V2400035109) - заявление
      в течение 2 рабочих дней после результата; страница апелляции НЦТ (testcenter.kz) - по тыңдалым/оқылым
      в день тестирования сразу после выдачи результата. По QazResmiTest официальных сроков мы не нашли, поэтому не пишем.
-     Канал напоминаний (KZ.site.telegramChannel): даты регистрации на тестирование и окно апелляции в 2 рабочих дня.
-     Показывается в подвале ссылкой и блоком после пройденного раздела - в момент, когда человек думает о реальном экзамене.
-     Пустая настройка выключает и то, и другое. */
+     Ссылка на канал (KZ.site.telegramChannel) - в подвале, см. remindCta(). */
   /* «Поделиться результатом» - после разделов с автоматической проверкой. Ссылка ведёт на посадочную страницу
      уровня на языке интерфейса с метками utm_source=share, чтобы в статистике было видно такие переходы.
      Telegram - прямой ссылкой t.me/share; на телефонах, где есть системное меню «Поделиться», - ещё и оно. */
@@ -1725,13 +1723,11 @@
     g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
     g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
   }
+  /* Ссылка на канал в подвале. Напоминания о сессиях ҚАЗТЕСТ убраны 23.11.2026, канал остаётся ради «задания дня».
+     Клик по-прежнему уходит событием remind, чтобы статистика не рвалась. */
   function remindCta(where) {
-    if (!KZ.site || !KZ.site.telegramChannel) return '';
-    var url = 'https://t.me/' + esc(KZ.site.telegramChannel);
-    if (where === 'footer') return " · <a href='" + url + "' target='_blank' rel='noopener' data-remind='footer'>" + T('Напоминания в Telegram') + '</a>';
-    return '<div class="notice"><b class="t">' + T('Не пропустите регистрацию') + '</b><p>' +
-      T('Сессии тестирования идут по графику, а срок апелляции короткий: по ҚАЗТЕСТ на аудирование и чтение - в день тестирования сразу после результата, на письмо и говорение - 2 рабочих дня. Напомним заранее, без писем и без регистрации.') +
-      "</p><p><a class='btn' href='" + url + "' target='_blank' rel='noopener' data-remind='after'>" + T('Подписаться на напоминания') + '</a></p></div>';
+    if (!KZ.site || !KZ.site.telegramChannel || where !== 'footer') return '';
+    return " · <a href='https://t.me/" + esc(KZ.site.telegramChannel) + "' target='_blank' rel='noopener' data-remind='footer'>" + T('Задание дня - в Telegram') + '</a>';
   }
   function feedbackLink(t, sec, saved) {
     if (!KZ.site || !KZ.site.feedbackTelegram) return '';

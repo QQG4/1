@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS tg_videos (
 -- Instagram (ig.js): токен владельца и публикации Reels. n — номер ролика в queue.json, как в tg_videos.
 CREATE TABLE IF NOT EXISTS ig_auth (id INTEGER PRIMARY KEY, token TEXT NOT NULL, user_id TEXT NOT NULL, username TEXT, ts INTEGER);
 CREATE TABLE IF NOT EXISTS ig_posts (n INTEGER PRIMARY KEY, status TEXT NOT NULL, container_id TEXT, media_id TEXT, err TEXT, ts INTEGER);
+CREATE TABLE IF NOT EXISTS ig_stories (n INTEGER PRIMARY KEY, status TEXT NOT NULL, container_id TEXT, media_id TEXT, err TEXT, tt_sent INTEGER, ts INTEGER);   -- сторис, stories.js (23.11.2026)
 
 -- Пилот «проверка письма командой» (15.11.2026): работы, присланные посетителями. Тот же код — migrate-2026-11-15-writing.sql.
 CREATE TABLE IF NOT EXISTS writing_submissions (

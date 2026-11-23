@@ -1,4 +1,5 @@
 import { igReady, igBacklog, igStatus } from './ig.js';
+import { storyStatus } from './stories.js';
 import { tgBase } from './tgapi.js';
 
 /* Ролики в канал с одобрением владельца (13.10.2026).
@@ -122,5 +123,5 @@ export async function queueStatus(env) {
   const shown = Object.values(by).reduce((a, b) => a + b, 0);
   return 'Ролики: всего ' + total + ', не показаны ' + (total - shown) + '\nждут решения: ' + (by.preview || 0) +
     '\nодобрены и ждут эфира: ' + (by.approved || 0) + '\nопубликованы: ' + (by.published || 0) +
-    '\nпропущены: ' + (by.skipped || 0) + '\nна доработке: ' + (by.change || 0) + '\n\n' + (await igStatus(env)) + '\n\n/next — прислать следующий ролик сейчас\n/igdone 3 — ролик №3 уже выложен в Instagram вручную';
+    '\nпропущены: ' + (by.skipped || 0) + '\nна доработке: ' + (by.change || 0) + '\n\n' + (await igStatus(env)) + '\n' + (await storyStatus(env).catch(() => 'Сторис: таблицы нет')) + '\n\n/next — прислать следующий ролик сейчас\n/igdone 3 — ролик №3 уже выложен в Instagram вручную';
 }

@@ -43,7 +43,8 @@ def main():
                       'caption_ig': ig_caption(mp4.with_suffix('.txt').read_text())})
     # Вне банка (19.11.2026): ролики прогрева конкурса эссе. Номера с 1001, чтобы номера банка не сдвигались;
     # воркер выпускает номера от 1000 раньше остальных одобренных (videos.js, ig.js).
-    for k, (folder, start) in enumerate([('прогрев-письмо/ролики', 1001)]):
+    # Серия «по-казахски за 15 секунд» (23.11.2026, по аналитике роликов): номера с 1101, выходит раньше банка, после прогрева.
+    for k, (folder, start) in enumerate([('прогрев-письмо/ролики', 1001), ('по-казахски', 1101)]):
         scen = ROOT / folder / 'сценарии.json'
         if not scen.exists(): continue
         for i, v in enumerate(json.loads(scen.read_text())['videos']):

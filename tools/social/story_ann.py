@@ -10,7 +10,9 @@
   python3 tools/social/story_ann.py 45 --look=2   принудительно вид 0..2 (иначе по номеру)
   python3 tools/social/story_ann.py 45 --png      только первый кадр-проверка (быстро)
 
-Выход: соцсети/сторис/NN.mp4 (+ NN.png, NN.txt с выбранными строками). Казахские строки пула проверены kk-master
+Выход: соцсети/сторис/NN.mp4 (+ NN.png, NN.txt с выбранными строками) и копия соцсети/_publish/v/story-N.mp4: её воркер
+выкладывает в Instagram и присылает владельцу для TikTok (stories.js, 23.11.2026; после сборки нужен деплой воркера).
+Один файл на обе площадки, поэтому в шапке карточки нет слова «Reels». Казахские строки пула проверены kk-master
 (слова в словарях), пары слов корпус не подтверждает — весь казахский идёт носителю (соцсети/сторис/казахский-на-проверку.md).
 Без длинного тире. Ничего никуда не публикует."""
 import json, pathlib, subprocess, sys, tempfile, re
@@ -93,7 +95,7 @@ def card_frame(cw, sch):
     mk = Image.open(HERE / 'brand' / 'mark-navy.png').convert('RGBA').resize((56, 56), Image.LANCZOS)
     d.ellipse((pad, 18, pad + 60, 78), fill=SUN + (255,)); im.alpha_composite(mk, (pad + 2, 20))
     d.text((pad + 76, 48), 'qazaq.trainer', font=font('GolosText-600.ttf', 38), fill=ONSUN, anchor='lm')
-    d.text((im.width - pad - 4, 48), 'Reels', font=font('GolosText-600.ttf', 34), fill=(120, 128, 150), anchor='rm')
+    # слово «Reels» справа в шапке убрано 23.11.2026: тот же файл идёт и в TikTok
     return im, (pad, head), ch
 
 def build(n, look=None, png_only=False):
@@ -150,10 +152,12 @@ def build(n, look=None, png_only=False):
     fg.append('[8:a]volume=0.5,adelay=1000|1000,apad=whole_dur=%.2f,aresample=44100,aformat=channel_layouts=stereo[a]' % DUR)
     (tmp / 'fg.txt').write_text(';\n'.join(fg))
     cmd += ['-/filter_complex', str(tmp / 'fg.txt'), '-map', '[out]', '-map', '[a]', '-t', '%.2f' % DUR, '-r', '30',
-            '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(out)]
+            '-threads', '2', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(out)]
     subprocess.run(cmd, check=True)
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', '3.2', '-i', str(out), '-frames:v', '1', str(OUT / ('%02d.png' % n))], check=True)
     (OUT / ('%02d.txt' % n)).write_text('ролик №%d (%s), вид %d, сцена %s\nRU: %s\nKK: %s\nEN: %s\n' % (n, q['id'], li, scene, ru, kk, en))
+    pub = SOC / '_publish' / 'v' / ('story-%d.mp4' % n)
+    pub.write_bytes(out.read_bytes())
     print('№%d  %s | %s | %s  [%s, вид %d]' % (n, ru, kk, en, scene, li))
     return out
 

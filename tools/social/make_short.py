@@ -124,7 +124,10 @@ def base(meta):
 
 def frame_question(meta, q, path, count=None, reveal=False, explain=None):
     im, d = base(meta)
-    y = text_block(d, q['text'], font('Arial Bold.ttf', q.get('size', 62)), 80, 330, W - 160, WHITE)   # size: reels.py крупнее
+    y = 330
+    if q.get('kicker'):   # reels.py --fmt2: короткая строка голоса жёлтым над крупным поисковым вопросом
+        y = text_block(d, q['kicker'], font('Arial Bold.ttf', 56), 80, y, W - 160, SUN) + 10
+    y = text_block(d, q['text'], font('Arial Bold.ttf', q.get('size', 62)), 80, y, W - 160, WHITE)   # size: reels.py крупнее
     if q.get('sub'): y = text_block(d, q['sub'], font('Arial.ttf', 46), 80, y + 10, W - 160, PALE)   # перевод вопроса (reels.py)
     y += 40
     fo = font('Semi', 50)

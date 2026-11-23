@@ -11,6 +11,7 @@ import { handleWriting, purgeWritingRate } from '../writing-api.js';   // про
 import { runPlan, linkTakenToday } from './plan.js';
 import { wStart, wCallback, wMy, wDelete, notifyWritingReady } from './writing-bot.js';
 import { IG_PREP_UTC, IG_PUB_UTC, igPrepare, igPublish, igRefresh, saveToken } from './ig.js';
+import { STORY_PREP_UTC, STORY_PUB_UTC, storyPrepare, storyPublish } from './stories.js';
 
 const ALLOWED = [                      // откуда принимаем события (CORS + защита от чужих сайтов)
   'https://qazaqtrainer.com',         // основной домен
@@ -112,6 +113,8 @@ export default {
     const h = new Date().getUTCHours(), task = TASKS.find((t) => t.utc === h);
     if (IG_PREP_UTC.includes(h)) await igPrepare(env, queue);   // Instagram: контейнер за час до эфира (ig.js)
     if (IG_PUB_UTC.includes(h)) await igPublish(env);           // Instagram: эфир 19:00 по Алматы
+    if (h === STORY_PREP_UTC) await storyPrepare(env).catch((e) => console.log('stories: ' + e));   // сторис: Instagram 20:00 + файл владельцу для TikTok (stories.js)
+    if (STORY_PUB_UTC.includes(h)) await storyPublish(env).catch((e) => console.log('stories: ' + e));
     if (h === VIDEO_UTC) return publishVideo(env);    // ролик дня (videos.js)
     if (h === NUDGE_UTC) await previewNext(env);       // вечером — следующий ролик владельцу на одобрение
     if (!task) return;

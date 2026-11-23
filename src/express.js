@@ -2,8 +2,10 @@
    Экспресс-тест «Узнать уровень за 10 минут» (29.10.2026): #/express/<exam>, отдельно для ҚАЗТЕСТ и QazResmiTest.
    Зачем: полные тесты длинные, письмо и говорение бросают в 28–34 % случаев; короткий тест даёт ориентир и ведёт
    в полный тест найденного уровня.
-   Лесенка: старт с A2, по 4 вопроса на ступень. 3–4 верных - ступень выше, 2 - уровень этой ступени, 0–1 - стоп
-   (уровень - прошлая ступень; если провалена первая же A2, проверяем A1). Ступени - examLevels экзамена.
+   Лесенка: старт с A2, по 4 вопроса на ступень. 3–4 верных - ступень пройдена, идём выше; 0–2 - стоп, уровень -
+   последняя пройденная ступень; если не пройдена первая же A2, проверяем A1. Верхняя ступень экзамена (C1 ҚАЗТЕСТ,
+   C2 QRT) засчитывается только за все верные. Ступени - examLevels экзамена. Правило 23.11.2026: раньше 2 из 4 давали
+   уровень ступени, и до 2/3 прохождений упирались в верхний уровень (выжимки/1-сайт.md).
    Вопросы - только из вариантов 04–05 того же экзамена и уровня (их почти не проходят), новых казахских текстов нет:
    лексико-грамматические задания и лексика понятны без текста, к вопросу на понимание показывается один абзац —
    тот, который цитирует пояснение (как в «задании дня» в Telegram, tools/dump_meta.js). В конце - одна запись
@@ -67,13 +69,14 @@
     KZ.track('express-start', { exam: exam });
   }
   /* ответы ступени → следующая ступень, аудирование или итог */
+  /* Ступень пройдена: 3 из 4, на верхней ступени экзамена - все верные. */
+  function stepPassed(s) { return s.ok >= (nextLevel(s.lv) ? 3 : Math.max(3, s.tot)); }
   function finishStep() {
     var ok = X.items.filter(function (it) { return X.answers[it.key] === it.q.answer; }).length;
     X.steps.push({ lv: X.lv, ok: ok, tot: X.items.length, items: X.items, answers: X.answers });
-    var passed = X.steps.filter(function (s) { return s.ok >= 3; }).map(function (s) { return s.lv; });
+    var passed = X.steps.filter(stepPassed).map(function (s) { return s.lv; });
     var top = passed.length ? passed[passed.length - 1] : null, next = null;
-    if (ok >= 3) { next = X.steps.some(function (s) { return s.lv === nextLevel(X.lv); }) ? null : nextLevel(X.lv); if (!next) X.level = X.lv; }
-    else if (ok === 2) X.level = X.lv;
+    if (stepPassed(X.steps[X.steps.length - 1])) { next = X.steps.some(function (s) { return s.lv === nextLevel(X.lv); }) ? null : nextLevel(X.lv); if (!next) X.level = X.lv; }
     else if (top) X.level = top;
     else if (prevLevel(X.lv) && X.steps.length === 1) next = prevLevel(X.lv);   // первая же ступень не далась - проверяем уровень ниже
     else X.level = '';   // ниже A1
@@ -155,7 +158,7 @@
     var n = asked() + (X.listen ? X.listen.tot : 0);
     var big = lv ? '<div class="score-big">' + lv + '</div>' : '<div class="score-big">&lt;A1</div>';
     var msg = lv ? T('Ваш примерный уровень:') + ' ' + lv : T('Похоже, пока ниже A1. Начните с уровня A1.');
-    var rows = X.steps.map(function (s) { return '<li>' + T('Ступень') + ' ' + s.lv + ': ' + s.ok + '/' + s.tot + ' ' + (s.ok >= 3 ? '✓' : s.ok <= 1 ? '✗' : '·') + '</li>'; }).join('') +
+    var rows = X.steps.map(function (s) { return '<li>' + T('Ступень') + ' ' + s.lv + ': ' + s.ok + '/' + s.tot + ' ' + (stepPassed(s) ? '✓' : s.ok <= 1 ? '✗' : '·') + '</li>'; }).join('') +
       (X.listen ? '<li>' + LK(KZ.sectionTypes.listening, 'label') + ' ' + X.listen.lv + ': ' + X.listen.ok + '/' + X.listen.tot + '</li>' : '');
     var auNote = X.listen && X.listen.ok * 2 < X.listen.tot ? '<p class="small">' + T('Аудирование далось труднее остального - в полном тесте обратите на него внимание.') + '</p>' : '';
     var exN = examName(X.exam);

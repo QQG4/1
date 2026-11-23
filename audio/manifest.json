@@ -1194,7 +1194,7 @@
  "kaztest-listen-15-p3": {
   "title": "Велосипедші-саяхатшымен сұхбат",
   "voices": "Aigul + Daulet",
-  "bytes": 1179936,
+  "bytes": 1178208,
   "seconds": 98,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1347
@@ -1642,7 +1642,7 @@
  "kaztest-listen-26-p4": {
   "title": "Команда қалай құрылады?",
   "voices": "Daulet",
-  "bytes": 1216800,
+  "bytes": 1216512,
   "seconds": 101,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1661
@@ -1762,7 +1762,7 @@
  "kaztest-listen-30-p3": {
   "title": "Шебермен сұхбат: киіз басу",
   "voices": "Aigul + Daulet",
-  "bytes": 1027584,
+  "bytes": 1029024,
   "seconds": 86,
   "format": "audio-24khz-96kbitrate-mono-mp3",
   "chars": 1220

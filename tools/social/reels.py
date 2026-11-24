@@ -19,7 +19,7 @@ story — «История»: «типичная ситуация» фразам
 неверны намеренно (wrong_ok), не проверяются, но попадают в список для носителя отдельной пометкой.
 Рядом с роликами кладутся: <id>.txt (подписи), обзор-N.png (кадры всех роликов), казахский-на-проверку.md."""
 import difflib, hashlib, os, time, json, pathlib, re, shutil, random, subprocess, sys, tempfile
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import make_short as ms, kk_check
 
@@ -49,13 +49,6 @@ FX3D = '--3d' in sys.argv   # объёмный отсчёт, знак и куб�
 ECO = '--eco' in sys.argv
 # --mid (04.11.2026, владелец: «где-то на 70 % мощности»): кодировщик в 4 потока, без пауз между роликами
 MID = '--mid' in sys.argv
-# --fmt2 (23.11.2026, проба по методичке монтажа друга, соцсети/аналитика/2026-11-23/разбор-монтажа.md): или поле "fmt": 2
-# у ролика. Что меняет: элементы входят с масштаба, а не появляются целиком (POP); тема крупно на первом кадре; у квиза
-# крупно поисковый вопрос, строка голоса над ним; в «Истории» первая фраза видна сразу, казахская фраза шага (say_kk)
-# озвучивается Даулетом на жёлтой плашке; экспорт CRF 17, ключевой кадр раз в 2 с, метки bt709. Без флага всё как раньше
-FMT2 = '--fmt2' in sys.argv
-POP_N = 8                # кадров входа при 30 к/с: 0,27 с (методичка: вход 300–500 мс, ease-out)
-SAFE_Y = 1640            # низ безопасной зоны 9:16 (методичка): ниже подпись и кнопки площадки; при --fmt2 замечание, не ошибка
 # Кубиковые сцены вместо смайликов в «Истории» (решение владельца 31.10.2026): vox_scenes.py в проекте НАУАН, клипы в соцсети/_3d.
 # Герой-мужчина; у историй про героиню — те же сцены с девушкой (_w, 03.11.2026). Смайлика нет в таблице — остаётся смайлик.
 EMOJI_SCENE = {'🎓': 'qt_read', '❌': 'qt_read', '📖': 'qt_read', '📚': 'qt_read', '💼': 'qt_read', '🧩': 'qt_puzzled', '❓': 'qt_puzzled',
@@ -117,7 +110,7 @@ def kk_fields(v):
             add('вариант %s' % 'ABCD'[i], t, wrong=(i != v.get('answer') and v.get('wrong_ok')))
     for i, o in enumerate(v.get('poll', [])): add('вариант опроса %d' % (i + 1), o.get('kk'))
     for i, st in enumerate(v.get('steps', [])):
-        add('шаг %d, на экране' % (i + 1), st.get('kk')); add('шаг %d, казахская фраза, голос' % (i + 1), st.get('say_kk'))
+        add('шаг %d, на экране' % (i + 1), st.get('kk'))
         card = st.get('card') or {}
         for w in kk_check.WORD.findall(' '.join([st.get('text') or '', card.get('title', '')]).lower()):
             if KK_LETTERS & set(w): add('шаг %d, слово в субтитре' % (i + 1), w)
@@ -276,8 +269,7 @@ def frame_card(v, c, idx, n, path):
         fr = ms.font('Arial.ttf', 64)
         h = len(ms.wrap(d, c['ru'], fr, W - 160)) * 80
         parts.append((h + 20, lambda y: ms.text_block(d, c['ru'], fr, 80, y + 20, W - 160, ms.PALE, center=True)))
-    if FMT2 and idx == 1 and topic(v): top = header(d, topic(v), 84) + 20   # первый кадр: поисковый запрос крупно и жёлтым
-    else: top = header(d, topic(v), 54, ms.PALE) + 20 if topic(v) else 300
+    top = header(d, topic(v), 54, ms.PALE) + 20 if topic(v) else 300
     total = sum(h for h, _ in parts)
     y = top + 40 if FX3D else top + (BOTTOM - top - total) / 2   # при --3d место под сценой внизу
     for h, draw in parts: draw(y); y += h
@@ -402,46 +394,9 @@ def base_story(v, st, last):
         d.rounded_rectangle([60, 840, W - 60, 840 + n * 96 + 70], 36, fill=ms.SUN)
     return im
 
-def draw_story_kk(im, st):
-    """--fmt2: русская фраза шага целиком белым и под ней казахская фраза (say_kk) на жёлтой плашке, пока её читает Даулет."""
-    d = ImageDraw.Draw(im)
-    text = ' '.join(ms.nodash(st.get('text') or st['say']).split())
-    y = draw_words(d, text, ms.font('Arial Bold.ttf', 76), 900, 96, W - 180, ms.WHITE, None) + 10
-    kk = st['say_kk']; f = ms.font('Arial Bold.ttf', 84)
-    n = len(ms.wrap(d, kk, f, W - 220))
-    d.rounded_rectangle([60, y, W - 60, y + n * 104 + 60], 36, fill=ms.SUN)
-    draw_words(d, kk, f, y + 30 + 52, 104, W - 220, ms.INK, None)
-    return y + n * 104 + 60
-
 def draw_story(im, st, last, shown):
     text = ' '.join(ms.nodash(st.get('text') or st['say']).split())
     return draw_words(ImageDraw.Draw(im), text, ms.font('Arial Bold.ttf', 76), 900, 96, W - 180, ms.INK if last else ms.WHITE, shown, marker=(ms.NAVY, ms.WHITE) if last else (ms.SUN, ms.INK)) + 40
-
-def ease_out(t):
-    """Близко к кривой (0.16, 1, 0.3, 1) из методички: быстрый старт, долгое мягкое торможение."""
-    return 1 - (1 - t) ** 4
-
-def pop_frames(prev, cur, blank, tmp, name, start=0.92):
-    """--fmt2: кадры входа нового содержимого. Меняется только то, что отличается от прошлого кадра: оно растёт
-    с масштаба start до 1 (start > 1 — «удар» сверху вниз), остальное стоит. Возвращает пути картинок (POP_N штук)
-    или [], если менять нечего. Последний кадр — сам cur, его рисует вызывающий."""
-    new = Image.open(cur).convert('RGB'); ref = Image.open(prev).convert('RGB') if prev else blank
-    changed = ImageChops.difference(new, ref).convert('L').point(lambda x: 255 if x > 16 else 0).filter(ImageFilter.MaxFilter(9))
-    bb = changed.getbbox()
-    if not bb: return []
-    stage = Image.composite(blank, new, changed)   # там, где меняется, сначала пусто (фон), остальное как в новом кадре
-    cont = ImageChops.difference(new, blank).convert('L').point(lambda x: min(255, x * 4))
-    alpha = ImageChops.multiply(cont, changed).crop(bb)
-    layer = new.crop(bb).convert('RGBA'); layer.putalpha(alpha)
-    cx, cy = (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2
-    out = []
-    for i in range(POP_N):
-        k = start + (1 - start) * ease_out(i / POP_N)
-        w, h = max(1, round(layer.size[0] * k)), max(1, round(layer.size[1] * k))
-        im = stage.copy(); l = layer.resize((w, h), Image.BILINEAR)
-        im.paste(l, (round(cx - w / 2), round(cy - h / 2)), l)
-        p = tmp / ('%s-pop%d.png' % (name, i)); im.save(p, compress_level=1); out.append(p)
-    return out
 
 # ---------- слова во времени ----------
 ALIGN_PY = pathlib.Path.home() / 'transcribe-env' / 'venv' / 'bin' / 'python'
@@ -563,29 +518,18 @@ def assemble(segs, mp4, music_start=None, overlays=()):
     # потоки фильтров ограничены отдельно от кодировщика: иначе склейка кадров занимала 3+ ядра и грела ноутбук
     cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-filter_complex_threads', '2' if MID else '1', '-threads', '1'] + vin + sum((['-i', str(a)] for a in ain), []) + extra + ov_in + [
         '-filter_complex', graph, '-map', '[v]', '-map', '[aud]', '-t', '%.2f' % t, '-r', '30', '-c:v', 'libx264', '-threads', '4' if MID else '1' if ECO else '2',   # 2 потока: меньше греется
-        '-pix_fmt', 'yuv420p', '-preset', 'faster' if ECO else 'medium', '-crf', '17' if FMT2 else '20'] + (
-        ['-g', '60', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv'] if FMT2 else []) + [ '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(mp4)]
+        '-pix_fmt', 'yuv420p', '-preset', 'faster' if ECO else 'medium', '-crf', '20', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(mp4)]
     subprocess.run(cmd, check=True)
     return t
 
 def build(v, out, mute):
-    global FMT2
-    FMT2 = '--fmt2' in sys.argv or v.get('fmt') == 2
     voice = v.get('voice') or ms.voice_for(v['id'], '')
     if v['type'] in RU_TYPES: voice = RU_VOICE[voice]
     else: voice = KK_VOICE
     tmp = pathlib.Path(tempfile.mkdtemp(prefix='reel-'))
     segs, bottoms, keys, overlays = [], [], [], []   # overlays — 3D-клипы поверх кадров; keys — кадры для обзорного листа
-    blank = ms.base({'badge': BADGE[v['type']]})[0]
-    prev = [None]   # последний показанный кадр: при --fmt2 входит только то, что изменилось
-    def seg(png, dur, mp3=None, key=False, pop=0.92):
-        # --fmt2: каждый озвученный кадр (слово, вопрос, ответ, шаг, призыв) входит с масштаба; длина кадра та же,
-        # первые POP_N/30 с отдаются кадрам входа, голос стартует вместе с первым из них — тайминг не меняется
-        if FMT2 and mp3 is not None and dur >= 0.6:
-            fr = pop_frames(prev[0], png, blank, tmp, pathlib.Path(png).stem, pop)
-            for f in fr: segs.append((f, 1 / 30, mp3)); mp3 = None
-            dur -= len(fr) / 30
-        segs.append((png, dur, mp3)); prev[0] = png
+    def seg(png, dur, mp3=None, key=False):
+        segs.append((png, dur, mp3))
         if key: keys.append(png)
     # Заставки-крючка нет (решение владельца 26.10.2026): с 0,0 с на экране вопрос или казахское слово, голос сразу.
     # Поле hook в сценариях осталось: его русская строка — тема в шапке кадров (header) и первая строка подписи
@@ -604,8 +548,6 @@ def build(v, out, mute):
         order = list(range(len(opts))); random.Random(v['id']).shuffle(order)   # ключ не всегда на месте A
         q = {'text': v['q'].get('kk') or v['q']['ru'], 'sub': v['q']['ru'] if v['q'].get('kk') else '',
              'options': [opts[i] for i in order], 'answer': order.index(v['answer'])}
-        if FMT2 and v['q'].get('kk'):   # крупно то, что ищут («Как сказать … по-казахски?»), строка голоса жёлтым над ним
-            q.update(text=v['q']['ru'], sub='', kicker=v['q']['kk'])
         # вопрос — первое, что видит зритель: крупнее прежних 62 px, если укладывается в три строки
         probe = ImageDraw.Draw(Image.new('RGB', (1, 1)))
         q['size'] = 80 if len(ms.wrap(probe, q['text'], ms.font('Arial Bold.ttf', 80), W - 160)) <= 3 else 62
@@ -634,7 +576,7 @@ def build(v, out, mute):
             bottoms.append(('отсчёт', y0 + 16))
             gap_scene(overlays, v.get('scene_q') or 'qt_puzzled', 0, sum(x[1] for x in segs), y0 + 50, wmax=640)
         else:
-            gap_scene(overlays, v.get('scene_q') or 'qt_puzzled', 0, sum(x[1] for x in segs), bottoms[-1][1] + 30, wmax=640)   # scene_q: своя сцена под вопросом (19.11.2026, «Найди ошибку» о письме — qt_type)
+            gap_scene(overlays, v.get('scene_q') or 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30, wmax=640)   # scene_q: своя сцена под вопросом (19.11.2026, «Найди ошибку» о письме — qt_type)
             if FX3D:   # клип 640 px, центр там же, где был плоский кружок отсчёта
                 cy = max(bottoms[-1][1] + 240, 1350)
                 overlays.append(('count', sum(x[1] for x in segs), (W - 560) // 2, min(cy - 280, 1770 - 570), 560))
@@ -644,25 +586,23 @@ def build(v, out, mute):
         note = (v['note'], '') if v.get('note') else None
         bottoms.append(('ответ', fq(meta, q, tmp / 'ans.png', reveal=True, explain=note)))
         a, dur = tts(v['say_answer'], voice, mute)
-        t_ans = sum(x[1] for x in segs)
         if MOTION:   # звук ответа в момент открытия, голос вступает за ним
             seg(tmp / 'ans.png', 0.45, sfx('chime')); seg(tmp / 'ans.png', max(2.6, dur + 1.2) , a, key=True)
-        else: seg(tmp / 'ans.png', max(3.0, dur + 1.2), a, key=True, pop=1.1)   # ответ — «удар» с 1,1
+        else: seg(tmp / 'ans.png', max(3.0, dur + 1.2), a, key=True)
+        t_ans = sum(x[1] for x in segs[:-2 if MOTION else -1])
         gap_scene(overlays, 'qt_win', t_ans, sum(x[1] for x in segs), bottoms[-1][1] + 30)
     elif v['type'] == 'poll':
         bottoms.append(('опрос', frame_poll(v, tmp / 'poll.png')))
         a, dur = tts(v['q']['say'], voice, mute)
         # время прочитать каждый вариант; вместе с призывом не короче DUR
         seg(tmp / 'poll.png', max(dur + 3.0 + 1.3 * len(v['poll']), DUR['poll'][0] + 0.2 - d_cta), a, key=True)
-        gap_scene(overlays, 'qt_puzzled', 0, sum(x[1] for x in segs), bottoms[-1][1] + 30)
+        gap_scene(overlays, 'qt_puzzled', 0, segs[-1][1], bottoms[-1][1] + 30)
     elif v['type'] in RU_TYPES:
         for i, st in enumerate(v['steps']):
             last = i == len(v['steps']) - 1
             a, dur = tts(st['say'], voice, mute)
             starts = word_starts(a, st['say'], st.get('text') or st['say'], dur)
-            kk_say = FMT2 and v['type'] == 'story' and st.get('say_kk')
-            d_step = dur + (0.1 if kk_say else 0.8 if last else STEP_GAP)
-            if FMT2 and i == 0: starts = [0.0]   # первый кадр: вся фраза сразу, а не одно слово
+            d_step = dur + (0.8 if last else STEP_GAP)
             key = i in (0, len(v['steps']) // 2, len(v['steps']) - 1)
             lead = 0.0 if i == 0 else LEAD
             if v['type'] == 'tip':
@@ -671,14 +611,7 @@ def build(v, out, mute):
                 b = BOTTOM + 1 if top > SUB_TOP - 40 else b   # схема залезла на субтитр — ошибка вёрстки
             else:
                 sc = step_scene(v, st); t0 = sum(x[1] for x in segs)   # сцена на свой шаг: от его начала до конца (клип 4 с, дальше стоп-кадр)
-                lst = last and not kk_say   # с казахской фразой плашка у неё, русская строка белая
-                full = FMT2 and i == 0
-                b = reveal(base_story(v, st, lst), lambda im, k, st=st, lst=lst, full=full: draw_story(im, st, lst, None if full else k), starts, d_step, tmp, 's%02d' % i, seg, a, key and not kk_say, lead)
-                if kk_say:   # проба --fmt2 (только пкф-3): казахскую фразу читает Даулет, русский голос молчит
-                    ak, dk = tts(st['say_kk'], KK_VOICE, mute)
-                    im = base_story(v, st, False); b = draw_story_kk(im, st)
-                    p = tmp / ('s%02d-kk.png' % i); im.save(p)
-                    seg(p, dk + (0.8 if last else STEP_GAP), ak, key=key)
+                b = reveal(base_story(v, st, last), lambda im, k, st=st, last=last: draw_story(im, st, last, k), starts, d_step, tmp, 's%02d' % i, seg, a, key, lead)
                 if sc: overlays.append((sc, t0, (W - 490) // 2, 448, 490, sum(x[1] for x in segs)))
             bottoms.append(('шаг %d' % (i + 1), b))
     bottoms.append(('призыв', frame_cta(v, tmp / 'cta.png')))
@@ -689,7 +622,6 @@ def build(v, out, mute):
     mp4 = out / (v['id'] + '.mp4')
     total = assemble(segs, mp4, None if '--no-music' in sys.argv else MUSIC_STARTS[sum(map(ord, v['id'])) % len(MUSIC_STARTS)], overlays)
     problems = ['%s: текст заходит на подпись внизу (до %d px)' % (w, b) for w, b in bottoms if b > BOTTOM]
-    if FMT2: problems += ['%s: ниже безопасной зоны (до %d px, граница %d)' % (w, b, SAFE_Y) for w, b in bottoms if SAFE_Y < b <= BOTTOM and w != 'призыв']
     lo, hi = DUR[v['type']]
     if v.get('countdown'): hi += max(0, int(v['countdown']) - ms.COUNTDOWN)   # дольше думать — дольше ролик
     if not lo <= total <= hi: problems.append('длина %.1f с вне %d–%d с' % (total, lo, hi))
